@@ -5,7 +5,7 @@ declare global {
     electron: {
       getServers: () => Promise<import('./types').Server[]>
       deleteServer: (id: string) => Promise<{ ok: boolean }>
-      createServer: (opts: import('./types').CreateServerOpts) => Promise<{ ok: boolean; server: import('./types').Server; error?: string }>
+      createServer: (opts: import('./types').CreateServerOpts & { offlineMode?: boolean }) => Promise<{ ok: boolean; server: import('./types').Server; error?: string }>
       startServer: (id: string) => Promise<{ ok: boolean; error?: string }>
       stopServer: (id: string) => Promise<{ ok: boolean }>
       sendCommand: (id: string, command: string) => Promise<{ ok: boolean }>

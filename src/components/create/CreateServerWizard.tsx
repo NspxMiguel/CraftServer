@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap, Shield, Globe } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap, Shield, Globe, Lock, UserCheck } from 'lucide-react'
 import type { Page } from '../../App'
 import type { ServerType } from '../../types'
 import { PRESET_PLUGINS } from '../../data/presetPlugins'
@@ -74,6 +74,7 @@ export default function CreateServerWizard({ navigate }: Props) {
   const [ram, setRam] = useState(1024)
   const [port, setPort] = useState(25565)
   const [plugins, setPlugins] = useState(PRESET_PLUGINS.map(p => ({ ...p })))
+  const [offlineMode, setOfflineMode] = useState(false)
   const [creating, setCreating] = useState(false)
   const [progress, setProgress] = useState<string[]>([])
   const [done, setDone] = useState(false)
@@ -93,8 +94,21 @@ export default function CreateServerWizard({ navigate }: Props) {
     })
   }, [])
 
-  const togglePlugin = (i: number) =>
+  // plugins locked-on when offline mode is active
+  const OFFLINE_REQUIRED = ['AuthMe Reloaded', 'SkinsRestorer']
+
+  const togglePlugin = (i: number) => {
+    if (offlineMode && OFFLINE_REQUIRED.includes(plugins[i].name)) return
     setPlugins(ps => ps.map((p, idx) => idx === i ? { ...p, enabled: !p.enabled } : p))
+  }
+
+  const handleOfflineToggle = (v: boolean) => {
+    setOfflineMode(v)
+    if (v) {
+      // force-enable AuthMe + SkinsRestorer
+      setPlugins(ps => ps.map(p => OFFLINE_REQUIRED.includes(p.name) ? { ...p, enabled: true } : p))
+    }
+  }
 
   const handleCreate = async () => {
     if (!name.trim() || !version) return
@@ -104,7 +118,7 @@ export default function CreateServerWizard({ navigate }: Props) {
 
     const selectedPlugins = plugins.filter(p => p.enabled).map(p => ({ name: p.name, url: p.url, filename: p.filename }))
     const res = isElectron
-      ? await window.electron.createServer({ name: name.trim(), type, version, ram, port, plugins: selectedPlugins })
+      ? await window.electron.createServer({ name: name.trim(), type, version, ram, port, plugins: selectedPlugins, offlineMode })
       : { ok: true, server: { id: Date.now().toString(), name, type, version, ram, port, dir: '', createdAt: Date.now(), playit: false } }
 
     if (res.ok) {
@@ -290,6 +304,66 @@ export default function CreateServerWizard({ navigate }: Props) {
                       </p>
                     </div>
                   )}
+
+                  {/* Offline mode toggle — only for Java-based servers */}
+                  {type !== 'bedrock' && (
+                    <div>
+                      <button
+                        onClick={() => handleOfflineToggle(!offlineMode)}
+                        className={`w-full flex items-center justify-between text-left px-4 py-3.5 rounded-xl border transition-all
+                          ${offlineMode ? 'bg-amber-500/8 border-amber-500/30' : 'bg-dark-800 border-dark-500 hover:border-dark-400'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${offlineMode ? 'bg-amber-500/15 text-amber-400' : 'bg-dark-700 text-slate-500'}`}>
+                            <Lock size={16} />
+                          </div>
+                          <div>
+                            <p className={`text-sm font-bold ${offlineMode ? 'text-amber-300' : 'text-slate-300'}`}>Modo offline (pirata)</p>
+                            <p className="text-[11px] text-slate-600 mt-0.5">Aceita jogadores sem Minecraft original</p>
+                          </div>
+                        </div>
+                        <div className={`relative shrink-0 w-10 h-5 rounded-full transition-colors duration-200 ${offlineMode ? 'bg-amber-500' : 'bg-dark-500'}`}>
+                          <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${offlineMode ? 'left-5' : 'left-0.5'}`} />
+                        </div>
+                      </button>
+
+                      <AnimatePresence>
+                        {offlineMode && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-2 p-3.5 bg-dark-800 border border-dark-600 rounded-xl space-y-2">
+                              <div className="flex items-center gap-2 text-xs text-amber-400 font-bold">
+                                <UserCheck size={13} />
+                                Auto-configurado para modo offline:
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                  <Check size={10} className="text-green-400 shrink-0" strokeWidth={3} />
+                                  <span><strong className="text-slate-200">AuthMe</strong> instalado e configurado</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                  <Check size={10} className="text-green-400 shrink-0" strokeWidth={3} />
+                                  <span><strong className="text-slate-200">SkinsRestorer</strong> para skins offline</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                  <Check size={10} className="text-green-400 shrink-0" strokeWidth={3} />
+                                  <span>Auto-login para quem tem <strong className="text-slate-200">jogo original</strong></span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                  <Check size={10} className="text-green-400 shrink-0" strokeWidth={3} />
+                                  <span>Pirata faz <strong className="text-slate-200">/register</strong> uma vez</span>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
                 </div>
               </StepWrap>
             )}
@@ -309,25 +383,38 @@ export default function CreateServerWizard({ navigate }: Props) {
                 )}
                 <div className="space-y-2">
                   {plugins.map((p, i) => {
-                    const disabled = type === 'bedrock'
+                    const disabledByType = type === 'bedrock'
+                    const lockedByOffline = offlineMode && OFFLINE_REQUIRED.includes(p.name)
+                    const clickable = !disabledByType && !lockedByOffline
                     return (
                       <button
                         key={p.name}
-                        onClick={() => !disabled && togglePlugin(i)}
-                        disabled={disabled}
+                        onClick={() => clickable && togglePlugin(i)}
+                        disabled={disabledByType}
                         className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all duration-150
-                          ${disabled ? 'opacity-40 cursor-not-allowed border-dark-500 bg-dark-800'
-                            : p.enabled
-                              ? 'border-brand-400/25 bg-brand-400/[0.05]'
-                              : 'border-dark-500 bg-dark-800 hover:border-dark-400'
+                          ${disabledByType ? 'opacity-40 cursor-not-allowed border-dark-500 bg-dark-800'
+                            : lockedByOffline
+                              ? 'border-amber-500/30 bg-amber-500/[0.06] cursor-default'
+                              : p.enabled
+                                ? 'border-brand-400/25 bg-brand-400/[0.05]'
+                                : 'border-dark-500 bg-dark-800 hover:border-dark-400'
                           }`}
                       >
                         <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all shrink-0
-                          ${p.enabled && !disabled ? 'bg-brand-500 border-brand-500' : 'border-dark-400'}`}>
-                          {p.enabled && !disabled && <Check size={11} className="text-white" strokeWidth={3} />}
+                          ${lockedByOffline ? 'bg-amber-500 border-amber-500'
+                            : p.enabled && !disabledByType ? 'bg-brand-500 border-brand-500' : 'border-dark-400'}`}>
+                          {lockedByOffline
+                            ? <Lock size={9} className="text-white" strokeWidth={3} />
+                            : p.enabled && !disabledByType && <Check size={11} className="text-white" strokeWidth={3} />
+                          }
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className={`text-sm font-bold ${p.enabled && !disabled ? 'text-white' : 'text-slate-400'}`}>{p.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm font-bold ${lockedByOffline ? 'text-amber-300' : p.enabled && !disabledByType ? 'text-white' : 'text-slate-400'}`}>{p.name}</p>
+                            {lockedByOffline && (
+                              <span className="text-[9px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25 px-1.5 py-0.5 rounded-full">OFFLINE</span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-600 truncate mt-0.5">{p.description}</p>
                         </div>
                       </button>
