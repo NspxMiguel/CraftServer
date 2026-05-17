@@ -774,95 +774,116 @@ export default function CreateServerWizard({ navigate }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="absolute inset-0 z-50 flex flex-col bg-[#0a0a0d]/95 backdrop-blur-xl"
+            transition={{ duration: 0.25 }}
+            className="absolute inset-0 z-50 flex flex-col bg-[#08080e]/97 backdrop-blur-xl"
           >
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-violet-500/8 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 right-0 w-[400px] h-[300px] bg-brand-400/5 rounded-full blur-3xl pointer-events-none" />
+            {/* Background glows */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-[350px] h-[250px] bg-indigo-400/6 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="relative flex-1 flex flex-col items-center justify-center px-8 py-10 max-w-2xl mx-auto w-full">
+            <div className="relative flex-1 flex flex-col items-center justify-center px-8 py-10 max-w-[680px] mx-auto w-full">
 
+              {/* Icon */}
               <motion.div
-                initial={{ scale: 0.7, opacity: 0 }}
+                initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
-                className="w-20 h-20 rounded-3xl bg-violet-500/15 border border-violet-400/30 flex items-center justify-center mb-6 shadow-2xl shadow-violet-400/10"
+                transition={{ delay: 0.08, type: 'spring', stiffness: 280, damping: 20 }}
+                className="w-24 h-24 rounded-3xl bg-violet-500/15 border border-violet-400/30 flex items-center justify-center mb-7 shadow-2xl shadow-violet-500/15"
               >
-                <Globe size={36} className="text-violet-400" />
+                <Globe size={42} className="text-violet-400" />
               </motion.div>
 
+              {/* Heading */}
               <motion.div
-                initial={{ y: 16, opacity: 0 }}
+                initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.15 }}
-                className="text-center mb-4"
+                transition={{ delay: 0.14 }}
+                className="text-center mb-3"
               >
-                <h2 className="text-3xl font-black text-white tracking-tight">Servidor público grátis</h2>
-                <p className="text-slate-400 text-sm mt-2 leading-relaxed max-w-md mx-auto">
-                  O <strong className="text-white">PlayIt.gg</strong> cria um túnel gratuito para o seu servidor.
-                  Amigos de qualquer lugar do mundo conectam com um endereço como{' '}
-                  <code className="font-mono text-violet-300 text-xs bg-violet-500/10 px-1.5 py-0.5 rounded">auto.playit.gg:25565</code>.
+                <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">Recomendado para você</p>
+                <h2 className="text-4xl font-black text-white tracking-tight leading-tight">Deixa seus amigos<br/>entrarem sem dor de cabeça</h2>
+              </motion.div>
+
+              {/* Problem / solution explanation */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-center mb-7 max-w-lg"
+              >
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Normalmente para jogar online você precisaria <span className="text-slate-300 font-semibold">abrir portas no roteador</span> —
+                  uma configuração técnica chata que varia de roteador pra roteador e muita gente não consegue fazer.
+                </p>
+                <p className="text-slate-400 text-sm leading-relaxed mt-2">
+                  O <strong className="text-violet-300">PlayIt.gg</strong> resolve isso automaticamente. Ele cria um endereço público
+                  pro seu servidor que seus amigos usam pra conectar — <span className="text-slate-300 font-semibold">sem mexer em nada no roteador</span>.
                 </p>
               </motion.div>
 
+              {/* Feature cards */}
               <motion.div
-                initial={{ y: 16, opacity: 0 }}
+                initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
+                transition={{ delay: 0.26 }}
                 className="w-full grid grid-cols-3 gap-3 mb-6"
               >
                 {[
-                  { emoji: '🆓', title: 'Completamente grátis', desc: 'Sem limite de tempo ou dados' },
-                  { emoji: '🔒', title: 'Sem abrir portas', desc: 'Não precisa mexer no roteador' },
-                  { emoji: '🌍', title: 'Funciona no Windows', desc: 'Mac, Linux e VPS também' },
+                  { emoji: '🚫', title: 'Sem abrir portas', desc: 'Nada de mexer no roteador. Funciona na primeira tentativa.' },
+                  { emoji: '🆓', title: '100% grátis', desc: 'Sem limite de tempo, dados ou jogadores. Sempre gratuito.' },
+                  { emoji: '🌍', title: 'Acesso de qualquer lugar', desc: 'Seus amigos recebem um endereço público pra conectar.' },
                 ].map((item, i) => (
                   <motion.div
                     key={i}
                     initial={{ y: 16, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 + i * 0.06 }}
-                    className="flex flex-col gap-1.5 p-3.5 bg-dark-800 border border-dark-600 rounded-2xl text-center"
+                    transition={{ delay: 0.3 + i * 0.06 }}
+                    className="flex flex-col gap-2 p-4 bg-violet-500/[0.05] border border-violet-400/15 rounded-2xl text-center"
                   >
                     <span className="text-2xl">{item.emoji}</span>
-                    <p className="text-xs font-bold text-slate-300">{item.title}</p>
-                    <p className="text-[11px] text-slate-600 leading-relaxed">{item.desc}</p>
+                    <p className="text-xs font-bold text-slate-200">{item.title}</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">{item.desc}</p>
                   </motion.div>
                 ))}
               </motion.div>
 
+              {/* Tip */}
               <motion.div
                 initial={{ y: 16, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.35 }}
-                className="w-full p-4 bg-violet-500/[0.06] border border-violet-400/20 rounded-2xl mb-6"
+                transition={{ delay: 0.42 }}
+                className="w-full p-3.5 bg-violet-500/[0.06] border border-violet-400/20 rounded-2xl mb-6 flex items-start gap-2.5"
               >
-                <p className="text-xs text-slate-400 leading-relaxed text-center">
-                  ⚡ Após criar o servidor, abra o console e execute <code className="font-mono text-violet-300 bg-violet-500/15 px-1.5 py-0.5 rounded text-[11px]">/playit</code> para vincular sua conta gratuita e ver o endereço do túnel.
+                <span className="text-base mt-0.5">⚡</span>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Depois que o servidor estiver rodando, execute{' '}
+                  <code className="font-mono text-violet-300 bg-violet-500/15 px-1.5 py-0.5 rounded text-[11px]">/playit</code>{' '}
+                  no console para vincular uma conta gratuita e ver o endereço que seus amigos vão usar.
                 </p>
               </motion.div>
 
+              {/* Actions */}
               <motion.div
                 initial={{ y: 16, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: 0.48 }}
                 className="flex items-center gap-3 w-full"
               >
                 <button
                   onClick={() => { setShowPlayitModal(false); setShowChunkyModal(true) }}
-                  className="flex-[2] py-3 rounded-xl bg-violet-500 hover:bg-violet-400 text-white text-sm font-bold transition-all shadow-lg shadow-violet-500/20 flex items-center justify-center gap-2"
+                  className="flex-[2] py-3.5 rounded-xl bg-violet-500 hover:bg-violet-400 active:bg-violet-600 text-white text-sm font-bold transition-all shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2"
                 >
-                  <Globe size={15} /> Entendido, continuar
+                  <Globe size={15} /> Quero usar o PlayIt.gg
                 </button>
                 <button
                   onClick={() => {
-                    // Disable PlayIt and continue
                     setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: false } : p))
                     setShowPlayitModal(false)
                     setShowChunkyModal(true)
                   }}
-                  className="flex-1 py-3 rounded-xl border border-dark-500 text-slate-400 hover:text-white hover:border-dark-400 text-sm font-semibold transition-colors"
+                  className="flex-1 py-3.5 rounded-xl border border-dark-500 hover:border-dark-400 text-slate-500 hover:text-slate-300 text-sm font-semibold transition-colors"
                 >
-                  Remover PlayIt
+                  Não preciso
                 </button>
               </motion.div>
             </div>

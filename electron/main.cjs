@@ -6,6 +6,16 @@ const { spawn, execFile } = require('child_process')
 const https = require('https')
 const http = require('http')
 
+// Suppress uncaught errors during shutdown (e.g. IPC to destroyed windows on Windows)
+process.on('uncaughtException', (err) => {
+  if (app.isQuitting) return // silently swallow during shutdown
+  console.error('[uncaughtException]', err)
+})
+process.on('unhandledRejection', (reason) => {
+  if (app.isQuitting) return
+  console.error('[unhandledRejection]', reason)
+})
+
 let autoUpdater
 try { autoUpdater = require('electron-updater').autoUpdater } catch {}
 
@@ -21,6 +31,12 @@ const PLAYIT_BIN = path.join(DATA_DIR, 'playit' + (process.platform === 'win32' 
 
 const serverProcesses = {}
 const playitProcesses = {}
+
+// Safe IPC send — silently ignores if the renderer has already been destroyed
+function safeSend(sender, channel, payload) {
+  if (app.isQuitting) return
+  try { sender.send(channel, payload) } catch {}
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function readConfig() {
@@ -284,7 +300,7 @@ ipcMain.handle('create-server', async (event, opts) => {
   fs.mkdirSync(serverDir, { recursive: true })
   fs.mkdirSync(path.join(serverDir, 'plugins'), { recursive: true })
 
-  const send = msg => event.sender.send('create-progress', { id, msg })
+  const send = msg => safeSend(event.sender, 'create-progress', { id, msg })
 
   try {
     send(`Baixando ${type} ${version}...`)
@@ -495,11 +511,11 @@ ipcMain.handle('start-server', async (event, id) => {
   })
   serverProcesses[id] = proc
 
-  proc.stdout.on('data', d => event.sender.send('server-log', { id, line: d.toString() }))
-  proc.stderr.on('data', d => event.sender.send('server-log', { id, line: d.toString() }))
+  proc.stdout.on('data', d => safeSend(event.sender, 'server-log', { id, line: d.toString() }))
+  proc.stderr.on('data', d => safeSend(event.sender, 'server-log', { id, line: d.toString() }))
   proc.on('close', code => {
     delete serverProcesses[id]
-    event.sender.send('server-stopped', { id, code })
+    safeSend(event.sender, 'server-stopped', { id, code })
   })
   return { ok: true }
 })
@@ -646,7 +662,7 @@ ipcMain.handle('install-plugin', async (event, { serverId, projectId, projectTit
       const downloadUrl = ver.downloads?.PAPER?.downloadUrl ||
         `https://hangar.papermc.io/api/v1/projects/${owner}/${slug}/versions/${encodeURIComponent(version)}/PAPER/jar`
       const filename = `${slug}-${version}.jar`
-      event.sender.send('create-progress', { id: serverId, msg: `Instalando ${projectTitle}...` })
+      safeSend(event.sender, 'create-progress', { id: serverId, msg: `Instalando ${projectTitle}...` })
       await downloadFile(downloadUrl, path.join(server.dir, 'plugins', filename))
       return { ok: true, filename }
     } catch (e) {
@@ -684,7 +700,7 @@ ipcMain.handle('install-plugin', async (event, { serverId, projectId, projectTit
 
   if (!compatible?.files?.[0]) return { ok: false, error: 'Versão compatível não encontrada' }
   const file = compatible.files.find(f => f.primary) || compatible.files[0]
-  event.sender.send('create-progress', { id: serverId, msg: `Instalando ${projectTitle}...` })
+  safeSend(event.sender, 'create-progress', { id: serverId, msg: `Instalando ${projectTitle}...` })
   await downloadFile(file.url, path.join(server.dir, 'plugins', file.filename))
   return { ok: true, filename: file.filename }
 })
@@ -715,7 +731,7 @@ ipcMain.handle('toggle-playit', async (event, { serverId, enable }) => {
     return { ok: true }
   }
   if (!fs.existsSync(PLAYIT_BIN)) {
-    event.sender.send('create-progress', { id: serverId, msg: 'Baixando playit.gg...' })
+    safeSend(event.sender, 'create-progress', { id: serverId, msg: 'Baixando playit.gg...' })
     const arch = process.arch === 'arm64' ? 'aarch64' : 'x86_64'
     const urls = {
       darwin: `https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-darwin-${arch}`,
@@ -738,14 +754,14 @@ ipcMain.handle('toggle-playit', async (event, { serverId, enable }) => {
     const addrMatch = text.match(/address[:\s]+([^\s]+:\d+)/i)
       || text.match(/([\w.-]+\.playit\.gg[:\d]*)/i)
       || text.match(/tunnel[:\s]+([^\s]+:\d+)/i)
-    if (addrMatch) event.sender.send('playit-address', { serverId, address: addrMatch[1] })
+    if (addrMatch) safeSend(event.sender, 'playit-address', { serverId, address: addrMatch[1] })
     // Capture claim URL (new auth flow)
     const claimMatch = text.match(/https:\/\/playit\.gg\/[^\s]+/i)
-    if (claimMatch) event.sender.send('playit-address', { serverId, address: claimMatch[0], isClaim: true })
-    event.sender.send('playit-log', { serverId, line: text })
+    if (claimMatch) safeSend(event.sender, 'playit-address', { serverId, address: claimMatch[0], isClaim: true })
+    safeSend(event.sender, 'playit-log', { serverId, line: text })
   })
-  proc.stderr.on('data', d => event.sender.send('playit-log', { serverId, line: d.toString() }))
-  proc.on('close', () => { delete playitProcesses[serverId]; event.sender.send('playit-stopped', { serverId }) })
+  proc.stderr.on('data', d => safeSend(event.sender, 'playit-log', { serverId, line: d.toString() }))
+  proc.on('close', () => { delete playitProcesses[serverId]; safeSend(event.sender, 'playit-stopped', { serverId }) })
 
   const idx = servers.findIndex(s => s.id === serverId)
   if (idx !== -1) { servers[idx].playit = true; writeServers(servers) }
@@ -793,7 +809,7 @@ ipcMain.handle('update-server', async (event, arg) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
   if (!server) return { ok: false }
-  const send = msg => event.sender.send('create-progress', { id: serverId, msg })
+  const send = msg => safeSend(event.sender, 'create-progress', { id: serverId, msg })
   try {
     const latest = await fetchLatestVersion(server.type)
     if (!latest) return { ok: false, error: 'Versão mais recente não encontrada' }
@@ -846,9 +862,12 @@ app.whenReady().then(() => {
     autoUpdater.checkForUpdatesAndNotify().catch(() => {})
   }
 })
+app.on('before-quit', () => { app.isQuitting = true })
+
 app.on('window-all-closed', () => {
-  Object.values(serverProcesses).forEach(p => p.kill())
-  Object.values(playitProcesses).forEach(p => p.kill())
+  app.isQuitting = true
+  Object.values(serverProcesses).forEach(p => { try { p.kill() } catch {} })
+  Object.values(playitProcesses).forEach(p => { try { p.kill() } catch {} })
   if (process.platform !== 'darwin') app.quit()
 })
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
