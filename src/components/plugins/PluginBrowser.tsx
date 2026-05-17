@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Search, Download, Loader2, Trash2, Puzzle, Package, Check, Database, Pickaxe } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useServerStore } from '../../store/serverStore'
@@ -31,6 +31,7 @@ export default function PluginBrowser() {
   const [installing, setInstalling] = useState<string | null>(null)
   const [tab, setTab] = useState<'browse' | 'installed'>('browse')
   const [justInstalled, setJustInstalled] = useState<Set<string>>(new Set())
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const noPluginSupport = type === 'vanilla' || type === 'bedrock'
 
@@ -46,12 +47,40 @@ export default function PluginBrowser() {
     if (!noPluginSupport) loadInstalled()
   }, [selectedId, type])
 
-  const handleSearch = async (q = query) => {
-    if (!isElectron || !q.trim() || noPluginSupport) return
+  // Live search with debounce
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => { handleSearch(query) }, 300)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [query])
+
+  const handleSearch = async (q: string) => {
+    const trimmed = q.trim()
+    if (!isElectron || !trimmed || noPluginSupport) return
     setLoading(true)
     setResults([])
-    const res = await window.electron.searchPlugins(q.trim(), loaderFor(type), server?.version)
-    setResults(res)
+
+    const isFabric = loaderFor(type) === 'fabric'
+
+    const [modrinthRes, hangarRes] = await Promise.all([
+      window.electron.searchPlugins(trimmed, loaderFor(type), server?.version).catch(() => [] as Plugin[]),
+      // Hangar only for bukkit-compatible servers
+      (!isFabric && window.electron.searchHangar)
+        ? window.electron.searchHangar(trimmed).catch(() => [] as Plugin[])
+        : Promise.resolve([] as Plugin[]),
+    ])
+
+    // Merge & deduplicate by title (Modrinth first, then Hangar)
+    const seen = new Set<string>()
+    const merged = [...modrinthRes, ...hangarRes].filter(p => {
+      const key = p.title.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+
+    setResults(merged)
     setLoading(false)
   }
 
@@ -113,7 +142,7 @@ export default function PluginBrowser() {
 
   /* ── Supported types: paper, purpur, fabric, hybrid ── */
   const quickSearches = QUICK_SEARCHES[type] ?? QUICK_SEARCHES.paper
-  const loaderLabel = type === 'fabric' ? 'Modrinth · Fabric' : 'Modrinth · Bukkit/Paper'
+  const loaderLabel = type === 'fabric' ? 'Modrinth · Fabric' : 'Modrinth + Hangar · Bukkit/Paper'
 
   return (
     <div className="h-full flex flex-col">
@@ -145,27 +174,25 @@ export default function PluginBrowser() {
           {tab === 'browse' && (
             <motion.div key="browse" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
               <div className="px-6 pt-4 pb-3">
-                <form onSubmit={e => { e.preventDefault(); handleSearch() }} className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
-                    <input
-                      value={query}
-                      onChange={e => setQuery(e.target.value)}
-                      placeholder={type === 'fabric' ? 'Buscar mods Fabric no Modrinth...' : 'Buscar plugins no Modrinth...'}
-                      className="w-full bg-dark-700 border border-dark-500 hover:border-brand-400/30 focus:border-brand-400/60 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-700 focus:outline-none transition-colors"
-                    />
-                  </div>
-                  <button type="submit" className="px-5 py-2.5 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-brand-500/20">
-                    Buscar
-                  </button>
-                </form>
+                <div className="flex-1 relative">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+                  {loading && (
+                    <Loader2 size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 animate-spin" />
+                  )}
+                  <input
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    placeholder={type === 'fabric' ? 'Buscar mods Fabric (busca automática)...' : 'Buscar plugins — Modrinth + Hangar (busca automática)...'}
+                    className="w-full bg-dark-700 border border-dark-500 hover:border-brand-400/30 focus:border-brand-400/60 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-700 focus:outline-none transition-colors"
+                  />
+                </div>
 
                 {results.length === 0 && !loading && (
                   <div className="flex flex-wrap gap-1.5 mt-3">
                     {quickSearches.map(q => (
                       <button
                         key={q}
-                        onClick={() => { setQuery(q); handleSearch(q) }}
+                        onClick={() => setQuery(q)}
                         className="px-3 py-1 bg-dark-700 hover:bg-dark-600 border border-dark-500 hover:border-dark-400 text-slate-500 hover:text-slate-300 rounded-full text-xs transition-colors"
                       >
                         {q}
@@ -179,26 +206,28 @@ export default function PluginBrowser() {
                 {loading && (
                   <div className="flex items-center justify-center gap-2 text-slate-600 py-16">
                     <Loader2 size={18} className="animate-spin" />
-                    <span className="text-sm">Buscando no Modrinth...</span>
+                    <span className="text-sm">Buscando plugins...</span>
                   </div>
                 )}
 
-                {!loading && results.length === 0 && query && (
+                {!loading && results.length === 0 && query.trim() && (
                   <div className="flex flex-col items-center gap-3 py-16 text-center">
                     <Puzzle size={28} className="text-slate-700" />
                     <p className="text-slate-600 text-sm">Nenhum resultado para "{query}"</p>
+                    <p className="text-slate-700 text-xs">Tente outro nome ou verifique a conexão com a internet.</p>
                   </div>
                 )}
 
                 {results.map((plugin, i) => {
                   const isInstalling = installing === plugin.project_id
                   const alreadyInstalled = justInstalled.has(plugin.project_id)
+                  const isHangar = plugin.source === 'hangar'
                   return (
                     <motion.div
                       key={plugin.project_id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.025, duration: 0.2 }}
+                      transition={{ delay: Math.min(i * 0.02, 0.3), duration: 0.18 }}
                       className="flex items-center gap-3.5 p-3.5 bg-dark-800 hover:bg-dark-750 border border-dark-600 hover:border-dark-500 rounded-2xl transition-all"
                     >
                       {plugin.icon_url ? (
@@ -209,7 +238,16 @@ export default function PluginBrowser() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-white truncate">{plugin.title}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-white truncate">{plugin.title}</p>
+                          <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
+                            isHangar
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                              : 'bg-brand-500/10 text-brand-400 border border-brand-500/20'
+                          }`}>
+                            {isHangar ? 'Hangar' : 'Modrinth'}
+                          </span>
+                        </div>
                         <p className="text-xs text-slate-500 truncate mt-0.5">{plugin.description}</p>
                         <p className="text-[11px] text-slate-700 mt-1">{plugin.downloads?.toLocaleString()} downloads</p>
                       </div>

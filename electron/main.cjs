@@ -595,11 +595,33 @@ ipcMain.handle('search-plugins', async (_, { query, loader, gameVersion }) => {
     const facetList = loader === 'fabric'
       ? [['project_type:mod'], ['categories:fabric']]
       : [['project_type:plugin']]
-    if (gameVersion) facetList.push([`versions:${gameVersion}`])
+    // Only add version facet for classic 1.x versions — Modrinth doesn't index 26.x yet
+    if (gameVersion && /^1\.\d+/.test(gameVersion)) {
+      facetList.push([`versions:${gameVersion}`])
+    }
     const facets = JSON.stringify(facetList)
-    const url = `https://api.modrinth.com/v2/search?query=${encodeURIComponent(query || '')}&facets=${encodeURIComponent(facets)}&limit=20&index=downloads`
+    const url = `https://api.modrinth.com/v2/search?query=${encodeURIComponent(query || '')}&facets=${encodeURIComponent(facets)}&limit=50&index=downloads`
     const data = await fetchJson(url)
-    return data.hits || []
+    return (data.hits || []).map(h => ({ ...h, source: 'modrinth' }))
+  } catch {
+    return []
+  }
+})
+
+ipcMain.handle('search-hangar', async (_, { query }) => {
+  try {
+    const url = `https://hangar.papermc.io/api/v1/projects?query=${encodeURIComponent(query || '')}&limit=20&orderBy=downloads`
+    const data = await fetchJson(url)
+    return (data.result || []).map(p => ({
+      project_id: `hangar:${p.namespace.owner}/${p.namespace.slug}`,
+      slug: p.namespace.slug,
+      title: p.name,
+      description: p.description,
+      icon_url: p.iconUrl || null,
+      downloads: p.stats?.downloads || 0,
+      categories: [],
+      source: 'hangar'
+    }))
   } catch {
     return []
   }
@@ -609,6 +631,28 @@ ipcMain.handle('install-plugin', async (event, { serverId, projectId, projectTit
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
   if (!server) return { ok: false, error: 'Servidor não encontrado' }
+
+  // ── Hangar install ────────────────────────────────────────────────────────
+  if (projectId.startsWith('hangar:')) {
+    const namespacePart = projectId.slice('hangar:'.length) // "owner/slug"
+    const [owner, slug] = namespacePart.split('/')
+    try {
+      const vData = await fetchJson(
+        `https://hangar.papermc.io/api/v1/projects/${owner}/${slug}/versions?limit=1&requestedPlatform=PAPER`
+      )
+      const ver = vData.result?.[0]
+      if (!ver) return { ok: false, error: 'Versão não encontrada no Hangar' }
+      const version = ver.name
+      const downloadUrl = ver.downloads?.PAPER?.downloadUrl ||
+        `https://hangar.papermc.io/api/v1/projects/${owner}/${slug}/versions/${encodeURIComponent(version)}/PAPER/jar`
+      const filename = `${slug}-${version}.jar`
+      event.sender.send('create-progress', { id: serverId, msg: `Instalando ${projectTitle}...` })
+      await downloadFile(downloadUrl, path.join(server.dir, 'plugins', filename))
+      return { ok: true, filename }
+    } catch (e) {
+      return { ok: false, error: String(e?.message || e) }
+    }
+  }
 
   const loaderFilter = server.type === 'fabric' ? ['fabric'] : ['paper','bukkit','spigot','purpur','folia']
   const encodedLoaders = encodeURIComponent(JSON.stringify(loaderFilter))

@@ -21,6 +21,7 @@ declare global {
       removeWhitelist: (id: string, name: string) => Promise<{ ok: boolean }>
 
       searchPlugins: (query: string, loader: string, gameVersion?: string) => Promise<import('./types').Plugin[]>
+      searchHangar: (query: string) => Promise<import('./types').Plugin[]>
       installPlugin: (sid: string, pid: string, title: string) => Promise<{ ok: boolean; filename?: string; error?: string }>
       getInstalledPlugins: (sid: string) => Promise<string[]>
       removePlugin: (sid: string, filename: string) => Promise<{ ok: boolean }>

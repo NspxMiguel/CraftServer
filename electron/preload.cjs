@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('electron', {
 
   // Plugins
   searchPlugins: (query, loader, gameVersion) => ipcRenderer.invoke('search-plugins', { query, loader, gameVersion }),
+  searchHangar: (query) => ipcRenderer.invoke('search-hangar', { query }),
   installPlugin: (sid, pid, title) => ipcRenderer.invoke('install-plugin', { serverId: sid, projectId: pid, projectTitle: title }),
   getInstalledPlugins: (sid) => ipcRenderer.invoke('get-installed-plugins', sid),
   removePlugin: (sid, filename) => ipcRenderer.invoke('remove-plugin', { serverId: sid, filename }),

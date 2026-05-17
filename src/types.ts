@@ -20,6 +20,7 @@ export interface Plugin {
   downloads: number
   categories: string[]
   project_id: string
+  source?: 'modrinth' | 'hangar'
 }
 
 export interface PresetPlugin {

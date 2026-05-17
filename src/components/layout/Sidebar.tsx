@@ -28,7 +28,7 @@ export default function Sidebar({ page, navigate }: Props) {
           <Cpu size={18} className="text-white relative z-10" strokeWidth={2} />
         </div>
         <div>
-          <p className="font-bold text-sm text-white tracking-tight leading-none">CraftNest</p>
+          <p className="font-bold text-sm text-white tracking-tight leading-none">CraftServer</p>
           <p className="text-[10px] text-brand-400/70 font-medium mt-0.5">Server Manager</p>
         </div>
       </div>
