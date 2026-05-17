@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap, Shield, Globe } from 'lucide-react'
 import type { Page } from '../../App'
 import type { ServerType } from '../../types'
 import { PRESET_PLUGINS } from '../../data/presetPlugins'
@@ -10,28 +10,56 @@ const isElectron = typeof window !== 'undefined' && !!window.electron
 
 const SERVER_TYPES = [
   {
-    id: 'paper', label: 'Paper', recommended: true,
-    desc: 'Performance máxima + plugins Bukkit/Spigot',
-    color: 'from-yellow-500/20 to-yellow-600/5', border: 'border-yellow-500/30', badge: 'text-yellow-400',
+    id: 'paper', label: 'Java — Paper',
+    emoji: '📄', recommended: true,
+    desc: 'Performance máxima + suporte a todos os plugins Bukkit/Spigot. Ideal para servidores de jogos.',
+    color: 'text-amber-300', border: 'border-amber-400/40', glow: 'shadow-amber-400/10',
+    gradient: 'from-amber-500/15 to-transparent',
+    tag: 'Mais popular',
   },
   {
-    id: 'purpur', label: 'Purpur', recommended: false,
-    desc: 'Fork do Paper com mais configurações',
-    color: 'from-purple-500/20 to-purple-600/5', border: 'border-purple-500/30', badge: 'text-purple-400',
+    id: 'purpur', label: 'Java — Purpur',
+    emoji: '🔮', recommended: false,
+    desc: 'Fork do Paper com centenas de configurações extras. Performance superior ao Paper.',
+    color: 'text-violet-300', border: 'border-violet-400/40', glow: 'shadow-violet-400/10',
+    gradient: 'from-violet-500/15 to-transparent',
+    tag: 'Alto desempenho',
   },
   {
-    id: 'vanilla', label: 'Vanilla', recommended: false,
-    desc: 'Servidor oficial da Mojang, sem plugins',
-    color: 'from-sky-500/20 to-sky-600/5', border: 'border-sky-500/30', badge: 'text-sky-400',
+    id: 'vanilla', label: 'Java — Vanilla',
+    emoji: '🌿', recommended: false,
+    desc: 'Servidor oficial da Mojang. Sem plugins, jogo puro. Ótimo para survival com amigos.',
+    color: 'text-slate-300', border: 'border-slate-400/40', glow: 'shadow-slate-400/10',
+    gradient: 'from-slate-500/15 to-transparent',
+    tag: 'Oficial Mojang',
   },
   {
-    id: 'fabric', label: 'Fabric', recommended: false,
-    desc: 'Ideal para mods técnicos e datapacks',
-    color: 'from-blue-500/20 to-blue-600/5', border: 'border-blue-500/30', badge: 'text-blue-400',
+    id: 'fabric', label: 'Java — Fabric',
+    emoji: '🧵', recommended: false,
+    desc: 'Ideal para mods técnicos e datapacks. Leve e altamente modular.',
+    color: 'text-blue-300', border: 'border-blue-400/40', glow: 'shadow-blue-400/10',
+    gradient: 'from-blue-500/15 to-transparent',
+    tag: 'Para modders',
+  },
+  {
+    id: 'bedrock', label: 'Bedrock (PowerNukkit)',
+    emoji: '🪨', recommended: false,
+    desc: 'Servidor Bedrock em Java. Suporta mobile (iOS/Android), console e Windows 10/11.',
+    color: 'text-orange-300', border: 'border-orange-400/40', glow: 'shadow-orange-400/10',
+    gradient: 'from-orange-500/15 to-transparent',
+    tag: 'Mobile/Console',
+  },
+  {
+    id: 'hybrid', label: 'Java + Bedrock (Geyser)',
+    emoji: '⚡', recommended: false,
+    desc: 'Servidor Java com GeyserMC: jogadores Java e Bedrock (mobile/console) no mesmo servidor.',
+    color: 'text-brand-300', border: 'border-brand-400/40', glow: 'shadow-brand-400/10',
+    gradient: 'from-brand-400/15 to-transparent',
+    tag: 'Melhor dos dois mundos',
   },
 ] as const
 
-const STEP_LABELS = ['Tipo', 'Versão', 'Config', 'Plugins']
+const STEPS = ['Tipo', 'Versão', 'Config', 'Plugins']
 
 interface Props { navigate: (p: Page) => void }
 
@@ -54,11 +82,7 @@ export default function CreateServerWizard({ navigate }: Props) {
     setLoadingVersions(true)
     setVersion('')
     const fn = isElectron ? window.electron.getVersions : () => Promise.resolve([])
-    fn(type).then(v => {
-      setVersions(v)
-      setVersion(v[0] || '')
-      setLoadingVersions(false)
-    })
+    fn(type).then(v => { setVersions(v); setVersion(v[0] || ''); setLoadingVersions(false) })
   }, [type])
 
   useEffect(() => {
@@ -69,8 +93,8 @@ export default function CreateServerWizard({ navigate }: Props) {
     })
   }, [])
 
-  const togglePlugin = (idx: number) =>
-    setPlugins(ps => ps.map((p, i) => i === idx ? { ...p, enabled: !p.enabled } : p))
+  const togglePlugin = (i: number) =>
+    setPlugins(ps => ps.map((p, idx) => idx === i ? { ...p, enabled: !p.enabled } : p))
 
   const handleCreate = async () => {
     if (!name.trim() || !version) return
@@ -81,7 +105,7 @@ export default function CreateServerWizard({ navigate }: Props) {
     const selectedPlugins = plugins.filter(p => p.enabled).map(p => ({ name: p.name, url: p.url, filename: p.filename }))
     const res = isElectron
       ? await window.electron.createServer({ name: name.trim(), type, version, ram, port, plugins: selectedPlugins })
-      : { ok: true, server: { id: '1', name, type, version, ram, port, dir: '', createdAt: Date.now(), playit: false } }
+      : { ok: true, server: { id: Date.now().toString(), name, type, version, ram, port, dir: '', createdAt: Date.now(), playit: false } }
 
     if (res.ok) {
       const updated = isElectron ? await window.electron.getServers() : [res.server]
@@ -91,242 +115,287 @@ export default function CreateServerWizard({ navigate }: Props) {
     }
   }
 
+  const selectedTypeMeta = SERVER_TYPES.find(t => t.id === type)!
   const canNext = step === 0 || (step === 1 && !!version) || (step === 2 && !!name.trim()) || step === 3
 
   return (
-    <div className="h-full flex flex-col max-w-2xl mx-auto px-8 py-8">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <button
-          onClick={() => navigate('dashboard')}
-          className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-colors"
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <h1 className="text-lg font-bold text-white">Criar Servidor</h1>
+    <div className="h-full flex flex-col relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-grid-dark bg-grid opacity-60 pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-brand-400/5 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Step indicators */}
-        <div className="ml-auto flex items-center gap-1">
-          {STEP_LABELS.map((label, i) => (
-            <div key={i} className="flex items-center gap-1">
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-300
-                ${i < step ? 'bg-brand-500/20 text-brand-400'
-                  : i === step ? 'bg-brand-500 text-white shadow-md shadow-brand-500/30'
-                  : 'bg-white/[0.04] text-zinc-600'
-                }`}>
-                {i < step ? <Check size={10} strokeWidth={2.5} /> : <span>{i + 1}</span>}
-                <span>{label}</span>
-              </div>
-              {i < STEP_LABELS.length - 1 && (
-                <div className={`w-4 h-px ${i < step ? 'bg-brand-500/40' : 'bg-white/[0.06]'} transition-colors`} />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <div className="relative flex flex-col h-full max-w-3xl mx-auto w-full px-8 py-8">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={() => navigate('dashboard')}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.05] transition-colors"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div>
+            <h1 className="text-lg font-bold text-white">Criar Servidor</h1>
+            <p className="text-xs text-slate-600 mt-0.5">Configure seu servidor passo a passo</p>
+          </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto">
-        <AnimatePresence mode="wait">
-          {/* Step 0: Type */}
-          {step === 0 && (
-            <StepWrap key="type">
-              <StepTitle>Que tipo de servidor?</StepTitle>
-              <div className="grid grid-cols-2 gap-3">
-                {SERVER_TYPES.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setType(t.id as ServerType)}
-                    className={`relative text-left p-4 rounded-2xl border transition-all duration-200 overflow-hidden
-                      ${type === t.id ? `${t.border} border` : 'border-white/[0.06] hover:border-white/[0.12] bg-white/[0.02]'}`}
-                  >
-                    {type === t.id && (
-                      <div className={`absolute inset-0 bg-gradient-to-br ${t.color} pointer-events-none`} />
-                    )}
-                    <div className="relative">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className={`font-bold text-base ${type === t.id ? t.badge : 'text-white'}`}>{t.label}</span>
-                        {t.recommended && (
-                          <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 bg-brand-500/20 text-brand-400 rounded-full font-semibold">
-                            <Zap size={9} />Recomendado
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-zinc-500 leading-relaxed">{t.desc}</p>
-                    </div>
-                    {type === t.id && (
-                      <div className={`absolute top-3 right-3 w-5 h-5 rounded-full ${t.badge.replace('text-', 'bg-')} flex items-center justify-center`}>
-                        <Check size={11} className="text-black" strokeWidth={3} />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </StepWrap>
-          )}
-
-          {/* Step 1: Version */}
-          {step === 1 && (
-            <StepWrap key="version">
-              <StepTitle>Versão do Minecraft</StepTitle>
-              {loadingVersions ? (
-                <div className="flex items-center justify-center gap-2 text-zinc-500 py-16">
-                  <Loader2 size={18} className="animate-spin" />
-                  <span className="text-sm">Buscando versões disponíveis...</span>
+          {/* Steps */}
+          <div className="ml-auto flex items-center gap-1.5">
+            {STEPS.map((label, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-300
+                  ${i < step ? 'bg-brand-400/20 text-brand-400 border border-brand-400/30'
+                    : i === step ? 'bg-brand-500 text-white shadow-md shadow-brand-500/30'
+                    : 'bg-dark-700 text-slate-600 border border-dark-500'
+                  }`}>
+                  {i < step ? <Check size={9} strokeWidth={3} /> : <span className="text-[10px]">{i + 1}</span>}
+                  {label}
                 </div>
-              ) : (
-                <>
-                  <p className="text-xs text-zinc-600 mb-3">{versions.length} versões encontradas · Mais recentes primeiro</p>
-                  <div className="grid grid-cols-4 gap-2 max-h-64 overflow-auto pr-1">
-                    {versions.slice(0, 40).map(v => (
+                {i < STEPS.length - 1 && <div className={`w-3 h-px ${i < step ? 'bg-brand-400/40' : 'bg-dark-500'} transition-colors`} />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto">
+          <AnimatePresence mode="wait">
+
+            {/* Step 0: Type */}
+            {step === 0 && (
+              <StepWrap key="type">
+                <h2 className="text-xl font-bold text-white mb-1.5">Qual tipo de servidor?</h2>
+                <p className="text-sm text-slate-500 mb-5">Escolha baseado em quem vai jogar e o que quer fazer</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {SERVER_TYPES.map(t => {
+                    const active = type === t.id
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => setType(t.id as ServerType)}
+                        className={`relative text-left p-4 rounded-2xl border overflow-hidden transition-all duration-200
+                          ${active ? `${t.border} border shadow-lg ${t.glow}` : 'border-dark-500 bg-dark-800 hover:border-dark-400'}`}
+                      >
+                        {active && <div className={`absolute inset-0 bg-gradient-to-br ${t.gradient} pointer-events-none`} />}
+                        <div className="relative">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">{t.emoji}</span>
+                              <div>
+                                <p className={`font-bold text-sm leading-tight ${active ? t.color : 'text-slate-200'}`}>{t.label}</p>
+                                <span className="text-[10px] text-slate-600 font-medium">{t.tag}</span>
+                              </div>
+                            </div>
+                            {t.recommended && (
+                              <span className="flex items-center gap-1 text-[9px] px-2 py-0.5 bg-brand-500/20 text-brand-300 border border-brand-400/30 rounded-full font-bold shrink-0">
+                                <Zap size={8} />REC
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 leading-relaxed">{t.desc}</p>
+                          {active && (
+                            <div className={`mt-2.5 inline-flex items-center gap-1 text-[11px] font-bold ${t.color}`}>
+                              <Check size={11} strokeWidth={3} /> Selecionado
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </StepWrap>
+            )}
+
+            {/* Step 1: Version */}
+            {step === 1 && (
+              <StepWrap key="version">
+                <div className="flex items-center gap-3 mb-5">
+                  <span className="text-3xl">{selectedTypeMeta.emoji}</span>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Versão do Minecraft</h2>
+                    <p className="text-sm text-slate-500">{selectedTypeMeta.label} — {versions.length} versões disponíveis</p>
+                  </div>
+                </div>
+                {loadingVersions ? (
+                  <div className="flex items-center justify-center gap-2 text-slate-500 py-16">
+                    <Loader2 size={18} className="animate-spin" />
+                    <span className="text-sm">Buscando versões...</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-5 gap-2 max-h-64 overflow-auto pr-1">
+                    {versions.slice(0, 50).map(v => (
                       <button
                         key={v}
                         onClick={() => setVersion(v)}
-                        className={`py-2.5 px-2 rounded-xl border text-xs font-mono font-medium transition-all duration-150
+                        className={`py-2 px-1 rounded-xl border text-xs font-mono font-bold transition-all duration-150
                           ${version === v
-                            ? 'border-brand-500/60 bg-brand-500/15 text-brand-300 shadow-sm shadow-brand-500/10'
-                            : 'border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:border-white/[0.15] hover:text-zinc-200'
+                            ? `${selectedTypeMeta.border} bg-gradient-to-b ${selectedTypeMeta.gradient} ${selectedTypeMeta.color}`
+                            : 'border-dark-500 bg-dark-800 text-slate-500 hover:border-dark-400 hover:text-slate-300'
                           }`}
                       >
                         {v}
                       </button>
                     ))}
                   </div>
-                </>
-              )}
-            </StepWrap>
-          )}
+                )}
+              </StepWrap>
+            )}
 
-          {/* Step 2: Config */}
-          {step === 2 && (
-            <StepWrap key="config">
-              <StepTitle>Configurações básicas</StepTitle>
-              <div className="space-y-5">
-                <Field label="Nome do servidor">
-                  <input
-                    autoFocus
-                    className="w-full bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.14] focus:border-brand-500/60 rounded-xl px-4 py-3 text-white placeholder-zinc-700 focus:outline-none text-sm transition-colors"
-                    placeholder="Ex: Survival do João"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                  />
-                </Field>
-
-                <Field label={`RAM — ${ram >= 1024 ? `${ram / 1024}GB` : `${ram}MB`}`}>
-                  <div className="px-1">
+            {/* Step 2: Config */}
+            {step === 2 && (
+              <StepWrap key="config">
+                <h2 className="text-xl font-bold text-white mb-5">Configurações básicas</h2>
+                <div className="space-y-5">
+                  <Field label="Nome do servidor">
                     <input
-                      type="range" min={512} max={8192} step={512}
-                      value={ram}
-                      onChange={e => setRam(Number(e.target.value))}
-                      className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-brand-500 bg-white/[0.08]"
+                      autoFocus
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      placeholder="Ex: Survival dos Amigos"
+                      className="w-full bg-dark-800 border border-dark-500 hover:border-brand-400/30 focus:border-brand-400/60 rounded-xl px-4 py-3 text-white placeholder-slate-700 focus:outline-none text-sm font-medium transition-colors"
                     />
-                    <div className="flex justify-between text-[11px] text-zinc-700 mt-1.5">
-                      <span>512MB</span><span>2GB</span><span>4GB</span><span>8GB</span>
+                  </Field>
+
+                  <Field label={`RAM — ${ram >= 1024 ? `${ram/1024}GB` : `${ram}MB`}`}>
+                    <div className="px-1 pt-1">
+                      <input
+                        type="range" min={512} max={8192} step={512} value={ram}
+                        onChange={e => setRam(Number(e.target.value))}
+                        className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-brand-400 bg-dark-600"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-700 mt-2 font-mono font-bold">
+                        <span>512MB</span><span>2GB</span><span>4GB</span><span>6GB</span><span>8GB</span>
+                      </div>
                     </div>
+                  </Field>
+
+                  <Field label="Porta do servidor">
+                    <input
+                      type="number" min={1024} max={65535} value={port}
+                      onChange={e => setPort(Number(e.target.value))}
+                      className="w-full bg-dark-800 border border-dark-500 hover:border-brand-400/30 focus:border-brand-400/60 rounded-xl px-4 py-3 text-white focus:outline-none text-sm font-mono font-bold transition-colors"
+                    />
+                    <p className="text-xs text-slate-700 mt-1.5 font-medium">
+                      {type === 'bedrock' || type === 'hybrid' ? 'Bedrock usa porta 19132 por padrão · Java usa 25565' : 'Padrão: 25565'}
+                    </p>
+                  </Field>
+
+                  {(type === 'bedrock' || type === 'hybrid') && (
+                    <div className="flex items-start gap-3 p-3.5 bg-orange-400/5 border border-orange-400/20 rounded-xl">
+                      <Globe size={14} className="text-orange-400 mt-0.5 shrink-0" />
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        {type === 'hybrid'
+                          ? 'Modo híbrido: jogadores Java conectam na porta Java (25565), Bedrock na porta 19132. GeyserMC e Floodgate serão instalados automaticamente.'
+                          : 'PowerNukkit roda o protocolo Bedrock em Java. Compatível com Mac, Windows e Linux.'
+                        }
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </StepWrap>
+            )}
+
+            {/* Step 3: Plugins */}
+            {step === 3 && !creating && (
+              <StepWrap key="plugins">
+                <h2 className="text-xl font-bold text-white mb-1.5">Plugins pré-configurados</h2>
+                <p className="text-sm text-slate-500 mb-5">Ative ou desative conforme precisar — tudo pode ser mudado depois</p>
+                {(type === 'bedrock') && (
+                  <div className="flex items-start gap-2.5 p-3.5 bg-orange-400/5 border border-orange-400/20 rounded-xl mb-4">
+                    <Shield size={13} className="text-orange-400 mt-0.5 shrink-0" />
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Servidores Bedrock (PowerNukkit) usam plugins NukkitX, não Bukkit. Os plugins abaixo não são compatíveis com Bedrock puro.
+                    </p>
                   </div>
-                </Field>
-
-                <Field label="Porta">
-                  <input
-                    type="number" min={1024} max={65535}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.14] focus:border-brand-500/60 rounded-xl px-4 py-3 text-white focus:outline-none text-sm font-mono transition-colors"
-                    value={port}
-                    onChange={e => setPort(Number(e.target.value))}
-                  />
-                  <p className="text-xs text-zinc-700 mt-1.5">Padrão: 25565</p>
-                </Field>
-              </div>
-            </StepWrap>
-          )}
-
-          {/* Step 3: Plugins */}
-          {step === 3 && !creating && (
-            <StepWrap key="plugins">
-              <StepTitle>Plugins recomendados</StepTitle>
-              <p className="text-xs text-zinc-600 mb-4">Pré-selecionamos os mais essenciais. Você pode mudar depois.</p>
-              <div className="space-y-2">
-                {plugins.map((p, i) => (
-                  <button
-                    key={p.name}
-                    onClick={() => togglePlugin(i)}
-                    className={`w-full flex items-center gap-3.5 p-4 rounded-2xl border text-left transition-all duration-150
-                      ${p.enabled
-                        ? 'border-brand-500/25 bg-brand-500/[0.06]'
-                        : 'border-white/[0.05] bg-white/[0.02] hover:border-white/[0.1]'
-                      }`}
-                  >
-                    <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-all
-                      ${p.enabled ? 'bg-brand-500 border-brand-500' : 'border-zinc-700'}`}>
-                      {p.enabled && <Check size={11} className="text-white" strokeWidth={3} />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className={`text-sm font-semibold ${p.enabled ? 'text-white' : 'text-zinc-400'}`}>{p.name}</p>
-                      <p className="text-xs text-zinc-600 truncate mt-0.5">{p.description}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </StepWrap>
-          )}
-
-          {/* Creating */}
-          {creating && (
-            <StepWrap key="creating">
-              <div className="flex flex-col items-center gap-6 py-12">
-                <div className={`w-20 h-20 rounded-3xl flex items-center justify-center transition-colors duration-500
-                  ${done ? 'bg-brand-500/20' : 'bg-white/[0.04]'}`}>
-                  {done
-                    ? <Check size={36} className="text-brand-400" strokeWidth={2.5} />
-                    : <Loader2 size={36} className="text-brand-400 animate-spin" />
-                  }
+                )}
+                <div className="space-y-2">
+                  {plugins.map((p, i) => {
+                    const disabled = type === 'bedrock'
+                    return (
+                      <button
+                        key={p.name}
+                        onClick={() => !disabled && togglePlugin(i)}
+                        disabled={disabled}
+                        className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all duration-150
+                          ${disabled ? 'opacity-40 cursor-not-allowed border-dark-500 bg-dark-800'
+                            : p.enabled
+                              ? 'border-brand-400/25 bg-brand-400/[0.05]'
+                              : 'border-dark-500 bg-dark-800 hover:border-dark-400'
+                          }`}
+                      >
+                        <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all shrink-0
+                          ${p.enabled && !disabled ? 'bg-brand-500 border-brand-500' : 'border-dark-400'}`}>
+                          {p.enabled && !disabled && <Check size={11} className="text-white" strokeWidth={3} />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-sm font-bold ${p.enabled && !disabled ? 'text-white' : 'text-slate-400'}`}>{p.name}</p>
+                          <p className="text-xs text-slate-600 truncate mt-0.5">{p.description}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
-                <div className="text-center">
-                  <p className="text-white font-bold text-lg">{done ? 'Servidor criado!' : 'Criando servidor...'}</p>
-                  <p className="text-zinc-500 text-sm mt-1">{progress[progress.length - 1] || 'Preparando...'}</p>
-                </div>
-                <div className="w-full bg-[#080808] border border-white/[0.05] rounded-2xl p-4 max-h-44 overflow-auto font-mono text-xs text-zinc-500 space-y-0.5">
-                  {progress.map((line, i) => (
-                    <div key={i} className={i === progress.length - 1 ? 'text-zinc-300' : ''}>{line}</div>
-                  ))}
-                </div>
-              </div>
-            </StepWrap>
-          )}
-        </AnimatePresence>
-      </div>
+              </StepWrap>
+            )}
 
-      {/* Footer */}
-      {!creating && (
-        <div className="flex items-center justify-between pt-5 mt-4 border-t border-white/[0.05]">
-          <button
-            onClick={() => step > 0 ? setStep(s => s - 1) : navigate('dashboard')}
-            className="flex items-center gap-1.5 px-4 py-2 text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] rounded-xl text-sm transition-colors"
-          >
-            <ChevronLeft size={15} />
-            {step === 0 ? 'Cancelar' : 'Voltar'}
-          </button>
-
-          {step < 3 ? (
-            <button
-              onClick={() => canNext && setStep(s => s + 1)}
-              disabled={!canNext}
-              className="flex items-center gap-1.5 px-6 py-2.5 bg-brand-500 hover:bg-brand-600 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-brand-500/20"
-            >
-              Próximo
-              <ChevronRight size={15} />
-            </button>
-          ) : (
-            <button
-              onClick={handleCreate}
-              disabled={!name.trim()}
-              className="flex items-center gap-2 px-6 py-2.5 bg-brand-500 hover:bg-brand-600 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-brand-500/20"
-            >
-              <Server size={15} />
-              Criar servidor
-            </button>
-          )}
+            {/* Creating */}
+            {creating && (
+              <StepWrap key="creating">
+                <div className="flex flex-col items-center gap-6 py-12">
+                  <div className={`w-24 h-24 rounded-3xl flex items-center justify-center transition-all duration-700
+                    ${done ? 'bg-brand-400/20 shadow-xl shadow-brand-400/20' : 'bg-dark-700'}`}>
+                    {done ? (
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300 }}>
+                        <Check size={40} className="text-brand-400" strokeWidth={2.5} />
+                      </motion.div>
+                    ) : (
+                      <Loader2 size={40} className="text-brand-400 animate-spin" />
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white font-bold text-xl">{done ? 'Servidor pronto!' : 'Criando servidor...'}</p>
+                    <p className="text-slate-400 text-sm mt-1">{progress[progress.length - 1] || 'Iniciando...'}</p>
+                  </div>
+                  <div className="w-full bg-dark-950 border border-dark-600 rounded-2xl p-4 max-h-48 overflow-auto font-mono text-xs text-slate-600 space-y-0.5">
+                    {progress.map((line, i) => (
+                      <div key={i} className={i === progress.length - 1 ? 'text-slate-300' : ''}>{line}</div>
+                    ))}
+                  </div>
+                </div>
+              </StepWrap>
+            )}
+          </AnimatePresence>
         </div>
-      )}
+
+        {/* Footer */}
+        {!creating && (
+          <div className="flex items-center justify-between pt-5 mt-4 border-t border-dark-600">
+            <button
+              onClick={() => step > 0 ? setStep(s => s - 1) : navigate('dashboard')}
+              className="flex items-center gap-1.5 px-4 py-2 text-slate-500 hover:text-slate-200 hover:bg-white/[0.04] rounded-xl text-sm font-semibold transition-colors"
+            >
+              <ChevronLeft size={15} />
+              {step === 0 ? 'Cancelar' : 'Voltar'}
+            </button>
+            {step < 3 ? (
+              <button
+                onClick={() => canNext && setStep(s => s + 1)}
+                disabled={!canNext}
+                className="flex items-center gap-1.5 px-6 py-2.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-500/20"
+              >
+                Próximo <ChevronRight size={15} />
+              </button>
+            ) : (
+              <button
+                onClick={handleCreate}
+                disabled={!name.trim()}
+                className="flex items-center gap-2 px-6 py-2.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-30 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-500/20"
+              >
+                <Server size={15} /> Criar servidor
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -334,9 +403,9 @@ export default function CreateServerWizard({ navigate }: Props) {
 function StepWrap({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 24 }}
+      initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -24 }}
+      exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
     >
       {children}
@@ -344,14 +413,10 @@ function StepWrap({ children }: { children: React.ReactNode }) {
   )
 }
 
-function StepTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-xl font-bold text-white mb-5">{children}</h2>
-}
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 block">{label}</label>
+      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">{label}</label>
       {children}
     </div>
   )

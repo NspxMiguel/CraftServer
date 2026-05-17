@@ -1,4 +1,4 @@
-export type ServerType = 'paper' | 'purpur' | 'vanilla' | 'fabric'
+export type ServerType = 'paper' | 'purpur' | 'vanilla' | 'fabric' | 'bedrock' | 'hybrid'
 
 export interface Server {
   id: string
@@ -28,6 +28,7 @@ export interface PresetPlugin {
   url: string
   filename: string
   enabled: boolean
+  category: 'auth' | 'core' | 'compat' | 'protection' | 'qol'
 }
 
 export interface CreateServerOpts {
@@ -37,4 +38,9 @@ export interface CreateServerOpts {
   ram: number
   port: number
   plugins: { name: string; url: string; filename: string }[]
+}
+
+export interface WhitelistEntry {
+  uuid: string
+  name: string
 }

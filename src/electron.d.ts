@@ -11,17 +11,23 @@ declare global {
       sendCommand: (id: string, command: string) => Promise<{ ok: boolean }>
       getRunningServers: () => Promise<string[]>
       openServerFolder: (id: string) => Promise<void>
-
       getVersions: (type: string) => Promise<string[]>
 
-      searchPlugins: (query: string, loader: string) => Promise<import('./types').Plugin[]>
-      installPlugin: (serverId: string, projectId: string, title: string) => Promise<{ ok: boolean; filename?: string; error?: string }>
-      getInstalledPlugins: (serverId: string) => Promise<string[]>
-      removePlugin: (serverId: string, filename: string) => Promise<{ ok: boolean }>
+      getServerProperties: (id: string) => Promise<Record<string, string | number | boolean> | null>
+      setServerProperties: (id: string, props: Record<string, string | number | boolean>) => Promise<{ ok: boolean }>
 
-      togglePlayit: (serverId: string, enable: boolean) => Promise<{ ok: boolean }>
-      checkUpdate: (serverId: string) => Promise<{ hasUpdate: boolean; currentVersion?: string; latestVersion?: string }>
-      updateServer: (serverId: string) => Promise<{ ok: boolean; newVersion?: string; error?: string }>
+      getWhitelist: (id: string) => Promise<import('./types').WhitelistEntry[]>
+      addWhitelist: (id: string, username: string) => Promise<{ ok: boolean; entry?: import('./types').WhitelistEntry; error?: string }>
+      removeWhitelist: (id: string, name: string) => Promise<{ ok: boolean }>
+
+      searchPlugins: (query: string, loader: string) => Promise<import('./types').Plugin[]>
+      installPlugin: (sid: string, pid: string, title: string) => Promise<{ ok: boolean; filename?: string; error?: string }>
+      getInstalledPlugins: (sid: string) => Promise<string[]>
+      removePlugin: (sid: string, filename: string) => Promise<{ ok: boolean }>
+
+      togglePlayit: (sid: string, enable: boolean) => Promise<{ ok: boolean }>
+      checkUpdate: (sid: string) => Promise<{ hasUpdate: boolean; currentVersion?: string; latestVersion?: string }>
+      updateServer: (sid: string) => Promise<{ ok: boolean; newVersion?: string; error?: string }>
 
       getConfig: () => Promise<Record<string, string>>
       setConfig: (cfg: Record<string, string>) => Promise<{ ok: boolean }>

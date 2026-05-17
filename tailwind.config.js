@@ -4,29 +4,40 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Diamond blue — completely different from LootFlow green
         brand: {
-          50:  '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
+          50:  '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
         },
-        surface: {
-          900: '#0a0a0a',
-          800: '#111111',
-          700: '#1a1a1a',
-          600: '#222222',
-          500: '#2a2a2a',
-          400: '#333333',
+        // Deep navy dark surfaces
+        dark: {
+          950: '#05080f',
+          900: '#080d18',
+          800: '#0d1424',
+          700: '#111d33',
+          600: '#172440',
+          500: '#1e2e4a',
+          400: '#263859',
+          300: '#2f4268',
         },
       },
       fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+      },
+      backgroundImage: {
+        'grid-dark': 'linear-gradient(rgba(56,189,248,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.04) 1px, transparent 1px)',
+      },
+      backgroundSize: {
+        'grid': '48px 48px',
       },
     },
   },

@@ -1,7 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electron', {
-  // Servers
   getServers: () => ipcRenderer.invoke('get-servers'),
   deleteServer: (id) => ipcRenderer.invoke('delete-server', id),
   createServer: (opts) => ipcRenderer.invoke('create-server', opts),
@@ -10,32 +9,37 @@ contextBridge.exposeInMainWorld('electron', {
   sendCommand: (id, command) => ipcRenderer.invoke('send-command', { id, command }),
   getRunningServers: () => ipcRenderer.invoke('get-running-servers'),
   openServerFolder: (id) => ipcRenderer.invoke('open-server-folder', id),
-
-  // Versions
   getVersions: (type) => ipcRenderer.invoke('get-versions', type),
+
+  // server.properties
+  getServerProperties: (id) => ipcRenderer.invoke('get-server-properties', id),
+  setServerProperties: (id, props) => ipcRenderer.invoke('set-server-properties', { serverId: id, props }),
+
+  // Whitelist
+  getWhitelist: (id) => ipcRenderer.invoke('get-whitelist', id),
+  addWhitelist: (id, username) => ipcRenderer.invoke('add-whitelist', { serverId: id, username }),
+  removeWhitelist: (id, name) => ipcRenderer.invoke('remove-whitelist', { serverId: id, name }),
 
   // Plugins
   searchPlugins: (query, loader) => ipcRenderer.invoke('search-plugins', { query, loader }),
-  installPlugin: (serverId, projectId, projectTitle) =>
-    ipcRenderer.invoke('install-plugin', { serverId, projectId, projectTitle }),
-  getInstalledPlugins: (serverId) => ipcRenderer.invoke('get-installed-plugins', serverId),
-  removePlugin: (serverId, filename) => ipcRenderer.invoke('remove-plugin', { serverId, filename }),
+  installPlugin: (sid, pid, title) => ipcRenderer.invoke('install-plugin', { serverId: sid, projectId: pid, projectTitle: title }),
+  getInstalledPlugins: (sid) => ipcRenderer.invoke('get-installed-plugins', sid),
+  removePlugin: (sid, filename) => ipcRenderer.invoke('remove-plugin', { serverId: sid, filename }),
 
   // playit.gg
-  togglePlayit: (serverId, enable) => ipcRenderer.invoke('toggle-playit', { serverId, enable }),
+  togglePlayit: (sid, enable) => ipcRenderer.invoke('toggle-playit', { serverId: sid, enable }),
 
   // Updates
-  checkUpdate: (serverId) => ipcRenderer.invoke('check-update', { serverId }),
-  updateServer: (serverId) => ipcRenderer.invoke('update-server', { serverId }),
+  checkUpdate: (sid) => ipcRenderer.invoke('check-update', { serverId: sid }),
+  updateServer: (sid) => ipcRenderer.invoke('update-server', { serverId: sid }),
 
   // Config
   getConfig: () => ipcRenderer.invoke('get-config'),
   setConfig: (cfg) => ipcRenderer.invoke('set-config', cfg),
 
-  // Events
   on: (channel, cb) => {
     const allowed = ['server-log', 'server-stopped', 'create-progress', 'playit-address', 'playit-log', 'playit-stopped']
-    if (allowed.includes(channel)) ipcRenderer.on(channel, (_event, data) => cb(data))
+    if (allowed.includes(channel)) ipcRenderer.on(channel, (_e, d) => cb(d))
   },
   off: (channel, cb) => ipcRenderer.removeListener(channel, cb),
 })

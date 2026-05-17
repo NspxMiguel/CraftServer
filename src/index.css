@@ -11,48 +11,54 @@ html, body, #root {
 }
 
 body {
-  background: #0d0d0d;
-  color: #f1f1f1;
+  background: #080d18;
+  color: #e2e8f0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
+::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(56,189,248,0.3); }
 
-/* Drag region for native titlebar */
 .drag-region { -webkit-app-region: drag; }
 .no-drag { -webkit-app-region: no-drag; }
 
-/* Console / mono */
 .font-mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace; }
 
-/* Text selection */
-::selection { background: rgba(34,197,94,0.25); }
+::selection { background: rgba(56,189,248,0.2); }
 
-/* Smooth scroll */
-.scroll-smooth { scroll-behavior: smooth; }
-
-/* Glow effect */
-.glow-green {
-  box-shadow: 0 0 20px rgba(34,197,94,0.15);
+/* Noise texture overlay for depth */
+.noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
 }
 
-/* Glass card */
-.glass {
-  background: rgba(255,255,255,0.03);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.06);
+/* Glow */
+.glow-blue { box-shadow: 0 0 24px rgba(56,189,248,0.12); }
+
+/* Card glass */
+.card {
+  background: rgba(13, 20, 36, 0.8);
+  border: 1px solid rgba(56,189,248,0.08);
+  backdrop-filter: blur(8px);
 }
 
-/* Subtle grid bg */
-.grid-bg {
-  background-image:
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: 40px 40px;
+/* Animated gradient border */
+.border-glow {
+  position: relative;
+}
+.border-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(56,189,248,0.3), transparent, rgba(99,102,241,0.2));
+  pointer-events: none;
 }
