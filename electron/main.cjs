@@ -163,6 +163,15 @@ ipcMain.handle('remove-whitelist', (_, { serverId, name }) => {
 })
 
 // ── Versions ──────────────────────────────────────────────────────────────────
+const FALLBACK_VERSIONS = {
+  paper:   ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.8'],
+  purpur:  ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.19.2','1.18.2','1.16.5'],
+  fabric:  ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.18.2','1.17.1'],
+  bedrock: ['1.21.50','1.21.30','1.21.0','1.20.80','1.20.50'],
+  hybrid:  ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4'],
+  vanilla: ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.9'],
+}
+
 ipcMain.handle('get-versions', async (_, type) => {
   try {
     if (type === 'paper') {
@@ -178,14 +187,15 @@ ipcMain.handle('get-versions', async (_, type) => {
       return d.filter(v => v.stable).map(v => v.version)
     }
     if (type === 'bedrock' || type === 'hybrid') {
-      // PowerNukkit — latest release tags from GitHub
       const releases = await fetchJson('https://api.github.com/repos/PowerNukkit/PowerNukkit/releases?per_page=10')
       return releases.map(r => r.tag_name.replace(/^v/, ''))
     }
     // vanilla
     const d = await fetchJson('https://launchermeta.mojang.com/mc/game/version_manifest.json')
     return d.versions.filter(v => v.type === 'release').map(v => v.id)
-  } catch { return [] }
+  } catch {
+    return FALLBACK_VERSIONS[type] || FALLBACK_VERSIONS.paper
+  }
 })
 
 // ── Create server ─────────────────────────────────────────────────────────────
@@ -611,7 +621,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200, height: 780, minWidth: 900, minHeight: 620,
     titleBarStyle: 'hiddenInset',
-    backgroundColor: '#080d18',
+    backgroundColor: '#100f0c',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

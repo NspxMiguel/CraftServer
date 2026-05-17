@@ -1,0 +1,7 @@
+#!/bin/bash
+# Strip quarantine so macOS Gatekeeper doesn't block the app after install
+APP="/Applications/CraftServer.app"
+if [ -e "$APP" ]; then
+    xattr -cr "$APP" 2>/dev/null || true
+fi
+exit 0

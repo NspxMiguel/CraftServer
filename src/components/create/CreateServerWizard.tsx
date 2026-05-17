@@ -8,6 +8,15 @@ import { useServerStore } from '../../store/serverStore'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
+const FALLBACK_VERSIONS: Record<string, string[]> = {
+  paper:   ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.8'],
+  purpur:  ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.19.2','1.18.2','1.16.5'],
+  fabric:  ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.18.2','1.17.1'],
+  bedrock: ['1.21.50','1.21.30','1.21.0','1.20.80','1.20.50'],
+  hybrid:  ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4'],
+  vanilla: ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.9'],
+}
+
 const SERVER_TYPES = [
   {
     id: 'paper', label: 'Java — Paper',
@@ -79,12 +88,21 @@ export default function CreateServerWizard({ navigate }: Props) {
   const [progress, setProgress] = useState<string[]>([])
   const [done, setDone] = useState(false)
 
-  useEffect(() => {
+  const fetchVersions = (t: ServerType) => {
     setLoadingVersions(true)
     setVersion('')
-    const fn = isElectron ? window.electron.getVersions : () => Promise.resolve([])
-    fn(type).then(v => { setVersions(v); setVersion(v[0] || ''); setLoadingVersions(false) })
-  }, [type])
+    const fn = isElectron
+      ? window.electron.getVersions
+      : (type: string) => Promise.resolve(FALLBACK_VERSIONS[type] || FALLBACK_VERSIONS.paper)
+    fn(t).then(v => {
+      const list = v.length ? v : (FALLBACK_VERSIONS[t] || FALLBACK_VERSIONS.paper)
+      setVersions(list)
+      setVersion(list[0] || '')
+      setLoadingVersions(false)
+    })
+  }
+
+  useEffect(() => { fetchVersions(type) }, [type])
 
   useEffect(() => {
     if (!isElectron) return

@@ -33,10 +33,10 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
 
-      - name: Upload DMG
+      - name: Upload PKG
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*arm64.dmg
+          files: release/*arm64.pkg
 
   release-win:
     name: Build Windows
