@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld('electron', {
   removeWhitelist: (id, name) => ipcRenderer.invoke('remove-whitelist', { serverId: id, name }),
 
   // Plugins
-  searchPlugins: (query, loader) => ipcRenderer.invoke('search-plugins', { query, loader }),
+  searchPlugins: (query, loader, gameVersion) => ipcRenderer.invoke('search-plugins', { query, loader, gameVersion }),
   installPlugin: (sid, pid, title) => ipcRenderer.invoke('install-plugin', { serverId: sid, projectId: pid, projectTitle: title }),
   getInstalledPlugins: (sid) => ipcRenderer.invoke('get-installed-plugins', sid),
   removePlugin: (sid, filename) => ipcRenderer.invoke('remove-plugin', { serverId: sid, filename }),
@@ -30,8 +30,8 @@ contextBridge.exposeInMainWorld('electron', {
   togglePlayit: (sid, enable) => ipcRenderer.invoke('toggle-playit', { serverId: sid, enable }),
 
   // Updates
-  checkUpdate: (sid) => ipcRenderer.invoke('check-update', { serverId: sid }),
-  updateServer: (sid) => ipcRenderer.invoke('update-server', { serverId: sid }),
+  checkUpdate: (sid) => ipcRenderer.invoke('check-update', sid),
+  updateServer: (sid) => ipcRenderer.invoke('update-server', sid),
 
   // Config
   getConfig: () => ipcRenderer.invoke('get-config'),

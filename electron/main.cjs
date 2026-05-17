@@ -167,26 +167,68 @@ ipcMain.handle('remove-whitelist', (_, { serverId, name }) => {
 
 // ── Versions ──────────────────────────────────────────────────────────────────
 const FALLBACK_VERSIONS = {
-  paper:   ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.8'],
-  purpur:  ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.19.2','1.18.2','1.16.5'],
-  fabric:  ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.18.2','1.17.1'],
-  bedrock: ['1.21.60','1.21.50','1.21.30','1.21.0','1.20.80','1.20.50'],
-  hybrid:  ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4'],
-  vanilla: ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.9'],
+  paper: [
+    '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
+    '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
+    '1.19.4','1.19.3','1.19.2','1.19.1','1.19',
+    '1.18.2','1.18.1','1.18','1.17.1','1.17',
+    '1.16.5','1.16.4','1.16.3','1.16.2','1.16.1',
+    '1.15.2','1.15.1','1.15','1.14.4','1.14.3','1.14.2','1.14.1','1.14',
+    '1.13.2','1.13.1','1.13','1.12.2','1.12.1','1.12',
+    '1.11.2','1.11','1.10.2','1.9.4','1.8.8',
+  ],
+  purpur: [
+    '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
+    '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
+    '1.19.4','1.19.3','1.19.2','1.19','1.18.2','1.18.1','1.18',
+    '1.17.1','1.17','1.16.5','1.16.4',
+  ],
+  fabric: [
+    '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
+    '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
+    '1.19.4','1.19.3','1.19.2','1.19','1.18.2','1.18.1','1.18',
+    '1.17.1','1.17','1.16.5','1.16.4','1.16.3','1.16.1',
+    '1.15.2','1.15','1.14.4','1.13.2',
+  ],
+  bedrock: [
+    '1.21.60','1.21.51','1.21.50','1.21.44','1.21.40',
+    '1.21.31','1.21.30','1.21.23','1.21.20',
+    '1.21.0','1.20.81','1.20.80','1.20.73','1.20.70',
+    '1.20.62','1.20.60','1.20.51','1.20.50',
+  ],
+  hybrid: [
+    '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
+    '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
+    '1.19.4','1.19.2','1.19','1.18.2','1.18',
+  ],
+  vanilla: [
+    '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
+    '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
+    '1.19.4','1.19.3','1.19.2','1.19.1','1.19','1.18.2','1.18.1','1.18',
+    '1.17.1','1.17','1.16.5','1.16.4','1.16.3','1.16.2','1.16.1',
+    '1.15.2','1.15','1.14.4','1.14','1.13.2','1.13',
+    '1.12.2','1.12','1.11.2','1.11','1.10.2','1.9.4','1.9','1.8.9',
+  ],
 }
 
 async function resolvePluginUrl(plugin, mcVersion) {
   if (plugin.modrinthSlug) {
     try {
-      const encodedLoaders = encodeURIComponent(JSON.stringify(['paper','spigot','bukkit']))
+      const loaders = ['paper','spigot','bukkit','purpur','folia']
+      const encodedLoaders = encodeURIComponent(JSON.stringify(loaders))
       const encodedVersions = encodeURIComponent(JSON.stringify([mcVersion]))
+      // Try exact MC version match
       const url = `https://api.modrinth.com/v2/project/${plugin.modrinthSlug}/version?loaders=${encodedLoaders}&game_versions=${encodedVersions}`
       const versions = await fetchJson(url)
       if (Array.isArray(versions) && versions.length > 0) {
         const file = versions[0].files.find(f => f.primary) || versions[0].files[0]
         if (file) return { url: file.url, filename: file.filename }
       }
-      // If no version matches exactly, try without game_version filter
+    } catch {}
+    try {
+      const loaders = ['paper','spigot','bukkit','purpur','folia']
+      const encodedLoaders = encodeURIComponent(JSON.stringify(loaders))
+      // Fallback: any version, compatible loader
       const urlNoVer = `https://api.modrinth.com/v2/project/${plugin.modrinthSlug}/version?loaders=${encodedLoaders}`
       const versionsNoVer = await fetchJson(urlNoVer)
       if (Array.isArray(versionsNoVer) && versionsNoVer.length > 0) {
@@ -511,26 +553,56 @@ ipcMain.handle('delete-server', (_, id) => {
 })
 
 // ── Plugins ───────────────────────────────────────────────────────────────────
-ipcMain.handle('search-plugins', async (_, { query, loader }) => {
-  const facets = loader === 'fabric'
-    ? `[["categories:fabric"],["project_type:mod"]]`
-    : `[["categories:paper"],["project_type:plugin"]]`
-  const url = `https://api.modrinth.com/v2/search?query=${encodeURIComponent(query)}&facets=${encodeURIComponent(facets)}&limit=20`
-  const data = await fetchJson(url)
-  return data.hits || []
+ipcMain.handle('search-plugins', async (_, { query, loader, gameVersion }) => {
+  try {
+    const facetList = loader === 'fabric'
+      ? [['project_type:mod'], ['categories:fabric']]
+      : [['project_type:plugin']]
+    if (gameVersion) facetList.push([`versions:${gameVersion}`])
+    const facets = JSON.stringify(facetList)
+    const url = `https://api.modrinth.com/v2/search?query=${encodeURIComponent(query || '')}&facets=${encodeURIComponent(facets)}&limit=20&index=downloads`
+    const data = await fetchJson(url)
+    return data.hits || []
+  } catch {
+    return []
+  }
 })
 
 ipcMain.handle('install-plugin', async (event, { serverId, projectId, projectTitle }) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
   if (!server) return { ok: false, error: 'Servidor não encontrado' }
-  const versions = await fetchJson(`https://api.modrinth.com/v2/project/${projectId}/version`)
-  const compatible = versions.find(v =>
-    v.loaders.includes(server.type === 'fabric' ? 'fabric' : 'paper') ||
-    v.loaders.includes('bukkit') || v.loaders.includes('spigot')
-  )
+
+  const loaderFilter = server.type === 'fabric' ? ['fabric'] : ['paper','bukkit','spigot','purpur','folia']
+  const encodedLoaders = encodeURIComponent(JSON.stringify(loaderFilter))
+  const encodedVersions = encodeURIComponent(JSON.stringify([server.version]))
+
+  let compatible = null
+
+  // Try 1: exact MC version + loader
+  try {
+    const vs = await fetchJson(`https://api.modrinth.com/v2/project/${projectId}/version?loaders=${encodedLoaders}&game_versions=${encodedVersions}`)
+    if (Array.isArray(vs) && vs.length > 0) compatible = vs[0]
+  } catch {}
+
+  // Try 2: compatible loader, any version
+  if (!compatible) {
+    try {
+      const vs = await fetchJson(`https://api.modrinth.com/v2/project/${projectId}/version?loaders=${encodedLoaders}`)
+      if (Array.isArray(vs) && vs.length > 0) compatible = vs[0]
+    } catch {}
+  }
+
+  // Try 3: any version
+  if (!compatible) {
+    try {
+      const vs = await fetchJson(`https://api.modrinth.com/v2/project/${projectId}/version`)
+      if (Array.isArray(vs) && vs.length > 0) compatible = vs[0]
+    } catch {}
+  }
+
   if (!compatible?.files?.[0]) return { ok: false, error: 'Versão compatível não encontrada' }
-  const file = compatible.files[0]
+  const file = compatible.files.find(f => f.primary) || compatible.files[0]
   event.sender.send('create-progress', { id: serverId, msg: `Instalando ${projectTitle}...` })
   await downloadFile(file.url, path.join(server.dir, 'plugins', file.filename))
   return { ok: true, filename: file.filename }
@@ -581,8 +653,14 @@ ipcMain.handle('toggle-playit', async (event, { serverId, enable }) => {
 
   proc.stdout.on('data', d => {
     const text = d.toString()
-    const match = text.match(/address[:\s]+([^\s]+:\d+)/i) || text.match(/([\w.-]+\.playit\.gg[:\d]*)/i)
-    if (match) event.sender.send('playit-address', { serverId, address: match[1] })
+    // Capture tunnel address
+    const addrMatch = text.match(/address[:\s]+([^\s]+:\d+)/i)
+      || text.match(/([\w.-]+\.playit\.gg[:\d]*)/i)
+      || text.match(/tunnel[:\s]+([^\s]+:\d+)/i)
+    if (addrMatch) event.sender.send('playit-address', { serverId, address: addrMatch[1] })
+    // Capture claim URL (new auth flow)
+    const claimMatch = text.match(/https:\/\/playit\.gg\/[^\s]+/i)
+    if (claimMatch) event.sender.send('playit-address', { serverId, address: claimMatch[0], isClaim: true })
     event.sender.send('playit-log', { serverId, line: text })
   })
   proc.stderr.on('data', d => event.sender.send('playit-log', { serverId, line: d.toString() }))
@@ -616,7 +694,8 @@ async function fetchLatestVersion(type) {
   return null
 }
 
-ipcMain.handle('check-update', async (_, serverId) => {
+ipcMain.handle('check-update', async (_, arg) => {
+  const serverId = typeof arg === 'string' ? arg : arg?.serverId
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
   if (!server || server.type === 'bedrock') return { hasUpdate: false }
@@ -628,7 +707,8 @@ ipcMain.handle('check-update', async (_, serverId) => {
   } catch { return { hasUpdate: false } }
 })
 
-ipcMain.handle('update-server', async (event, serverId) => {
+ipcMain.handle('update-server', async (event, arg) => {
+  const serverId = typeof arg === 'string' ? arg : arg?.serverId
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
   if (!server) return { ok: false }

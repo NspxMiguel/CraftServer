@@ -225,6 +225,15 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
     category: 'qol',
   },
   {
+    name: 'PlayIt.gg',
+    description: 'Túnel gratuito para expor o servidor sem precisar configurar roteador ou IP fixo.',
+    modrinthSlug: 'playit',
+    url: 'https://github.com/playit-cloud/playit-minecraft-plugin/releases/latest/download/playit-minecraft.jar',
+    filename: 'playit-minecraft.jar',
+    enabled: false,
+    category: 'qol',
+  },
+  {
     name: 'mcMMO',
     description: 'Sistema de RPG com habilidades, levels e partidas por ação.',
     url: 'https://github.com/mcMMO-Dev/mcMMO/releases/latest/download/mcMMO.jar',
@@ -253,7 +262,8 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'MythicMobs',
     description: 'Mobs customizados com skills, drops e comportamentos únicos.',
-    url: 'https://mythiccraft.io/index.php?resources/mythicmobs.1/',
+    modrinthSlug: 'mythicmobs',
+    url: 'https://modrinth.com/plugin/mythicmobs',
     filename: 'MythicMobs.jar',
     enabled: false,
     category: 'rpg',

@@ -50,7 +50,7 @@ export default function PluginBrowser() {
     if (!isElectron || !q.trim() || noPluginSupport) return
     setLoading(true)
     setResults([])
-    const res = await window.electron.searchPlugins(q.trim(), loaderFor(type))
+    const res = await window.electron.searchPlugins(q.trim(), loaderFor(type), server?.version)
     setResults(res)
     setLoading(false)
   }
