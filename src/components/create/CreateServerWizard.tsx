@@ -113,9 +113,9 @@ const SERVER_TYPES = [
 
 const STEPS = ['Tipo', 'Versão', 'Config', 'Plugins']
 
-interface Props { navigate: (p: Page) => void; quickSetup?: boolean; onCancelQuick?: () => void }
+interface Props { navigate: (p: Page) => void; quickSetup?: boolean }
 
-type WizardMode = 'choose' | 'quick' | 'manual' | 'gamemode'
+type WizardMode = 'choose' | 'manual' | 'gamemode'
 
 // RAM reserved for the host machine (NOT given to the server)
 function calcOverhead(gaming: boolean, voice: boolean): number {
@@ -151,10 +151,10 @@ function calcRecommendedRam(
   return Math.max(512, Math.min(maxAllowed, Math.round(raw / 512) * 512))
 }
 
-export default function CreateServerWizard({ navigate, quickSetup = false, onCancelQuick }: Props) {
+export default function CreateServerWizard({ navigate, quickSetup: _quickSetup = false }: Props) {
   const { setServers, setSelected } = useServerStore()
-  // 'choose' = show mode selection; 'quick' = Quick Setup; 'manual' = step wizard
-  const [mode, setMode] = useState<WizardMode>(quickSetup ? 'quick' : 'choose')
+  // 'choose' = show mode selection; 'manual' = step wizard; 'gamemode' = game mode grid
+  const [mode, setMode] = useState<WizardMode>('choose')
   const [step, setStep] = useState(0)
   const [type, setType] = useState<ServerType>('paper')
   const [versions, setVersions] = useState<string[]>([])
@@ -170,7 +170,6 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
   const [done, setDone] = useState(false)
   const [showOptional, setShowOptional] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
-  const quickNameRef = useRef<string>('')
 
   const [systemRam, setSystemRam] = useState<number>(0) // total MB
   const [gamingMode, setGamingMode] = useState(false)    // playing MC same PC
@@ -190,16 +189,6 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
     }
   }, [step])
 
-  // Fetch system RAM for quick setup smart defaults
-  useEffect(() => {
-    if (quickSetup && isElectron) {
-      window.electron.getSystemRam?.().then(({ totalMb }: { totalMb: number }) => {
-        setSystemRam(totalMb)
-        setRam(calcRecommendedRam(totalMb, false, false, 'small'))
-      }).catch(() => {})
-    }
-  }, [quickSetup])
-
   // Focus name input after step animation completes (autoFocus breaks on Windows Electron)
   useEffect(() => {
     if (step === 2) {
@@ -212,7 +201,6 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
   const [chunkyRadius, setChunkyRadius] = useState<number>(10)
   const [customRadius, setCustomRadius] = useState(10)
   const [chunkyPreset, setChunkyPreset] = useState<'small'|'medium'|'large'|'huge'|'custom'>('medium')
-  const [quickName, setQuickName] = useState('Meu Servidor')
   const [hybridInfoOpen, setHybridInfoOpen] = useState(false)
 
   // Derived plugin buckets (based on static flags, not stateful enabled)
@@ -290,25 +278,6 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
       setSelected(res.server.id)
       setTimeout(() => navigate('server'), 900)
     }
-  }
-
-  const playitEnabled = !!plugins.find(p => p.name === 'PlayIt.gg')?.enabled
-
-  const handleQuickCreate = () => {
-    // Use quick setup defaults: paper, first available version, all recommended plugins, smart RAM, port 25565
-    const resolvedName = quickName.trim() || 'Meu Servidor'
-    quickNameRef.current = resolvedName
-    setName(resolvedName)
-    setType('paper')
-    setPort(25565)
-    // Enable all core (recommended) plugins
-    setPlugins(ps => ps.map(p => {
-      const preset = PRESET_PLUGINS.find(pp => pp.name === p.name)
-      if (preset?.enabled) return { ...p, enabled: true }
-      return p
-    }))
-    // Show PlayIt modal flow
-    setShowPlayitModal(true)
   }
 
   const onClickCreate = () => {
@@ -408,31 +377,36 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
               transition={{ delay: 0.05 }}
               className="text-center mb-8"
             >
-              <h2 className="text-3xl font-black text-white tracking-tight">Como deseja criar?</h2>
-              <p className="text-slate-500 text-sm mt-2">Escolha o modo de criação do seu servidor</p>
+              <h2 className="text-3xl font-black text-white tracking-tight">Criar servidor</h2>
+              <p className="text-slate-500 text-sm mt-2">Escolha como quer configurar</p>
             </motion.div>
 
             <div className="flex flex-col gap-3 w-full">
-              {/* Quick Setup card */}
+              {/* Quick Setup → Game Mode grid */}
               <motion.button
                 initial={{ y: 18, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1 }}
-                onClick={() => setMode('quick')}
-                className="group text-left p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-400/30 hover:border-amber-400/60 hover:bg-amber-500/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                onClick={() => setMode('gamemode')}
+                className="group text-left p-5 rounded-2xl bg-brand-500/10 border-2 border-brand-400/30 hover:border-brand-400/60 hover:bg-brand-500/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center">
-                    <Zap size={20} className="text-amber-400" />
+                  <div className="w-10 h-10 rounded-xl bg-brand-400/20 border border-brand-400/30 flex items-center justify-center">
+                    <Gamepad2 size={20} className="text-brand-400" />
                   </div>
                   <div>
-                    <p className="text-white font-black text-base">⚡ Configuração Rápida</p>
-                    <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">Recomendado</span>
+                    <p className="text-white font-black text-base">🎮 Escolher Modo de Jogo</p>
+                    <span className="text-[10px] font-bold text-brand-400 bg-brand-400/10 border border-brand-400/20 px-2 py-0.5 rounded-full">Recomendado</span>
                   </div>
                 </div>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  A gente configura tudo automaticamente — Paper, última versão, plugins recomendados e RAM ideal. Só diga o nome!
+                  Survival, Skyblock, OneBlock, KitPvP, SkyWars e mais — tudo pré-configurado, só jogar!
                 </p>
+                <div className="flex gap-1.5 mt-3 flex-wrap">
+                  {['🌿 Survival', '🏝️ Skyblock', '⬛ OneBlock', '💰 Ilha Eco', '🌌 SkyWars', '🥊 KitPvP'].map(m => (
+                    <span key={m} className="text-[10px] px-2 py-0.5 bg-dark-700 border border-dark-600 text-slate-500 rounded-full">{m}</span>
+                  ))}
+                </div>
               </motion.button>
 
               {/* Manual card */}
@@ -441,7 +415,7 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.16 }}
                 onClick={() => setMode('manual')}
-                className="group text-left p-5 rounded-2xl bg-dark-800 border-2 border-dark-600 hover:border-brand-500/40 hover:bg-dark-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="group text-left p-5 rounded-2xl bg-dark-800 border-2 border-dark-600 hover:border-slate-500/40 hover:bg-dark-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-xl bg-dark-700 border border-dark-600 flex items-center justify-center">
@@ -453,39 +427,12 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
                   Escolha o tipo de servidor, versão, plugins e RAM no detalhe.
                 </p>
               </motion.button>
-
-              {/* Game modes card */}
-              <motion.button
-                initial={{ y: 18, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.22 }}
-                onClick={() => setMode('gamemode')}
-                className="group text-left p-5 rounded-2xl bg-brand-500/8 border-2 border-brand-500/30 hover:border-brand-500/60 hover:bg-brand-500/12 transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/25 flex items-center justify-center">
-                    <Gamepad2 size={18} className="text-brand-400" />
-                  </div>
-                  <div>
-                    <p className="text-white font-black text-base">🎮 Modo de Jogo</p>
-                    <span className="text-[10px] font-bold text-brand-400 bg-brand-400/10 border border-brand-400/20 px-2 py-0.5 rounded-full">Novo!</span>
-                  </div>
-                </div>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Skyblock, OneBlock, BedWars, SkyWars, KitPvP e mais — tudo pré-configurado, só jogar!
-                </p>
-                <div className="flex gap-1.5 mt-3 flex-wrap">
-                  {['🏝️ Skyblock', '⬛ OneBlock', '💰 Ilha Eco', '🛏️ BedWars', '🌌 SkyWars', '🥊 KitPvP'].map(m => (
-                    <span key={m} className="text-[10px] px-2 py-0.5 bg-dark-700 border border-dark-600 text-slate-500 rounded-full">{m}</span>
-                  ))}
-                </div>
-              </motion.button>
             </div>
 
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.25 }}
+              transition={{ delay: 0.22 }}
               onClick={() => navigate('dashboard')}
               className="mt-6 text-sm text-dark-400 hover:text-slate-400 transition-colors"
             >
@@ -495,92 +442,6 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
         </div>
       )}
 
-      {/* Quick Setup Screen */}
-      {mode === 'quick' && !showPlayitModal && !showChunkyModal && !creating && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center px-8 py-10 bg-[#08080e]/98 backdrop-blur-xl">
-          {/* Glows */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-amber-400/8 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[250px] bg-brand-400/5 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative flex flex-col items-center max-w-md w-full">
-            {/* Icon */}
-            <motion.div
-              initial={{ scale: 0.6, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.05, type: 'spring', stiffness: 280, damping: 20 }}
-              className="w-20 h-20 rounded-3xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center mb-6 shadow-2xl shadow-amber-400/15"
-            >
-              <Zap size={38} className="text-amber-400" />
-            </motion.div>
-
-            {/* Title */}
-            <motion.div
-              initial={{ y: 18, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.12 }}
-              className="text-center mb-2"
-            >
-              <h2 className="text-4xl font-black text-white tracking-tight">⚡ Configuração Rápida</h2>
-              <p className="text-slate-400 text-base mt-2">A gente configura tudo — só diz o nome!</p>
-            </motion.div>
-
-            {/* Auto-config bullets */}
-            <motion.div
-              initial={{ y: 18, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.19 }}
-              className="flex items-center justify-center gap-2 flex-wrap text-xs text-slate-500 mb-8 mt-4"
-            >
-              {['Paper (mais popular)', 'Última versão', 'Plugins recomendados', 'RAM ideal para seu PC'].map((item, i) => (
-                <span key={i} className="flex items-center gap-1.5 px-2.5 py-1 bg-dark-800 border border-dark-600 rounded-full">
-                  <Check size={9} className="text-brand-400" strokeWidth={3} />
-                  {item}
-                </span>
-              ))}
-            </motion.div>
-
-            {/* Name input */}
-            <motion.div
-              initial={{ y: 18, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.25 }}
-              className="w-full mb-4"
-            >
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Nome do servidor</label>
-              <input
-                autoFocus
-                value={quickName}
-                onChange={e => setQuickName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && quickName.trim()) handleQuickCreate() }}
-                placeholder="Meu Servidor"
-                className="w-full bg-dark-800 border border-dark-500 hover:border-amber-400/30 focus:border-amber-400/60 rounded-xl px-4 py-3.5 text-white placeholder-slate-700 focus:outline-none text-base font-bold transition-colors text-center"
-              />
-            </motion.div>
-
-            {/* Create button */}
-            <motion.div
-              initial={{ y: 18, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="w-full space-y-3"
-            >
-              <button
-                onClick={handleQuickCreate}
-                disabled={!quickName.trim()}
-                className="w-full py-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-30 disabled:cursor-not-allowed text-white text-base font-black transition-all shadow-xl shadow-amber-500/25 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Criar Agora →
-              </button>
-              <button
-                onClick={() => { setMode('choose'); onCancelQuick?.() }}
-                className="w-full text-sm text-slate-600 hover:text-slate-400 transition-colors py-2"
-              >
-                Configurar manualmente
-              </button>
-            </motion.div>
-          </div>
-        </div>
-      )}
 
       <div className="relative flex flex-col h-full max-w-3xl mx-auto w-full px-8 py-8">
         {/* Header */}

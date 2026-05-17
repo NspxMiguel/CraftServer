@@ -17,7 +17,6 @@ const isElectron = typeof window !== 'undefined' && !!window.electron
 
 export default function App() {
   const [page, setPage] = useState<Page>('dashboard')
-  const [quickSetup, setQuickSetup] = useState(false)
   const { setServers, setRunning, selectedId } = useServerStore()
   const langSet = useIsLangSet()
 
@@ -27,9 +26,8 @@ export default function App() {
     window.electron.getRunningServers().then(setRunning)
   }, [])
 
-  const navigate = (p: Page) => { setPage(p); if (p !== 'create') setQuickSetup(false) }
-  const handleQuickSetup = () => { setQuickSetup(true); setPage('create') }
-  const handleCancelQuick = () => setQuickSetup(false)
+  const navigate = (p: Page) => setPage(p)
+  const handleQuickSetup = () => setPage('create')
 
   // Show language selection on first launch (before anything else)
   if (!langSet) {
@@ -50,7 +48,7 @@ export default function App() {
           )}
           {page === 'create' && (
             <PageWrap key="create">
-              <CreateServerWizard navigate={navigate} quickSetup={quickSetup} onCancelQuick={handleCancelQuick} />
+              <CreateServerWizard navigate={navigate} />
             </PageWrap>
           )}
           {page === 'server' && selectedId && (
