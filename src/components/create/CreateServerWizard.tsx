@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap, Shield, Globe, Lock, UserCheck, Layers } from 'lucide-react'
 import type { Page } from '../../App'
@@ -135,6 +135,15 @@ export default function CreateServerWizard({ navigate }: Props) {
   const [progress, setProgress] = useState<string[]>([])
   const [done, setDone] = useState(false)
   const [showOptional, setShowOptional] = useState(false)
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  // Focus name input after step animation completes (autoFocus breaks on Windows Electron)
+  useEffect(() => {
+    if (step === 2) {
+      const t = setTimeout(() => nameInputRef.current?.focus(), 220)
+      return () => clearTimeout(t)
+    }
+  }, [step])
   const [showChunkyModal, setShowChunkyModal] = useState(false)
   const [chunkyRadius, setChunkyRadius] = useState<number>(10)
   const [customRadius, setCustomRadius] = useState(10)
@@ -358,7 +367,7 @@ export default function CreateServerWizard({ navigate }: Props) {
                 <div className="space-y-5">
                   <Field label="Nome do servidor">
                     <input
-                      autoFocus
+                      ref={nameInputRef}
                       value={name}
                       onChange={e => setName(e.target.value)}
                       placeholder="Ex: Survival dos Amigos"
