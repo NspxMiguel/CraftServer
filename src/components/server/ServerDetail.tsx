@@ -249,9 +249,38 @@ export default function ServerDetail({ navigate }: Props) {
         <AnimatePresence mode="wait">
           {tab === 'console' && (
             <motion.div key="console" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col">
-              <div className="flex-1 overflow-auto p-5 font-mono text-xs leading-5 bg-dark-950">
+              {/* Console toolbar */}
+              <div className="flex items-center justify-between px-4 py-1.5 border-b border-dark-700 bg-dark-900/80">
+                <span className="text-[10px] text-slate-700 font-mono">{logs.length} linhas</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      const text = logs.map(l => l.text).join('\n')
+                      navigator.clipboard.writeText(text)
+                      setCopied(true)
+                      setTimeout(() => setCopied(false), 1800)
+                    }}
+                    disabled={logs.length === 0}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold text-slate-600 hover:text-slate-300 hover:bg-white/[0.04] transition-colors disabled:opacity-30"
+                    title="Copiar todos os logs (Ctrl+A depois Ctrl+C também funciona)"
+                  >
+                    {copied ? <Check size={10} className="text-brand-400" /> : <Copy size={10} />}
+                    {copied ? 'Copiado!' : 'Copiar tudo'}
+                  </button>
+                  <button
+                    onClick={() => setLogs([])}
+                    disabled={logs.length === 0}
+                    className="px-2.5 py-1 rounded-md text-[10px] font-semibold text-slate-700 hover:text-slate-400 hover:bg-white/[0.04] transition-colors disabled:opacity-30"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </div>
+
+              {/* Log area — select-text enables Ctrl+C on selected text */}
+              <div className="flex-1 overflow-auto p-5 font-mono text-xs leading-5 bg-dark-950 select-text cursor-text">
                 {logs.length === 0 ? (
-                  <div className="flex items-center gap-2 text-slate-700 mt-2">
+                  <div className="flex items-center gap-2 text-slate-700 mt-2 select-none">
                     <Circle size={5} />Aguardando início do servidor...
                   </div>
                 ) : (
