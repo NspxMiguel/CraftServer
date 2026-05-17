@@ -1,6 +1,6 @@
 {
   "name": "craftserver",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Minecraft Server Manager — create, manage and share servers with ease",
   "type": "module",
   "main": "electron/main.cjs",
@@ -53,9 +53,9 @@
     "asar": true,
     "mac": {
       "category": "public.app-category.utilities",
+      "gatekeeperAssess": false,
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] },
-        { "target": "zip", "arch": ["x64", "arm64"] }
+        { "target": "dmg", "arch": ["arm64"] }
       ]
     },
     "dmg": {
@@ -64,13 +64,11 @@
     },
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        { "target": "nsis", "arch": ["x64"] }
       ]
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     }
