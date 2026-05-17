@@ -164,12 +164,12 @@ ipcMain.handle('remove-whitelist', (_, { serverId, name }) => {
 
 // ── Versions ──────────────────────────────────────────────────────────────────
 const FALLBACK_VERSIONS = {
-  paper:   ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.8'],
-  purpur:  ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.19.2','1.18.2','1.16.5'],
-  fabric:  ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.18.2','1.17.1'],
-  bedrock: ['1.21.50','1.21.30','1.21.0','1.20.80','1.20.50'],
-  hybrid:  ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4'],
-  vanilla: ['1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.9'],
+  paper:   ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.8'],
+  purpur:  ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.19.2','1.18.2','1.16.5'],
+  fabric:  ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.18.2','1.17.1'],
+  bedrock: ['1.21.60','1.21.50','1.21.30','1.21.0','1.20.80','1.20.50'],
+  hybrid:  ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4'],
+  vanilla: ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.9'],
 }
 
 ipcMain.handle('get-versions', async (_, type) => {
@@ -186,8 +186,13 @@ ipcMain.handle('get-versions', async (_, type) => {
       const d = await fetchJson('https://meta.fabricmc.net/v2/versions/game')
       return d.filter(v => v.stable).map(v => v.version)
     }
-    if (type === 'bedrock' || type === 'hybrid') {
-      const releases = await fetchJson('https://api.github.com/repos/PowerNukkit/PowerNukkit/releases?per_page=10')
+    if (type === 'hybrid') {
+      // Hybrid (Geyser) runs on Paper — use Paper versions
+      const d = await fetchJson('https://api.papermc.io/v2/projects/paper')
+      return d.versions.reverse()
+    }
+    if (type === 'bedrock') {
+      const releases = await fetchJson('https://api.github.com/repos/PowerNukkit/PowerNukkit/releases?per_page=15')
       return releases.map(r => r.tag_name.replace(/^v/, ''))
     }
     // vanilla
@@ -561,39 +566,47 @@ ipcMain.handle('toggle-playit', async (event, { serverId, enable }) => {
 })
 
 // ── Auto-update ───────────────────────────────────────────────────────────────
-ipcMain.handle('check-update', async (_, { serverId }) => {
+async function fetchLatestVersion(type) {
+  if (type === 'paper' || type === 'hybrid') {
+    const d = await fetchJson('https://api.papermc.io/v2/projects/paper')
+    return d.versions[d.versions.length - 1]
+  }
+  if (type === 'purpur') {
+    const d = await fetchJson('https://api.purpurmc.org/v2/purpur')
+    return d.versions[d.versions.length - 1]
+  }
+  if (type === 'vanilla') {
+    const d = await fetchJson('https://launchermeta.mojang.com/mc/game/version_manifest.json')
+    const rel = d.versions.find(v => v.type === 'release')
+    return rel ? rel.id : null
+  }
+  if (type === 'fabric') {
+    const d = await fetchJson('https://meta.fabricmc.net/v2/versions/game')
+    const stable = d.find(v => v.stable)
+    return stable ? stable.version : null
+  }
+  return null
+}
+
+ipcMain.handle('check-update', async (_, serverId) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
-  if (!server || !['paper', 'purpur'].includes(server.type)) return { hasUpdate: false }
+  if (!server || server.type === 'bedrock') return { hasUpdate: false }
   try {
-    let latest
-    if (server.type === 'paper') {
-      const d = await fetchJson('https://api.papermc.io/v2/projects/paper')
-      latest = d.versions[d.versions.length - 1]
-    } else {
-      const d = await fetchJson('https://api.purpurmc.org/v2/purpur')
-      latest = d.versions[d.versions.length - 1]
-    }
+    const latest = await fetchLatestVersion(server.type)
     return latest && latest !== server.version
       ? { hasUpdate: true, currentVersion: server.version, latestVersion: latest }
       : { hasUpdate: false }
   } catch { return { hasUpdate: false } }
 })
 
-ipcMain.handle('update-server', async (event, { serverId }) => {
+ipcMain.handle('update-server', async (event, serverId) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
   if (!server) return { ok: false }
   const send = msg => event.sender.send('create-progress', { id: serverId, msg })
   try {
-    let latest
-    if (server.type === 'paper') {
-      const d = await fetchJson('https://api.papermc.io/v2/projects/paper')
-      latest = d.versions[d.versions.length - 1]
-    } else if (server.type === 'purpur') {
-      const d = await fetchJson('https://api.purpurmc.org/v2/purpur')
-      latest = d.versions[d.versions.length - 1]
-    }
+    const latest = await fetchLatestVersion(server.type)
     if (!latest) return { ok: false, error: 'Versão mais recente não encontrada' }
     send(`Baixando ${server.type} ${latest}...`)
     const jarPath = path.join(server.dir, 'server.jar')

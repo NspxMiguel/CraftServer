@@ -75,17 +75,9 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   // ── Compatibilidade de Versão ─────────────────────────────────────────────
   {
     name: 'ViaVersion',
-    description: 'Permite que jogadores com versões mais novas do Minecraft entrem no servidor.',
+    description: 'Permite que jogadores com versões mais novas do Minecraft entrem no servidor. Jogadores em versões antigas não conseguem entrar.',
     url: 'https://github.com/ViaVersion/ViaVersion/releases/latest/download/ViaVersion.jar',
     filename: 'ViaVersion.jar',
-    enabled: true,
-    category: 'compat',
-  },
-  {
-    name: 'ViaBackwards',
-    description: 'Permite que jogadores com versões mais antigas entrem no servidor.',
-    url: 'https://github.com/ViaVersion/ViaBackwards/releases/latest/download/ViaBackwards.jar',
-    filename: 'ViaBackwards.jar',
     enabled: false,
     category: 'compat',
   },
