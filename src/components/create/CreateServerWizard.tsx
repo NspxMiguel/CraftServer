@@ -10,55 +10,49 @@ const isElectron = typeof window !== 'undefined' && !!window.electron
 
 const FALLBACK_VERSIONS: Record<string, string[]> = {
   paper: [
+    '26.1.2','26.1.1','26.1.0','26.0.3','26.0.2','26.0.1','26.0.0',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19.1','1.19',
-    '1.18.2','1.18.1','1.18',
-    '1.17.1','1.17',
+    '1.18.2','1.18.1','1.18','1.17.1','1.17',
     '1.16.5','1.16.4','1.16.3','1.16.2','1.16.1',
-    '1.15.2','1.15.1','1.15',
-    '1.14.4','1.14.3','1.14.2','1.14.1','1.14',
-    '1.13.2','1.13.1','1.13',
-    '1.12.2','1.12.1','1.12',
+    '1.15.2','1.15.1','1.15','1.14.4','1.14.3','1.14.2','1.14.1','1.14',
+    '1.13.2','1.13.1','1.13','1.12.2','1.12.1','1.12',
     '1.11.2','1.11','1.10.2','1.9.4','1.8.8',
   ],
   purpur: [
+    '26.1.2','26.1.1','26.1.0','26.0.3','26.0.2','26.0.1',
     '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
-    '1.19.4','1.19.3','1.19.2','1.19',
-    '1.18.2','1.18.1','1.18',
-    '1.17.1','1.17',
-    '1.16.5','1.16.4',
+    '1.19.4','1.19.3','1.19.2','1.19','1.18.2','1.18.1','1.18',
+    '1.17.1','1.17','1.16.5','1.16.4',
   ],
   fabric: [
+    '26.1.2','26.1.1','26.1.0',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
-    '1.19.4','1.19.3','1.19.2','1.19',
-    '1.18.2','1.18.1','1.18',
-    '1.17.1','1.17',
-    '1.16.5','1.16.4','1.16.3','1.16.2','1.16.1',
-    '1.15.2','1.15','1.14.4','1.14','1.13.2',
+    '1.19.4','1.19.3','1.19.2','1.19','1.18.2','1.18.1','1.18',
+    '1.17.1','1.17','1.16.5','1.16.4','1.16.3','1.16.1',
+    '1.15.2','1.15','1.14.4','1.13.2',
   ],
   bedrock: [
-    '1.21.60','1.21.51','1.21.50','1.21.44','1.21.43','1.21.41','1.21.40',
-    '1.21.31','1.21.30','1.21.23','1.21.22','1.21.21','1.21.20',
-    '1.21.3','1.21.2','1.21.1','1.21.0',
-    '1.20.81','1.20.80','1.20.73','1.20.72','1.20.71','1.20.70',
-    '1.20.62','1.20.61','1.20.60','1.20.51','1.20.50',
+    '1.21.60','1.21.51','1.21.50','1.21.44','1.21.40',
+    '1.21.31','1.21.30','1.21.23','1.21.20',
+    '1.21.0','1.20.81','1.20.80','1.20.73','1.20.70',
+    '1.20.62','1.20.60','1.20.51','1.20.50',
   ],
   hybrid: [
+    '26.1.2','26.1.1','26.1.0',
     '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
-    '1.19.4','1.19.2','1.19',
-    '1.18.2','1.18',
+    '1.19.4','1.19.2','1.19','1.18.2','1.18',
   ],
   vanilla: [
+    '26.1.2','26.1.1','26.1.0','26.0.3','26.0.2','26.0.1','26.0.0',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
-    '1.19.4','1.19.3','1.19.2','1.19.1','1.19',
-    '1.18.2','1.18.1','1.18',
-    '1.17.1','1.17',
-    '1.16.5','1.16.4','1.16.3','1.16.2','1.16.1',
+    '1.19.4','1.19.3','1.19.2','1.19.1','1.19','1.18.2','1.18.1','1.18',
+    '1.17.1','1.17','1.16.5','1.16.4','1.16.3','1.16.2','1.16.1',
     '1.15.2','1.15','1.14.4','1.14','1.13.2','1.13',
     '1.12.2','1.12','1.11.2','1.11','1.10.2','1.9.4','1.9','1.8.9',
   ],
@@ -119,6 +113,29 @@ const STEPS = ['Tipo', 'Versão', 'Config', 'Plugins']
 
 interface Props { navigate: (p: Page) => void }
 
+function calcRecommendedRam(
+  totalMb: number,
+  gaming: boolean,
+  voice: boolean,
+  players: 'small'|'medium'|'large'|'huge'
+): number {
+  if (totalMb < 512) return 512
+  // OS + background overhead
+  let overhead = 1536
+  // If gaming MC on same PC: reserve 3GB for game + GPU
+  if (gaming) overhead += 3072
+  // Discord/Spotify: reserve 512MB
+  if (voice) overhead += 512
+  // Player count base requirement
+  const playerRam: Record<string, number> = { small: 512, medium: 1024, large: 2048, huge: 4096 }
+  const needed = overhead + playerRam[players]
+  const available = totalMb - needed
+  // Clamp to multiples of 512, min 512, max 75% of total
+  const maxAllowed = Math.floor(totalMb * 0.75 / 512) * 512
+  const clamped = Math.max(512, Math.min(maxAllowed, Math.round(available / 512) * 512))
+  return clamped
+}
+
 export default function CreateServerWizard({ navigate }: Props) {
   const { setServers, setSelected } = useServerStore()
   const [step, setStep] = useState(0)
@@ -137,6 +154,24 @@ export default function CreateServerWizard({ navigate }: Props) {
   const [showOptional, setShowOptional] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
+  const [systemRam, setSystemRam] = useState<number>(0) // total MB
+  const [gamingMode, setGamingMode] = useState(false)    // playing MC same PC
+  const [voiceApp, setVoiceApp] = useState(false)        // Discord/Spotify open
+  const [playerCount, setPlayerCount] = useState<'small'|'medium'|'large'|'huge'>('small')
+  const [manualRam, setManualRam] = useState(false)
+
+  // Fetch system RAM when entering step 2
+  useEffect(() => {
+    if (step === 2 && isElectron) {
+      window.electron.getSystemRam?.().then(({ totalMb }: { totalMb: number }) => {
+        setSystemRam(totalMb)
+        // Set smart default immediately
+        const rec = calcRecommendedRam(totalMb, false, false, 'small')
+        setRam(rec)
+      }).catch(() => {})
+    }
+  }, [step])
+
   // Focus name input after step animation completes (autoFocus breaks on Windows Electron)
   useEffect(() => {
     if (step === 2) {
@@ -145,6 +180,7 @@ export default function CreateServerWizard({ navigate }: Props) {
     }
   }, [step])
   const [showChunkyModal, setShowChunkyModal] = useState(false)
+  const [showPlayitModal, setShowPlayitModal] = useState(false)
   const [chunkyRadius, setChunkyRadius] = useState<number>(10)
   const [customRadius, setCustomRadius] = useState(10)
   const [chunkyPreset, setChunkyPreset] = useState<'small'|'medium'|'large'|'huge'|'custom'>('medium')
@@ -225,10 +261,13 @@ export default function CreateServerWizard({ navigate }: Props) {
     }
   }
 
+  const playitEnabled = !!plugins.find(p => p.name === 'PlayIt.gg')?.enabled
+
   const onClickCreate = () => {
     if (!name.trim()) return
-    // Only show Chunky modal for Java-based servers (not Bedrock)
-    if (type !== 'bedrock') {
+    if (type !== 'bedrock' && playitEnabled) {
+      setShowPlayitModal(true)
+    } else if (type !== 'bedrock') {
       setShowChunkyModal(true)
     } else {
       handleCreate(null)
@@ -375,18 +414,118 @@ export default function CreateServerWizard({ navigate }: Props) {
                     />
                   </Field>
 
-                  <Field label={`RAM — ${ram >= 1024 ? `${ram/1024}GB` : `${ram}MB`}`}>
-                    <div className="px-1 pt-1">
-                      <input
-                        type="range" min={512} max={8192} step={512} value={ram}
-                        onChange={e => setRam(Number(e.target.value))}
-                        className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-brand-400 bg-dark-600"
-                      />
-                      <div className="flex justify-between text-[10px] text-slate-700 mt-2 font-mono font-bold">
-                        <span>512MB</span><span>2GB</span><span>4GB</span><span>6GB</span><span>8GB</span>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 block">RAM do servidor</label>
+
+                    {/* System info chip */}
+                    {systemRam > 0 && (
+                      <div className="flex items-center gap-2 mb-3 text-[11px] text-slate-500">
+                        <span className="px-2 py-0.5 bg-dark-700 border border-dark-500 rounded-full font-mono font-bold text-slate-400">
+                          💻 {systemRam >= 1024 ? `${Math.round(systemRam/1024)}GB` : `${systemRam}MB`} no PC
+                        </span>
+                        <span className="text-slate-700">→ responda abaixo para calcular o ideal</span>
                       </div>
+                    )}
+
+                    {/* Smart questions */}
+                    <div className="space-y-2 mb-4">
+                      {/* Gaming toggle */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const ng = !gamingMode
+                          setGamingMode(ng)
+                          if (!manualRam && systemRam > 0) setRam(calcRecommendedRam(systemRam, ng, voiceApp, playerCount))
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-sm transition-all text-left
+                          ${gamingMode ? 'border-brand-400/30 bg-brand-400/[0.06]' : 'border-dark-600 bg-dark-800 hover:border-dark-500'}`}
+                      >
+                        <span className={gamingMode ? 'text-brand-300 font-medium' : 'text-slate-400'}>🎮 Vou jogar Minecraft no mesmo PC</span>
+                        <div className={`relative shrink-0 rounded-full transition-colors ${gamingMode ? 'bg-brand-500' : 'bg-dark-500'}`} style={{height: 18, width: 36}}>
+                          <div className={`absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-all ${gamingMode ? 'left-[18px]' : 'left-0.5'}`} />
+                        </div>
+                      </button>
+
+                      {/* Voice app toggle */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nv = !voiceApp
+                          setVoiceApp(nv)
+                          if (!manualRam && systemRam > 0) setRam(calcRecommendedRam(systemRam, gamingMode, nv, playerCount))
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-sm transition-all text-left
+                          ${voiceApp ? 'border-brand-400/30 bg-brand-400/[0.06]' : 'border-dark-600 bg-dark-800 hover:border-dark-500'}`}
+                      >
+                        <span className={voiceApp ? 'text-brand-300 font-medium' : 'text-slate-400'}>🎙️ Discord / Spotify abertos</span>
+                        <div className={`relative shrink-0 rounded-full transition-colors ${voiceApp ? 'bg-brand-500' : 'bg-dark-500'}`} style={{height: 18, width: 36}}>
+                          <div className={`absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-all ${voiceApp ? 'left-[18px]' : 'left-0.5'}`} />
+                        </div>
+                      </button>
+
+                      {/* Player count */}
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {([
+                          { id: 'small',  label: '2–5',   emoji: '👥' },
+                          { id: 'medium', label: '5–15',  emoji: '👥' },
+                          { id: 'large',  label: '15–30', emoji: '👥' },
+                          { id: 'huge',   label: '30+',   emoji: '🏟️' },
+                        ] as const).map(opt => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setPlayerCount(opt.id)
+                              if (!manualRam && systemRam > 0) setRam(calcRecommendedRam(systemRam, gamingMode, voiceApp, opt.id))
+                            }}
+                            className={`py-2 rounded-xl border text-xs font-bold transition-all
+                              ${playerCount === opt.id
+                                ? 'border-brand-400/40 bg-brand-400/[0.08] text-brand-300'
+                                : 'border-dark-600 bg-dark-800 text-slate-500 hover:border-dark-500'}`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-slate-700 px-0.5">Jogadores simultâneos esperados</p>
                     </div>
-                  </Field>
+
+                    {/* Recommendation + manual override */}
+                    <div className={`flex items-center justify-between px-4 py-3 rounded-xl border mb-2
+                      ${manualRam ? 'border-dark-500 bg-dark-800' : 'border-brand-400/25 bg-brand-400/[0.06]'}`}>
+                      <div>
+                        <p className="text-[11px] text-slate-600 font-medium">
+                          {manualRam ? 'Manual' : '✨ Recomendado'}
+                        </p>
+                        <p className={`text-lg font-black font-mono ${manualRam ? 'text-slate-300' : 'text-brand-300'}`}>
+                          {ram >= 1024 ? `${ram/1024}GB` : `${ram}MB`}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setManualRam(v => !v)}
+                        className="text-[11px] text-slate-600 hover:text-slate-400 underline transition-colors"
+                      >
+                        {manualRam ? 'Usar recomendado' : 'Ajustar manual'}
+                      </button>
+                    </div>
+
+                    {/* Manual slider (only when manualRam) */}
+                    {manualRam && (
+                      <div className="px-1">
+                        <input
+                          type="range" min={512} max={systemRam > 0 ? Math.floor(systemRam * 0.9 / 512) * 512 : 8192} step={512} value={ram}
+                          onChange={e => setRam(Number(e.target.value))}
+                          className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-brand-400 bg-dark-600"
+                        />
+                        <div className="flex justify-between text-[10px] text-slate-700 mt-1.5 font-mono font-bold">
+                          <span>512MB</span><span>2GB</span><span>4GB</span><span>6GB</span>
+                          {systemRam >= 8192 && <span>8GB</span>}
+                          {systemRam >= 16384 && <span>16GB</span>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   <Field label="Porta do servidor">
                     <input
@@ -627,6 +766,109 @@ export default function CreateServerWizard({ navigate }: Props) {
           </div>
         )}
       </div>
+
+      {/* PlayIt.gg Fullscreen Onboarding */}
+      <AnimatePresence>
+        {showPlayitModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 z-50 flex flex-col bg-[#0a0a0d]/95 backdrop-blur-xl"
+          >
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-violet-500/8 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-[400px] h-[300px] bg-brand-400/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative flex-1 flex flex-col items-center justify-center px-8 py-10 max-w-2xl mx-auto w-full">
+
+              <motion.div
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
+                className="w-20 h-20 rounded-3xl bg-violet-500/15 border border-violet-400/30 flex items-center justify-center mb-6 shadow-2xl shadow-violet-400/10"
+              >
+                <Globe size={36} className="text-violet-400" />
+              </motion.div>
+
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.15 }}
+                className="text-center mb-4"
+              >
+                <h2 className="text-3xl font-black text-white tracking-tight">Servidor público grátis</h2>
+                <p className="text-slate-400 text-sm mt-2 leading-relaxed max-w-md mx-auto">
+                  O <strong className="text-white">PlayIt.gg</strong> cria um túnel gratuito para o seu servidor.
+                  Amigos de qualquer lugar do mundo conectam com um endereço como{' '}
+                  <code className="font-mono text-violet-300 text-xs bg-violet-500/10 px-1.5 py-0.5 rounded">auto.playit.gg:25565</code>.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="w-full grid grid-cols-3 gap-3 mb-6"
+              >
+                {[
+                  { emoji: '🆓', title: 'Completamente grátis', desc: 'Sem limite de tempo ou dados' },
+                  { emoji: '🔒', title: 'Sem abrir portas', desc: 'Não precisa mexer no roteador' },
+                  { emoji: '🌍', title: 'Funciona no Windows', desc: 'Mac, Linux e VPS também' },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ y: 16, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 + i * 0.06 }}
+                    className="flex flex-col gap-1.5 p-3.5 bg-dark-800 border border-dark-600 rounded-2xl text-center"
+                  >
+                    <span className="text-2xl">{item.emoji}</span>
+                    <p className="text-xs font-bold text-slate-300">{item.title}</p>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">{item.desc}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.35 }}
+                className="w-full p-4 bg-violet-500/[0.06] border border-violet-400/20 rounded-2xl mb-6"
+              >
+                <p className="text-xs text-slate-400 leading-relaxed text-center">
+                  ⚡ Após criar o servidor, abra o console e execute <code className="font-mono text-violet-300 bg-violet-500/15 px-1.5 py-0.5 rounded text-[11px]">/playit</code> para vincular sua conta gratuita e ver o endereço do túnel.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="flex items-center gap-3 w-full"
+              >
+                <button
+                  onClick={() => { setShowPlayitModal(false); setShowChunkyModal(true) }}
+                  className="flex-[2] py-3 rounded-xl bg-violet-500 hover:bg-violet-400 text-white text-sm font-bold transition-all shadow-lg shadow-violet-500/20 flex items-center justify-center gap-2"
+                >
+                  <Globe size={15} /> Entendido, continuar
+                </button>
+                <button
+                  onClick={() => {
+                    // Disable PlayIt and continue
+                    setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: false } : p))
+                    setShowPlayitModal(false)
+                    setShowChunkyModal(true)
+                  }}
+                  className="flex-1 py-3 rounded-xl border border-dark-500 text-slate-400 hover:text-white hover:border-dark-400 text-sm font-semibold transition-colors"
+                >
+                  Remover PlayIt
+                </button>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Chunky Fullscreen Modal */}
       <AnimatePresence>

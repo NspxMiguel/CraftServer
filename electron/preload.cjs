@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('electron', {
   // Dependencies & system
   checkDependencies: () => ipcRenderer.invoke('check-dependencies'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  getSystemRam: () => ipcRenderer.invoke('get-system-ram'),
 
   on: (channel, cb) => {
     const allowed = ['server-log', 'server-stopped', 'create-progress', 'playit-address', 'playit-log', 'playit-stopped']

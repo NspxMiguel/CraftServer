@@ -32,8 +32,9 @@ declare global {
       getConfig: () => Promise<Record<string, string>>
       setConfig: (cfg: Record<string, string>) => Promise<{ ok: boolean }>
 
-      checkDependencies: () => Promise<{ java: { ok: boolean; version: string | null; cmd: string | null } }>
+      checkDependencies: () => Promise<{ java: { ok: boolean; java25: boolean; version: string | null; cmd: string | null } }>
       openExternal: (url: string) => Promise<void>
+      getSystemRam?: () => Promise<{ totalMb: number; freeMb: number }>
 
       on: (channel: string, cb: (data: any) => void) => void
       off: (channel: string, cb: (data: any) => void) => void

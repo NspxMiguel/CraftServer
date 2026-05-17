@@ -168,6 +168,8 @@ ipcMain.handle('remove-whitelist', (_, { serverId, name }) => {
 // ── Versions ──────────────────────────────────────────────────────────────────
 const FALLBACK_VERSIONS = {
   paper: [
+    '26.1.2','26.1.1','26.1.0',
+    '26.0.3','26.0.2','26.0.1','26.0.0',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19.1','1.19',
@@ -178,6 +180,7 @@ const FALLBACK_VERSIONS = {
     '1.11.2','1.11','1.10.2','1.9.4','1.8.8',
   ],
   purpur: [
+    '26.1.2','26.1.1','26.1.0','26.0.3','26.0.2','26.0.1',
     '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19','1.18.2','1.18.1','1.18',
@@ -197,11 +200,13 @@ const FALLBACK_VERSIONS = {
     '1.20.62','1.20.60','1.20.51','1.20.50',
   ],
   hybrid: [
+    '26.1.2','26.1.1','26.1.0',
     '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.2','1.19','1.18.2','1.18',
   ],
   vanilla: [
+    '26.1.2','26.1.1','26.1.0','26.0.3','26.0.2','26.0.1','26.0.0',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19.1','1.19','1.18.2','1.18.1','1.18',
@@ -468,7 +473,20 @@ ipcMain.handle('start-server', async (event, id) => {
   if (!server) return { ok: false, error: 'Servidor não encontrado' }
 
   const javaCmd = await findJava()
-  if (!javaCmd) return { ok: false, error: 'Java não encontrado. Instale Java 17+ em adoptium.net' }
+  if (!javaCmd) return { ok: false, error: 'Java não encontrado. Instale Java 21+ em adoptium.net' }
+
+  const minJava = requiredJavaVersion(server.version)
+  const javaVersionStr = await new Promise(res => {
+    execFile(javaCmd, ['-version'], (err, stdout, stderr) => {
+      const out = (stderr || stdout || '').trim()
+      const m = out.match(/version "([^"]+)"/)
+      res(m ? m[1] : '0')
+    })
+  })
+  const javaMajor = parseInt(javaVersionStr.split('.')[0]) || 0
+  if (javaMajor < minJava) {
+    return { ok: false, error: `Minecraft ${server.version} requer Java ${minJava}+. Versão atual: Java ${javaMajor}. Baixe em adoptium.net` }
+  }
 
   const ramArg = `${server.ram}M`
   const proc = spawn(javaCmd, [`-Xmx${ramArg}`, `-Xms${ramArg}`, '-jar', 'server.jar', 'nogui'], {
@@ -518,8 +536,9 @@ ipcMain.handle('check-dependencies', async () => {
   }
   const majorVersion = javaVersion ? parseInt(javaVersion.split('.')[0]) : 0
   const javaOk = javaCmd !== null && majorVersion >= 17
+  const java25Ok = javaCmd !== null && majorVersion >= 25
   return {
-    java: { ok: javaOk, version: javaVersion, cmd: javaCmd },
+    java: { ok: javaOk, java25: java25Ok, version: javaVersion, cmd: javaCmd },
   }
 })
 
@@ -530,8 +549,17 @@ async function findJava() {
     'java',
     '/usr/bin/java',
     '/usr/local/bin/java',
+    '/Library/Java/JavaVirtualMachines/jdk-25.jdk/Contents/Home/bin/java',
+    '/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home/bin/java',
+    '/Library/Java/JavaVirtualMachines/temurin-25.jdk/Contents/Home/bin/java',
+    '/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home/bin/java',
     process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin', 'java') : null,
     readConfig().javaPath || null,
+    // Windows paths
+    'C:\\Program Files\\Java\\jdk-25\\bin\\java.exe',
+    'C:\\Program Files\\Java\\jdk-21\\bin\\java.exe',
+    'C:\\Program Files\\Eclipse Adoptium\\jdk-25\\bin\\java.exe',
+    'C:\\Program Files\\Eclipse Adoptium\\jdk-21\\bin\\java.exe',
   ].filter(Boolean)
   for (const cmd of candidates) {
     try {
@@ -540,6 +568,15 @@ async function findJava() {
     } catch {}
   }
   return null
+}
+
+function requiredJavaVersion(mcVersion) {
+  if (!mcVersion) return 21
+  const major = parseFloat(mcVersion)
+  if (major >= 26) return 25       // MC 26.x requires Java 25
+  if (mcVersion >= '1.20.5') return 21  // MC 1.20.5+ requires Java 21
+  if (mcVersion >= '1.17') return 17    // MC 1.17+ requires Java 17
+  return 8
 }
 
 // ── Servers ───────────────────────────────────────────────────────────────────
@@ -732,6 +769,12 @@ ipcMain.handle('update-server', async (event, arg) => {
 // ── Config & misc ─────────────────────────────────────────────────────────────
 ipcMain.handle('get-config', () => readConfig())
 ipcMain.handle('set-config', (_, cfg) => { writeConfig({ ...readConfig(), ...cfg }); return { ok: true } })
+
+ipcMain.handle('get-system-ram', () => {
+  const totalMb = Math.floor(os.totalmem() / 1024 / 1024)
+  const freeMb  = Math.floor(os.freemem()  / 1024 / 1024)
+  return { totalMb, freeMb }
+})
 ipcMain.handle('open-server-folder', (_, serverId) => {
   const s = readServers().find(s => s.id === serverId)
   if (s) shell.openPath(s.dir)
