@@ -1,4 +1,4 @@
-# 🌿 CraftNest
+# 🌿 CraftServer
 
 > Crie, configure e gerencie servidores Minecraft com uma interface bonita — sem complicação.
 
