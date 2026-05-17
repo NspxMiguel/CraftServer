@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Save, ExternalLink, Info, Coffee } from 'lucide-react'
+import { Save, ExternalLink, Info, Coffee, Globe } from 'lucide-react'
+import { useT, setLang, getLang, type Lang } from '../../i18n'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
 export default function Settings() {
+  const t = useT()
   const [javaPath, setJavaPath] = useState('')
   const [saved, setSaved] = useState(false)
+  const [lang, setLangState] = useState<Lang>(getLang())
 
   useEffect(() => {
     if (!isElectron) return
@@ -21,41 +24,73 @@ export default function Settings() {
     setTimeout(() => setSaved(false), 2000)
   }
 
+  const handleLang = (l: Lang) => {
+    setLangState(l)
+    setLang(l)
+  }
+
   return (
     <div className="h-full p-6 max-w-xl mx-auto">
-      <h1 className="text-lg font-semibold text-white mb-6">Configurações</h1>
+      <h1 className="text-lg font-semibold text-white mb-6">{t.settingsTitle}</h1>
 
       <div className="space-y-4">
+        {/* Language */}
         <div className="p-4 bg-dark-800 border border-dark-700 rounded-xl">
-          <h2 className="text-sm font-medium text-white mb-3">Java</h2>
-          <label className="text-xs text-zinc-500 mb-1.5 block">Caminho do executável Java (deixe vazio para auto-detectar)</label>
+          <div className="flex items-center gap-2 mb-3">
+            <Globe size={14} className="text-slate-500" />
+            <h2 className="text-sm font-medium text-white">{t.languageSection}</h2>
+          </div>
+          <p className="text-xs text-zinc-500 mb-3">{t.languageLabel}</p>
+          <div className="flex gap-2">
+            {([
+              { lang: 'pt' as Lang, label: '🇧🇷 Português' },
+              { lang: 'en' as Lang, label: '🇺🇸 English' },
+            ]).map(({ lang: l, label }) => (
+              <button
+                key={l}
+                onClick={() => handleLang(l)}
+                className={`flex-1 py-2.5 rounded-xl border font-semibold text-sm transition-all
+                  ${lang === l
+                    ? 'bg-brand-500/15 border-brand-400/50 text-brand-300'
+                    : 'bg-dark-700 border-dark-600 text-slate-500 hover:border-dark-500 hover:text-slate-300'
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Java */}
+        <div className="p-4 bg-dark-800 border border-dark-700 rounded-xl">
+          <h2 className="text-sm font-medium text-white mb-3">{t.javaSection}</h2>
+          <label className="text-xs text-zinc-500 mb-1.5 block">{t.javaPathLabel}</label>
           <input
             value={javaPath}
             onChange={e => setJavaPath(e.target.value)}
-            placeholder="/usr/bin/java"
+            placeholder={t.javaPathPlaceholder}
             className="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-brand-500 font-mono"
           />
           <p className="text-xs text-zinc-600 mt-2 flex items-center gap-1">
             <Info size={11} />
-            Java 25 recomendado (Minecraft 26.x+). Java 21 para versões antigas.
+            {t.javaInfo}
           </p>
-          <a
-            href="https://adoptium.net/temurin/releases/?version=25"
-            target="_blank"
-            rel="noreferrer"
+          <button
+            onClick={() => isElectron && window.electron.openExternal('https://adoptium.net/temurin/releases/?version=25')}
             className="inline-flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300 mt-1 transition-colors"
           >
-            Baixar Java 25 (Adoptium) <ExternalLink size={10} />
-          </a>
+            {t.downloadJava} <ExternalLink size={10} />
+          </button>
         </div>
 
+        {/* About */}
         <div className="p-4 bg-dark-800 border border-dark-700 rounded-xl">
-          <h2 className="text-sm font-medium text-white mb-2">Sobre</h2>
+          <h2 className="text-sm font-medium text-white mb-2">{t.aboutSection}</h2>
           <div className="space-y-1 text-xs text-zinc-500">
             <p>CraftServer v0.1.0</p>
-            <p>Minecraft Server Manager para Mac e Windows</p>
+            <p>{t.aboutDesc}</p>
             <p className="flex items-center gap-1 mt-2 text-zinc-600">
-              <Coffee size={11} /> Feito com muito café
+              <Coffee size={11} /> {t.madeWithCoffee}
             </p>
           </div>
         </div>
@@ -65,7 +100,7 @@ export default function Settings() {
           className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-medium transition-colors"
         >
           <Save size={15} />
-          {saved ? 'Salvo!' : 'Salvar'}
+          {saved ? t.saved : t.save}
         </button>
       </div>
     </div>

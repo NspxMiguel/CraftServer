@@ -113,6 +113,8 @@ const STEPS = ['Tipo', 'Versão', 'Config', 'Plugins']
 
 interface Props { navigate: (p: Page) => void; quickSetup?: boolean; onCancelQuick?: () => void }
 
+type WizardMode = 'choose' | 'quick' | 'manual'
+
 // RAM reserved for the host machine (NOT given to the server)
 function calcOverhead(gaming: boolean, voice: boolean): number {
   let overhead = 1024          // OS baseline (1 GB)
@@ -149,6 +151,8 @@ function calcRecommendedRam(
 
 export default function CreateServerWizard({ navigate, quickSetup = false, onCancelQuick }: Props) {
   const { setServers, setSelected } = useServerStore()
+  // 'choose' = show mode selection; 'quick' = Quick Setup; 'manual' = step wizard
+  const [mode, setMode] = useState<WizardMode>(quickSetup ? 'quick' : 'choose')
   const [step, setStep] = useState(0)
   const [type, setType] = useState<ServerType>('paper')
   const [versions, setVersions] = useState<string[]>([])
@@ -323,8 +327,80 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
       <div className="absolute inset-0 bg-grid-dark bg-grid opacity-60 pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-brand-400/5 rounded-full blur-3xl pointer-events-none" />
 
+      {/* Mode Choice Screen */}
+      {mode === 'choose' && !showPlayitModal && !showChunkyModal && !creating && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center px-8 py-10 bg-[#08080e]/98 backdrop-blur-xl">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-brand-400/5 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative flex flex-col items-center max-w-md w-full">
+            <motion.div
+              initial={{ y: 14, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.05 }}
+              className="text-center mb-8"
+            >
+              <h2 className="text-3xl font-black text-white tracking-tight">Como deseja criar?</h2>
+              <p className="text-slate-500 text-sm mt-2">Escolha o modo de criação do seu servidor</p>
+            </motion.div>
+
+            <div className="flex flex-col gap-3 w-full">
+              {/* Quick Setup card */}
+              <motion.button
+                initial={{ y: 18, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                onClick={() => setMode('quick')}
+                className="group text-left p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-400/30 hover:border-amber-400/60 hover:bg-amber-500/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center">
+                    <Zap size={20} className="text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-white font-black text-base">⚡ Configuração Rápida</p>
+                    <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">Recomendado</span>
+                  </div>
+                </div>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  A gente configura tudo automaticamente — Paper, última versão, plugins recomendados e RAM ideal. Só diga o nome!
+                </p>
+              </motion.button>
+
+              {/* Manual card */}
+              <motion.button
+                initial={{ y: 18, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.16 }}
+                onClick={() => setMode('manual')}
+                className="group text-left p-5 rounded-2xl bg-dark-800 border-2 border-dark-600 hover:border-brand-500/40 hover:bg-dark-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-dark-700 border border-dark-600 flex items-center justify-center">
+                    <Server size={18} className="text-slate-400" />
+                  </div>
+                  <p className="text-white font-black text-base">⚙️ Configurar Manualmente</p>
+                </div>
+                <p className="text-slate-500 text-sm leading-relaxed">
+                  Escolha o tipo de servidor, versão, plugins e RAM no detalhe.
+                </p>
+              </motion.button>
+            </div>
+
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.25 }}
+              onClick={() => navigate('dashboard')}
+              className="mt-6 text-sm text-dark-400 hover:text-slate-400 transition-colors"
+            >
+              ← Voltar
+            </motion.button>
+          </div>
+        </div>
+      )}
+
       {/* Quick Setup Screen */}
-      {quickSetup && !showPlayitModal && !showChunkyModal && !creating && (
+      {mode === 'quick' && !showPlayitModal && !showChunkyModal && !creating && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center px-8 py-10 bg-[#08080e]/98 backdrop-blur-xl">
           {/* Glows */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-amber-400/8 rounded-full blur-3xl pointer-events-none" />
@@ -400,7 +476,7 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
                 Criar Agora →
               </button>
               <button
-                onClick={() => { onCancelQuick?.() }}
+                onClick={() => { setMode('choose'); onCancelQuick?.() }}
                 className="w-full text-sm text-slate-600 hover:text-slate-400 transition-colors py-2"
               >
                 Configurar manualmente
@@ -414,7 +490,7 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
-            onClick={() => navigate('dashboard')}
+            onClick={() => mode === 'manual' ? setMode('choose') : navigate('dashboard')}
             className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.05] transition-colors"
           >
             <ChevronLeft size={18} />

@@ -3,22 +3,24 @@ import { LayoutGrid, Plus, Puzzle, Settings, Flame } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Page } from '../../App'
 import { useServerStore } from '../../store/serverStore'
+import { useT } from '../../i18n'
 
 interface Props { page: Page; navigate: (p: Page) => void }
-
-const NAV = [
-  { id: 'dashboard', label: 'Servidores', icon: LayoutGrid },
-  { id: 'create',    label: 'Criar',      icon: Plus        },
-  { id: 'plugins',   label: 'Plugins',    icon: Puzzle      },
-] as const
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
 export default function TopBar({ page, navigate }: Props) {
+  const t = useT()
   const { runningIds, selectedId } = useServerStore()
   const running = runningIds.size
   const [isWindows, setIsWindows] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
+
+  const NAV = [
+    { id: 'dashboard', label: t.nav_servers, icon: LayoutGrid },
+    { id: 'create',    label: t.nav_create,  icon: Plus        },
+    { id: 'plugins',   label: t.nav_plugins, icon: Puzzle      },
+  ] as const
 
   useEffect(() => {
     if (!isElectron) return
@@ -50,6 +52,18 @@ export default function TopBar({ page, navigate }: Props) {
 
       {/* Divider */}
       <div className="h-5 w-px bg-dark-600 mr-4 shrink-0" />
+
+      {/* Windows drag hint — shown in the center of nav area so users know where to drag */}
+      {isWindows && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-[3px] opacity-[0.12] pointer-events-none select-none">
+          <div className="flex gap-[3px]">
+            {[0,1,2,3,4].map(i => <div key={i} className="w-[3px] h-[3px] rounded-full bg-slate-400" />)}
+          </div>
+          <div className="flex gap-[3px]">
+            {[0,1,2,3,4].map(i => <div key={i} className="w-[3px] h-[3px] rounded-full bg-slate-400" />)}
+          </div>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="no-drag flex items-center gap-0.5 flex-1">
@@ -101,7 +115,7 @@ export default function TopBar({ page, navigate }: Props) {
               ? 'bg-brand-500/15 border border-brand-500/25 text-brand-300'
               : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
             }`}
-          title="Configurações"
+          title={t.nav_settings}
         >
           <Settings size={15} strokeWidth={1.8} />
         </button>
@@ -113,7 +127,7 @@ export default function TopBar({ page, navigate }: Props) {
             <button
               onClick={() => winCtrl('minimize')}
               className="no-drag w-11 h-[52px] flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors"
-              title="Minimizar"
+              title={t.minimize}
             >
               <svg width="10" height="1" viewBox="0 0 10 1" fill="currentColor"><rect width="10" height="1"/></svg>
             </button>
@@ -121,7 +135,7 @@ export default function TopBar({ page, navigate }: Props) {
             <button
               onClick={() => winCtrl('maximize')}
               className="no-drag w-11 h-[52px] flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors"
-              title={isMaximized ? 'Restaurar' : 'Maximizar'}
+              title={isMaximized ? t.restore : t.maximize}
             >
               {isMaximized ? (
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
@@ -138,7 +152,7 @@ export default function TopBar({ page, navigate }: Props) {
             <button
               onClick={() => winCtrl('close')}
               className="no-drag w-11 h-[52px] flex items-center justify-center text-slate-500 hover:text-white hover:bg-red-600 transition-colors"
-              title="Fechar"
+              title={t.close}
             >
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2">
                 <line x1="0" y1="0" x2="10" y2="10"/>

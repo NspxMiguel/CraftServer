@@ -7,7 +7,9 @@ import ServerDetail from './components/server/ServerDetail'
 import PluginBrowser from './components/plugins/PluginBrowser'
 import Settings from './components/settings/Settings'
 import DependencyGate from './components/DependencyGate'
+import FirstLaunchLang from './components/FirstLaunchLang'
 import { useServerStore } from './store/serverStore'
+import { useIsLangSet } from './i18n'
 
 export type Page = 'dashboard' | 'create' | 'server' | 'plugins' | 'settings'
 
@@ -17,6 +19,7 @@ export default function App() {
   const [page, setPage] = useState<Page>('dashboard')
   const [quickSetup, setQuickSetup] = useState(false)
   const { setServers, setRunning, selectedId } = useServerStore()
+  const langSet = useIsLangSet()
 
   useEffect(() => {
     if (!isElectron) return
@@ -27,6 +30,11 @@ export default function App() {
   const navigate = (p: Page) => { setPage(p); if (p !== 'create') setQuickSetup(false) }
   const handleQuickSetup = () => { setQuickSetup(true); setPage('create') }
   const handleCancelQuick = () => setQuickSetup(false)
+
+  // Show language selection on first launch (before anything else)
+  if (!langSet) {
+    return <FirstLaunchLang onDone={() => {}} />
+  }
 
   return (
     <DependencyGate>

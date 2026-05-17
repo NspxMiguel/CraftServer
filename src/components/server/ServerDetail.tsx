@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Play, Square, FolderOpen, Wifi, WifiOff, Puzzle,
   RefreshCw, ChevronLeft, Copy, Check, AlertTriangle,
-  Server, Terminal, Settings, Shield, Circle
+  Server, Terminal, Settings, Shield, Circle, Loader2
 } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
 import ServerSettings from './ServerSettings'
 import WhitelistManager from './WhitelistManager'
+import { useT } from '../../i18n'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
@@ -17,6 +18,7 @@ type Tab = 'console' | 'settings' | 'whitelist'
 interface Props { navigate: (p: Page) => void }
 
 export default function ServerDetail({ navigate }: Props) {
+  const t = useT()
   const { servers, runningIds, selectedId, markRunning, markStopped, updateServer } = useServerStore()
   const server = servers.find(s => s.id === selectedId)
   const running = selectedId ? runningIds.has(selectedId) : false
@@ -26,6 +28,7 @@ export default function ServerDetail({ navigate }: Props) {
   const [tab, setTab] = useState<Tab>('console')
   const [playitAddr, setPlayitAddr] = useState('')
   const [playitRunning, setPlayitRunning] = useState(false)
+  const [playitLoading, setPlayitLoading] = useState(false)
   const [updateAvail, setUpdateAvail] = useState<{ latestVersion: string } | null>(null)
   const [updating, setUpdating] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -37,6 +40,7 @@ export default function ServerDetail({ navigate }: Props) {
     setLogs([])
     setPlayitAddr('')
     setPlayitRunning(false)
+    setPlayitLoading(false)
     setJavaError(false)
     setUpdateAvail(null)
 
@@ -50,7 +54,7 @@ export default function ServerDetail({ navigate }: Props) {
       setLogs(l => [...l.slice(-800), { text, type }])
     })
     window.electron.on('server-stopped', ({ id }: any) => {
-      if (id === selectedId) { markStopped(id); addLog('── Servidor parado ──', 'warn') }
+      if (id === selectedId) { markStopped(id); addLog(t.serverStopped, 'warn') }
     })
     window.electron.on('playit-address', ({ serverId, address }: any) => {
       if (serverId === selectedId) setPlayitAddr(address)
@@ -72,15 +76,15 @@ export default function ServerDetail({ navigate }: Props) {
 
   const handleStart = async () => {
     if (!isElectron) return
-    addLog('── Iniciando servidor... ──')
+    addLog(t.serverStarting)
     const res = await window.electron.startServer(server.id)
     if (res.ok) markRunning(server.id)
-    else { addLog(`Erro: ${res.error}`, 'error'); if (res.error?.includes('Java')) setJavaError(true) }
+    else { addLog(`${t.error}: ${res.error}`, 'error'); if (res.error?.includes('Java')) setJavaError(true) }
   }
 
   const handleStop = async () => {
     if (!isElectron) return
-    addLog('── Enviando stop... ──', 'warn')
+    addLog(t.sendingStop, 'warn')
     await window.electron.stopServer(server.id)
   }
 
@@ -93,12 +97,29 @@ export default function ServerDetail({ navigate }: Props) {
   }
 
   const handlePlayit = async () => {
-    if (!isElectron) return
+    if (!isElectron || playitLoading) return
     const enable = !playitRunning
-    setPlayitRunning(enable)
-    if (!enable) setPlayitAddr('')
-    const res = await window.electron.togglePlayit(server.id, enable)
-    if (!res.ok && enable) setPlayitRunning(false)
+    if (!enable) {
+      setPlayitRunning(false)
+      setPlayitAddr('')
+      window.electron.togglePlayit(server.id, false)
+      return
+    }
+    setPlayitLoading(true)
+    addLog('── Iniciando playit.gg... ──')
+    // Listen to download progress
+    const onProgress = ({ msg }: any) => addLog(`[playit] ${msg}`)
+    window.electron.on('create-progress', onProgress)
+    const res = await window.electron.togglePlayit(server.id, true)
+    window.electron.off('create-progress', onProgress)
+    if (!res.ok) {
+      addLog('Erro ao iniciar playit.gg — verifique sua conexão', 'error')
+      setPlayitLoading(false)
+      return
+    }
+    setPlayitRunning(true)
+    setPlayitLoading(false)
+    addLog('── playit.gg conectado — aguardando endereço... ──')
   }
 
   const handleUpdate = async () => {
@@ -119,9 +140,9 @@ export default function ServerDetail({ navigate }: Props) {
   }
 
   const TABS: { id: Tab; icon: React.ReactNode; label: string }[] = [
-    { id: 'console',   icon: <Terminal size={13} />,  label: 'Console'    },
-    { id: 'settings',  icon: <Settings size={13} />,  label: 'Config'     },
-    { id: 'whitelist', icon: <Shield size={13} />,    label: 'Whitelist'  },
+    { id: 'console',   icon: <Terminal size={13} />,  label: t.console    },
+    { id: 'settings',  icon: <Settings size={13} />,  label: t.settings   },
+    { id: 'whitelist', icon: <Shield size={13} />,    label: t.whitelist  },
   ]
 
   return (
@@ -164,14 +185,20 @@ export default function ServerDetail({ navigate }: Props) {
 
           <button
             onClick={handlePlayit}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors
+            disabled={playitLoading}
+            title={playitRunning ? 'Desconectar playit.gg' : 'Conectar via playit.gg (túnel gratuito)'}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all
               ${playitRunning
                 ? 'bg-brand-500/15 border-brand-500/30 text-brand-300'
-                : 'bg-dark-700 border-dark-600 text-slate-500 hover:text-white hover:border-dark-500'
+                : playitLoading
+                  ? 'bg-dark-700 border-brand-500/30 text-brand-400 cursor-wait'
+                  : 'bg-dark-700 border-dark-600 text-slate-500 hover:text-white hover:border-dark-500'
               }`}
           >
-            {playitRunning ? <Wifi size={12} /> : <WifiOff size={12} />}
-            playit.gg
+            {playitLoading
+              ? <Loader2 size={12} className="animate-spin" />
+              : playitRunning ? <Wifi size={12} /> : <WifiOff size={12} />}
+            {playitLoading ? 'Instalando...' : playitRunning ? 'Desconectar' : 'playit.gg'}
           </button>
 
           <button onClick={() => isElectron && window.electron.openServerFolder(server.id)}
@@ -186,12 +213,12 @@ export default function ServerDetail({ navigate }: Props) {
           {running ? (
             <button onClick={handleStop}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-colors">
-              <Square size={11} strokeWidth={3} /> Parar
+              <Square size={11} strokeWidth={3} /> {t.stop}
             </button>
           ) : (
             <button onClick={handleStart}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-500 hover:bg-brand-400 text-white rounded-lg text-xs font-bold transition-all shadow-md shadow-brand-500/20">
-              <Play size={11} strokeWidth={3} /> Iniciar
+              <Play size={11} strokeWidth={3} /> {t.start}
             </button>
           )}
         </div>
@@ -251,7 +278,7 @@ export default function ServerDetail({ navigate }: Props) {
             <motion.div key="console" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col">
               {/* Console toolbar */}
               <div className="flex items-center justify-between px-4 py-1.5 border-b border-dark-700 bg-dark-900/80">
-                <span className="text-[10px] text-slate-700 font-mono">{logs.length} linhas</span>
+                <span className="text-[10px] text-slate-700 font-mono">{logs.length} {t.consoleLines}</span>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => {
@@ -265,14 +292,14 @@ export default function ServerDetail({ navigate }: Props) {
                     title="Copiar todos os logs (Ctrl+A depois Ctrl+C também funciona)"
                   >
                     {copied ? <Check size={10} className="text-brand-400" /> : <Copy size={10} />}
-                    {copied ? 'Copiado!' : 'Copiar tudo'}
+                    {copied ? t.copied : t.copyAll}
                   </button>
                   <button
                     onClick={() => setLogs([])}
                     disabled={logs.length === 0}
                     className="px-2.5 py-1 rounded-md text-[10px] font-semibold text-slate-700 hover:text-slate-400 hover:bg-white/[0.04] transition-colors disabled:opacity-30"
                   >
-                    Limpar
+                    {t.clear}
                   </button>
                 </div>
               </div>
@@ -281,7 +308,7 @@ export default function ServerDetail({ navigate }: Props) {
               <div className="flex-1 overflow-auto p-5 font-mono text-xs leading-5 bg-dark-950 select-text cursor-text">
                 {logs.length === 0 ? (
                   <div className="flex items-center gap-2 text-slate-700 mt-2 select-none">
-                    <Circle size={5} />Aguardando início do servidor...
+                    <Circle size={5} />{t.noLogs}
                   </div>
                 ) : (
                   logs.map((log, i) => (

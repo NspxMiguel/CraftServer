@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Plus, Server, Play, Square, FolderOpen, Trash2, Wifi, Puzzle, Globe, Layers, Cpu, Pickaxe, Zap } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
+import { useT } from '../../i18n'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
@@ -17,7 +18,8 @@ const TYPE_META: Record<string, { label: string; color: string; border: string; 
 
 interface Props { navigate: (p: Page) => void; onQuickSetup: () => void }
 
-export default function Dashboard({ navigate, onQuickSetup }: Props) {
+export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Props) {
+  const t = useT()
   const { servers, runningIds, setServers, setSelected, markRunning, markStopped, removeServer } = useServerStore()
 
   useEffect(() => {
@@ -41,7 +43,10 @@ export default function Dashboard({ navigate, onQuickSetup }: Props) {
 
   const del = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
-    if (!confirm('Deletar este servidor? Todos os arquivos serão removidos permanentemente.')) return
+    const confirmMsg = t === undefined
+      ? 'Deletar este servidor? Todos os arquivos serão removidos permanentemente.'
+      : 'Deletar este servidor? Todos os arquivos serão removidos permanentemente.'
+    if (!confirm(confirmMsg)) return
     if (isElectron) await window.electron.deleteServer(id)
     removeServer(id)
   }
@@ -61,29 +66,20 @@ export default function Dashboard({ navigate, onQuickSetup }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-8 pt-8 pb-5">
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Meus Servidores</h1>
+            <h1 className="text-xl font-bold text-white tracking-tight">{t.myServers}</h1>
             <p className="text-sm text-slate-500 mt-0.5">
               {servers.length === 0
-                ? 'Nenhum servidor criado ainda'
-                : `${servers.length} servidor${servers.length !== 1 ? 'es' : ''} · ${runningIds.size} online`}
+                ? t.noServers
+                : `${servers.length} ${servers.length !== 1 ? t.serversCount_many : t.serversCount_one} · ${runningIds.size} ${t.online}`}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onQuickSetup}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/30 text-amber-300 rounded-xl text-sm font-bold transition-all hover:scale-[1.03] active:scale-[0.98]"
-            >
-              <Zap size={14} strokeWidth={2.5} />
-              Configuração Rápida
-            </button>
-            <button
-              onClick={() => navigate('create')}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-400/35 hover:scale-[1.03] active:scale-[0.98]"
-            >
-              <Plus size={15} strokeWidth={2.5} />
-              Novo servidor
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('create')}
+            className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-400/35 hover:scale-[1.03] active:scale-[0.98]"
+          >
+            <Plus size={15} strokeWidth={2.5} />
+            {t.newServer}
+          </button>
         </div>
 
         {/* Empty state */}
@@ -98,24 +94,16 @@ export default function Dashboard({ navigate, onQuickSetup }: Props) {
               </div>
             </div>
             <div className="text-center">
-              <p className="text-slate-200 font-bold">Nenhum servidor ainda</p>
-              <p className="text-slate-600 text-sm mt-1.5 max-w-xs">Crie um servidor Java, Bedrock ou híbrido e comece a jogar em minutos</p>
+              <p className="text-slate-200 font-bold">{t.noServersYet}</p>
+              <p className="text-slate-600 text-sm mt-1.5 max-w-xs">{t.noServersDesc}</p>
             </div>
-            <div className="flex flex-col items-center gap-2.5">
-              <button
-                onClick={onQuickSetup}
-                className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-amber-500/30 hover:scale-[1.03]"
-              >
-                <Zap size={15} strokeWidth={2.5} />
-                ⚡ Configuração Rápida
-              </button>
-              <button
-                onClick={() => navigate('create')}
-                className="text-sm text-slate-600 hover:text-slate-400 transition-colors underline"
-              >
-                Criar meu primeiro servidor
-              </button>
-            </div>
+            <button
+              onClick={() => navigate('create')}
+              className="flex items-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-500/30 hover:scale-[1.03]"
+            >
+              <Plus size={15} strokeWidth={2.5} />
+              {t.firstServer}
+            </button>
           </div>
         )}
 
@@ -179,23 +167,23 @@ export default function Dashboard({ navigate, onQuickSetup }: Props) {
                             onClick={e => stop(e, server.id)}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/18 border border-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-colors"
                           >
-                            <Square size={9} strokeWidth={3} /> Parar
+                            <Square size={9} strokeWidth={3} /> {t.stop}
                           </button>
                         ) : (
                           <button
                             onClick={e => start(e, server.id)}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 bg-brand-500/12 hover:bg-brand-500/22 border border-brand-500/25 text-brand-300 rounded-lg text-xs font-bold transition-colors"
                           >
-                            <Play size={9} strokeWidth={3} /> Iniciar
+                            <Play size={9} strokeWidth={3} /> {t.start}
                           </button>
                         )}
-                        <button onClick={e => plugins(e, server.id)} className="p-1.5 text-dark-400 hover:text-slate-300 hover:bg-white/[0.04] rounded-lg transition-colors" title="Plugins">
+                        <button onClick={e => plugins(e, server.id)} className="p-1.5 text-dark-400 hover:text-slate-300 hover:bg-white/[0.04] rounded-lg transition-colors" title={t.pluginsBtn}>
                           <Puzzle size={12} />
                         </button>
-                        <button onClick={e => folder(e, server.id)} className="p-1.5 text-dark-400 hover:text-slate-300 hover:bg-white/[0.04] rounded-lg transition-colors" title="Pasta">
+                        <button onClick={e => folder(e, server.id)} className="p-1.5 text-dark-400 hover:text-slate-300 hover:bg-white/[0.04] rounded-lg transition-colors" title={t.folder}>
                           <FolderOpen size={12} />
                         </button>
-                        <button onClick={e => del(e, server.id)} className="p-1.5 text-dark-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ml-auto" title="Deletar">
+                        <button onClick={e => del(e, server.id)} className="p-1.5 text-dark-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors ml-auto" title={t.delete}>
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -215,7 +203,7 @@ export default function Dashboard({ navigate, onQuickSetup }: Props) {
                 <div className="w-9 h-9 rounded-xl border-2 border-dashed border-current flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                   <Plus size={16} />
                 </div>
-                <span className="text-xs font-bold">Novo servidor</span>
+                <span className="text-xs font-bold">{t.newServer}</span>
               </motion.button>
             </div>
           </div>

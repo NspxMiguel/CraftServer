@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Download, CheckCircle2, XCircle, RefreshCw, Flame, Coffee } from 'lucide-react'
+import { useT } from '../i18n'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
@@ -11,6 +12,7 @@ interface DepState {
 interface Props { children: React.ReactNode }
 
 export default function DependencyGate({ children }: Props) {
+  const t = useT()
   const [state, setState] = useState<'checking' | 'ok' | 'missing'>('checking')
   const [deps, setDeps] = useState<DepState | null>(null)
   const [rechecking, setRechecking] = useState(false)
@@ -55,15 +57,15 @@ export default function DependencyGate({ children }: Props) {
         {state === 'checking' && (
           <div className="text-center space-y-3">
             <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-slate-400 text-sm">Verificando dependências...</p>
+            <p className="text-slate-400 text-sm">{t.checkingDeps}</p>
           </div>
         )}
 
         {state === 'missing' && (
           <div className="space-y-4">
             <div className="text-center mb-6">
-              <p className="text-white font-bold text-lg">Dependências necessárias</p>
-              <p className="text-slate-500 text-sm mt-1">Instale os itens abaixo para usar o CraftServer</p>
+              <p className="text-white font-bold text-lg">{t.missingDeps}</p>
+              <p className="text-slate-500 text-sm mt-1">{t.missingDepsDesc}</p>
             </div>
 
             {/* Java card */}
@@ -79,12 +81,12 @@ export default function DependencyGate({ children }: Props) {
                       <XCircle size={18} className="text-red-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-bold text-sm">Java 25</p>
+                      <p className="text-white font-bold text-sm">{t.javaRequired}</p>
                       <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">
-                        Necessário para executar servidores Minecraft. Minecraft 26.x+ requer Java 25.
+                        {t.javaRequiredDesc}
                       </p>
                       <p className="text-red-400/70 text-[11px] font-mono mt-1.5">
-                        {deps.java.version ? `Versão instalada: ${deps.java.version} (muito antiga)` : 'Java não encontrado no sistema'}
+                        {deps.java.version ? `${t.javaOld}: ${deps.java.version} ${t.javaTooOld}` : t.javaNotFound}
                       </p>
                     </div>
                   </div>
@@ -93,7 +95,7 @@ export default function DependencyGate({ children }: Props) {
                     className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-brand-500/20 hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Download size={14} />
-                    Clique aqui para instalar o Java 25
+                    {t.javaInstallBtn}
                   </button>
                 </motion.div>
               )}
@@ -107,7 +109,7 @@ export default function DependencyGate({ children }: Props) {
                   <CheckCircle2 size={18} className="text-green-400 shrink-0" />
                   <div>
                     <p className="text-white font-bold text-sm">Java {deps.java.version}</p>
-                    <p className="text-slate-600 text-xs">Instalado e pronto</p>
+                    <p className="text-slate-600 text-xs">{t.javaInstalled}</p>
                   </div>
                 </motion.div>
               )}
@@ -120,12 +122,12 @@ export default function DependencyGate({ children }: Props) {
               className="w-full flex items-center justify-center gap-2 py-3 bg-dark-700 hover:bg-dark-600 border border-brand-500/30 hover:border-brand-500/60 text-slate-300 hover:text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
             >
               <RefreshCw size={14} className={rechecking ? 'animate-spin text-brand-400' : 'text-brand-400'} />
-              {rechecking ? 'Verificando...' : 'Já instalei o Java — verificar agora'}
+              {rechecking ? t.rechecking : t.recheckBtn}
             </button>
 
             <p className="text-center text-xs text-dark-400 flex items-center justify-center gap-1.5">
               <Coffee size={11} />
-              Instale e clique no botão acima — não precisa reiniciar o app
+              {t.recheckNote}
             </p>
           </div>
         )}
