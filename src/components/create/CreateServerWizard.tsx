@@ -276,12 +276,10 @@ export default function CreateServerWizard({ navigate }: Props) {
 
   const onClickCreate = () => {
     if (!name.trim()) return
-    if (type !== 'bedrock' && playitEnabled) {
-      setShowPlayitModal(true)
-    } else if (type !== 'bedrock') {
-      setShowChunkyModal(true)
+    if (type === 'bedrock') {
+      handleCreate(null)       // bedrock: straight to create (no PlayIt/Chunky)
     } else {
-      handleCreate(null)
+      setShowPlayitModal(true) // always ask about PlayIt for Java/Fabric/etc
     }
   }
 
@@ -898,10 +896,14 @@ export default function CreateServerWizard({ navigate }: Props) {
                 className="flex items-center gap-3 w-full"
               >
                 <button
-                  onClick={() => { setShowPlayitModal(false); setShowChunkyModal(true) }}
+                  onClick={() => {
+                    setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: true } : p))
+                    setShowPlayitModal(false)
+                    setShowChunkyModal(true)
+                  }}
                   className="flex-[2] py-3.5 rounded-xl bg-violet-500 hover:bg-violet-400 active:bg-violet-600 text-white text-sm font-bold transition-all shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2"
                 >
-                  <Globe size={15} /> Quero usar o PlayIt.gg
+                  <Globe size={15} /> Sim, quero jogar online!
                 </button>
                 <button
                   onClick={() => {

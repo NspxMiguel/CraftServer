@@ -867,19 +867,35 @@ ipcMain.handle('open-server-folder', (_, serverId) => {
 })
 
 // ── Window ────────────────────────────────────────────────────────────────────
+let mainWindow = null
+
+ipcMain.handle('window-control', (_, action) => {
+  if (!mainWindow) return
+  if (action === 'minimize') mainWindow.minimize()
+  else if (action === 'maximize') mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize()
+  else if (action === 'close') mainWindow.close()
+})
+ipcMain.handle('window-is-maximized', () => mainWindow?.isMaximized() ?? false)
+ipcMain.handle('get-platform', () => process.platform)
+
 function createWindow() {
-  const win = new BrowserWindow({
+  const isMac = process.platform === 'darwin'
+  mainWindow = new BrowserWindow({
     width: 1200, height: 780, minWidth: 900, minHeight: 620,
-    titleBarStyle: 'hiddenInset',
+    // hiddenInset is macOS-only — on Windows use 'hidden' so the drag-region CSS handles dragging
+    titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
     backgroundColor: '#100f0c',
+    show: false, // prevent black flash while renderer loads
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
     },
   })
-  if (isDev) { win.loadURL('http://localhost:5173'); win.webContents.openDevTools() }
-  else win.loadFile(path.join(__dirname, '../dist/index.html'))
+  // Show only when the page is fully ready — eliminates black/white flash on Windows
+  mainWindow.once('ready-to-show', () => mainWindow.show())
+  if (isDev) { mainWindow.loadURL('http://localhost:5173'); mainWindow.webContents.openDevTools() }
+  else mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
 }
 
 app.whenReady().then(() => {

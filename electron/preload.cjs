@@ -42,6 +42,9 @@ contextBridge.exposeInMainWorld('electron', {
   checkDependencies: () => ipcRenderer.invoke('check-dependencies'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   getSystemRam: () => ipcRenderer.invoke('get-system-ram'),
+  getPlatform: () => ipcRenderer.invoke('get-platform'),
+  windowControl: (action) => ipcRenderer.invoke('window-control', action),
+  windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
 
   on: (channel, cb) => {
     const allowed = ['server-log', 'server-stopped', 'create-progress', 'playit-address', 'playit-log', 'playit-stopped']

@@ -36,6 +36,9 @@ declare global {
       checkDependencies: () => Promise<{ java: { ok: boolean; java25: boolean; version: string | null; cmd: string | null } }>
       openExternal: (url: string) => Promise<void>
       getSystemRam?: () => Promise<{ totalMb: number; freeMb: number }>
+      getPlatform?: () => Promise<string>
+      windowControl?: (action: 'minimize' | 'maximize' | 'close') => Promise<void>
+      windowIsMaximized?: () => Promise<boolean>
 
       on: (channel: string, cb: (data: any) => void) => void
       off: (channel: string, cb: (data: any) => void) => void

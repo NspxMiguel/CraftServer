@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { LayoutGrid, Plus, Puzzle, Settings, Flame } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Page } from '../../App'
@@ -11,9 +12,27 @@ const NAV = [
   { id: 'plugins',   label: 'Plugins',    icon: Puzzle      },
 ] as const
 
+const isElectron = typeof window !== 'undefined' && !!window.electron
+
 export default function TopBar({ page, navigate }: Props) {
   const { runningIds, selectedId } = useServerStore()
   const running = runningIds.size
+  const [isWindows, setIsWindows] = useState(false)
+  const [isMaximized, setIsMaximized] = useState(false)
+
+  useEffect(() => {
+    if (!isElectron) return
+    window.electron.getPlatform?.().then(p => setIsWindows(p === 'win32'))
+    window.electron.windowIsMaximized?.().then(setIsMaximized)
+  }, [])
+
+  const winCtrl = async (action: 'minimize' | 'maximize' | 'close') => {
+    if (!isElectron) return
+    await window.electron.windowControl?.(action)
+    if (action === 'maximize') {
+      window.electron.windowIsMaximized?.().then(setIsMaximized)
+    }
+  }
 
   return (
     <header className="drag-region shrink-0 flex items-center gap-0 px-4 border-b border-dark-600 bg-dark-900 relative z-10" style={{ height: 52 }}>
@@ -86,6 +105,48 @@ export default function TopBar({ page, navigate }: Props) {
         >
           <Settings size={15} strokeWidth={1.8} />
         </button>
+
+        {/* Windows title bar controls — hidden on macOS (uses native traffic lights) */}
+        {isWindows && (
+          <div className="flex items-center ml-2 -mr-2">
+            {/* Minimize */}
+            <button
+              onClick={() => winCtrl('minimize')}
+              className="no-drag w-11 h-[52px] flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors"
+              title="Minimizar"
+            >
+              <svg width="10" height="1" viewBox="0 0 10 1" fill="currentColor"><rect width="10" height="1"/></svg>
+            </button>
+            {/* Maximize / Restore */}
+            <button
+              onClick={() => winCtrl('maximize')}
+              className="no-drag w-11 h-[52px] flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors"
+              title={isMaximized ? 'Restaurar' : 'Maximizar'}
+            >
+              {isMaximized ? (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+                  <rect x="2" y="0" width="8" height="8"/>
+                  <path d="M0 2v8h8"/>
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+                  <rect x="0" y="0" width="10" height="10"/>
+                </svg>
+              )}
+            </button>
+            {/* Close */}
+            <button
+              onClick={() => winCtrl('close')}
+              className="no-drag w-11 h-[52px] flex items-center justify-center text-slate-500 hover:text-white hover:bg-red-600 transition-colors"
+              title="Fechar"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2">
+                <line x1="0" y1="0" x2="10" y2="10"/>
+                <line x1="10" y1="0" x2="0" y2="10"/>
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </header>
   )
