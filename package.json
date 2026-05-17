@@ -1,5 +1,5 @@
 {
-  "name": "craftnest",
+  "name": "craftserver",
   "version": "0.1.0",
   "description": "Minecraft Server Manager — create, manage and share servers with ease",
   "type": "module",
@@ -40,8 +40,8 @@
     "wait-on": "^8.0.1"
   },
   "build": {
-    "appId": "com.craftnest.app",
-    "productName": "CraftNest",
+    "appId": "com.craftserver.app",
+    "productName": "CraftServer",
     "directories": {
       "output": "release"
     },
@@ -59,7 +59,7 @@
       ]
     },
     "dmg": {
-      "title": "CraftNest",
+      "title": "CraftServer",
       "background": null
     },
     "win": {

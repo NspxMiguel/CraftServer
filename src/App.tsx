@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import Sidebar from './components/layout/Sidebar'
+import TopBar from './components/layout/TopBar'
 import Dashboard from './components/dashboard/Dashboard'
 import CreateServerWizard from './components/create/CreateServerWizard'
 import ServerDetail from './components/server/ServerDetail'
@@ -25,8 +25,8 @@ export default function App() {
   const navigate = (p: Page) => setPage(p)
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-surface-900">
-      <Sidebar page={page} navigate={navigate} />
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-dark-900">
+      <TopBar page={page} navigate={navigate} />
 
       <main className="flex-1 overflow-hidden relative">
         <AnimatePresence mode="wait">
@@ -65,10 +65,10 @@ function PageWrap({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
       className="absolute inset-0 overflow-auto"
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.18 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.15 }}
     >
       {children}
     </motion.div>

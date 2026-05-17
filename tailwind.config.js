@@ -4,29 +4,30 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Diamond blue — completely different from LootFlow green
+        // Lava orange — furnace/crafting feel, nothing like LootFlow
         brand: {
-          50:  '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50:  '#fff7ed',
+          100: '#ffedd5',
+          200: '#fed7aa',
+          300: '#fdba74',
+          400: '#fb923c',
+          500: '#f97316',
+          600: '#ea580c',
+          700: '#c2410c',
+          800: '#9a3412',
+          900: '#7c2d12',
         },
-        // Deep navy dark surfaces
+        // Warm dark — cave/underground feel
         dark: {
-          950: '#05080f',
-          900: '#080d18',
-          800: '#0d1424',
-          700: '#111d33',
-          600: '#172440',
-          500: '#1e2e4a',
-          400: '#263859',
-          300: '#2f4268',
+          950: '#080807',
+          900: '#100f0c',
+          800: '#1a1916',
+          750: '#1f1e1a',
+          700: '#252320',
+          600: '#302e29',
+          500: '#3d3a34',
+          400: '#4b4841',
+          300: '#5a564f',
         },
       },
       fontFamily: {
@@ -34,7 +35,7 @@ export default {
         mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
       },
       backgroundImage: {
-        'grid-dark': 'linear-gradient(rgba(56,189,248,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.04) 1px, transparent 1px)',
+        'grid-dark': 'linear-gradient(rgba(251,146,60,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(251,146,60,0.035) 1px, transparent 1px)',
       },
       backgroundSize: {
         'grid': '48px 48px',
