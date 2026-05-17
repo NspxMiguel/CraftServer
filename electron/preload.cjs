@@ -37,6 +37,10 @@ contextBridge.exposeInMainWorld('electron', {
   getConfig: () => ipcRenderer.invoke('get-config'),
   setConfig: (cfg) => ipcRenderer.invoke('set-config', cfg),
 
+  // Dependencies & system
+  checkDependencies: () => ipcRenderer.invoke('check-dependencies'),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+
   on: (channel, cb) => {
     const allowed = ['server-log', 'server-stopped', 'create-progress', 'playit-address', 'playit-log', 'playit-stopped']
     if (allowed.includes(channel)) ipcRenderer.on(channel, (_e, d) => cb(d))

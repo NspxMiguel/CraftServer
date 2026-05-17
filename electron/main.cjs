@@ -352,6 +352,28 @@ ipcMain.handle('send-command', (_, { id, command }) => {
 
 ipcMain.handle('get-running-servers', () => Object.keys(serverProcesses))
 
+// ── Dependency check ─────────────────────────────────────────────────────────
+ipcMain.handle('check-dependencies', async () => {
+  const javaCmd = await findJava()
+  let javaVersion = null
+  if (javaCmd) {
+    javaVersion = await new Promise(res => {
+      execFile(javaCmd, ['-version'], (err, stdout, stderr) => {
+        const out = (stderr || stdout || '').trim()
+        const m = out.match(/version "([^"]+)"/)
+        res(m ? m[1] : 'instalado')
+      })
+    })
+  }
+  const majorVersion = javaVersion ? parseInt(javaVersion.split('.')[0]) : 0
+  const javaOk = javaCmd !== null && majorVersion >= 17
+  return {
+    java: { ok: javaOk, version: javaVersion, cmd: javaCmd },
+  }
+})
+
+ipcMain.handle('open-external', (_, url) => shell.openExternal(url))
+
 async function findJava() {
   const candidates = [
     'java',

@@ -6,6 +6,7 @@ import CreateServerWizard from './components/create/CreateServerWizard'
 import ServerDetail from './components/server/ServerDetail'
 import PluginBrowser from './components/plugins/PluginBrowser'
 import Settings from './components/settings/Settings'
+import DependencyGate from './components/DependencyGate'
 import { useServerStore } from './store/serverStore'
 
 export type Page = 'dashboard' | 'create' | 'server' | 'plugins' | 'settings'
@@ -25,6 +26,7 @@ export default function App() {
   const navigate = (p: Page) => setPage(p)
 
   return (
+    <DependencyGate>
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-dark-900">
       <TopBar page={page} navigate={navigate} />
 
@@ -58,6 +60,7 @@ export default function App() {
         </AnimatePresence>
       </main>
     </div>
+    </DependencyGate>
   )
 }
 
