@@ -87,6 +87,13 @@ export default function CreateServerWizard({ navigate }: Props) {
   const [creating, setCreating] = useState(false)
   const [progress, setProgress] = useState<string[]>([])
   const [done, setDone] = useState(false)
+  const [showOptional, setShowOptional] = useState(false)
+
+  // Derived plugin buckets (based on static flags, not stateful enabled)
+  const corePlugins    = plugins.filter(p => !p.silent && !p.offlineOnly && PRESET_PLUGINS.find(pp => pp.name === p.name)?.enabled)
+  const optionalPlugins = plugins.filter(p => !p.silent && !p.offlineOnly && !PRESET_PLUGINS.find(pp => pp.name === p.name)?.enabled)
+  const offlinePlugins  = plugins.filter(p => p.offlineOnly)
+  const silentPlugins   = plugins.filter(p => p.silent)
 
   const fetchVersions = (t: ServerType) => {
     setLoadingVersions(true)
@@ -112,20 +119,12 @@ export default function CreateServerWizard({ navigate }: Props) {
     })
   }, [])
 
-  // plugins locked-on when offline mode is active
-  const OFFLINE_REQUIRED = ['AuthMe Reloaded', 'SkinsRestorer']
-
-  const togglePlugin = (i: number) => {
-    if (offlineMode && OFFLINE_REQUIRED.includes(plugins[i].name)) return
-    setPlugins(ps => ps.map((p, idx) => idx === i ? { ...p, enabled: !p.enabled } : p))
+  const togglePlugin = (name: string) => {
+    setPlugins(ps => ps.map(p => p.name === name ? { ...p, enabled: !p.enabled } : p))
   }
 
   const handleOfflineToggle = (v: boolean) => {
     setOfflineMode(v)
-    if (v) {
-      // force-enable AuthMe + SkinsRestorer
-      setPlugins(ps => ps.map(p => OFFLINE_REQUIRED.includes(p.name) ? { ...p, enabled: true } : p))
-    }
   }
 
   const handleCreate = async () => {
@@ -134,7 +133,16 @@ export default function CreateServerWizard({ navigate }: Props) {
     setProgress([])
     setDone(false)
 
-    const selectedPlugins = plugins.filter(p => p.enabled).map(p => ({ name: p.name, url: p.url, filename: p.filename, modrinthSlug: p.modrinthSlug }))
+    const toInstall = [
+      // silent: always included
+      ...silentPlugins,
+      // offline-only: only if offline mode
+      ...(offlineMode ? offlinePlugins : []),
+      // core + optional: only if enabled
+      ...corePlugins.filter(p => p.enabled),
+      ...optionalPlugins.filter(p => p.enabled),
+    ]
+    const selectedPlugins = toInstall.map(p => ({ name: p.name, url: p.url, filename: p.filename, modrinthSlug: p.modrinthSlug }))
     const res = isElectron
       ? await window.electron.createServer({ name: name.trim(), type, version, ram, port, plugins: selectedPlugins, offlineMode })
       : { ok: true, server: { id: Date.now().toString(), name, type, version, ram, port, dir: '', createdAt: Date.now(), playit: false } }
@@ -389,56 +397,94 @@ export default function CreateServerWizard({ navigate }: Props) {
             {/* Step 3: Plugins */}
             {step === 3 && !creating && (
               <StepWrap key="plugins">
-                <h2 className="text-xl font-bold text-white mb-1.5">Plugins pré-configurados</h2>
-                <p className="text-sm text-slate-500 mb-5">Ative ou desative conforme precisar — tudo pode ser mudado depois</p>
-                {(type === 'bedrock') && (
+                <h2 className="text-xl font-bold text-white mb-1">Plugins pré-configurados</h2>
+                <p className="text-sm text-slate-500 mb-4">Desative o que não precisar — tudo pode ser mudado depois</p>
+
+                {type === 'bedrock' && (
                   <div className="flex items-start gap-2.5 p-3.5 bg-orange-400/5 border border-orange-400/20 rounded-xl mb-4">
                     <Shield size={13} className="text-orange-400 mt-0.5 shrink-0" />
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      Servidores Bedrock (PowerNukkit) usam plugins NukkitX, não Bukkit. Os plugins abaixo não são compatíveis com Bedrock puro.
+                      Servidores Bedrock (PowerNukkit) usam plugins NukkitX. Os plugins abaixo são para servidores Java.
                     </p>
                   </div>
                 )}
-                <div className="space-y-2">
-                  {plugins.map((p, i) => {
-                    const disabledByType = type === 'bedrock'
-                    const lockedByOffline = offlineMode && OFFLINE_REQUIRED.includes(p.name)
-                    const clickable = !disabledByType && !lockedByOffline
-                    return (
-                      <button
-                        key={p.name}
-                        onClick={() => clickable && togglePlugin(i)}
-                        disabled={disabledByType}
-                        className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all duration-150
-                          ${disabledByType ? 'opacity-40 cursor-not-allowed border-dark-500 bg-dark-800'
-                            : lockedByOffline
-                              ? 'border-amber-500/30 bg-amber-500/[0.06] cursor-default'
-                              : p.enabled
-                                ? 'border-brand-400/25 bg-brand-400/[0.05]'
-                                : 'border-dark-500 bg-dark-800 hover:border-dark-400'
-                          }`}
-                      >
-                        <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all shrink-0
-                          ${lockedByOffline ? 'bg-amber-500 border-amber-500'
-                            : p.enabled && !disabledByType ? 'bg-brand-500 border-brand-500' : 'border-dark-400'}`}>
-                          {lockedByOffline
-                            ? <Lock size={9} className="text-white" strokeWidth={3} />
-                            : p.enabled && !disabledByType && <Check size={11} className="text-white" strokeWidth={3} />
-                          }
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className={`text-sm font-bold ${lockedByOffline ? 'text-amber-300' : p.enabled && !disabledByType ? 'text-white' : 'text-slate-400'}`}>{p.name}</p>
-                            {lockedByOffline && (
-                              <span className="text-[9px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25 px-1.5 py-0.5 rounded-full">OFFLINE</span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-600 truncate mt-0.5">{p.description}</p>
-                        </div>
-                      </button>
-                    )
-                  })}
+
+                {/* Core plugins */}
+                <div className="space-y-1.5">
+                  {corePlugins.map(p => (
+                    <PluginRow
+                      key={p.name}
+                      plugin={p}
+                      disabled={type === 'bedrock'}
+                      onToggle={() => togglePlugin(p.name)}
+                    />
+                  ))}
                 </div>
+
+                {/* Offline-only plugins */}
+                <AnimatePresence>
+                  {offlineMode && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden mt-3"
+                    >
+                      <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <Lock size={9} /> Modo offline
+                      </p>
+                      <div className="space-y-1.5">
+                        {offlinePlugins.map(p => (
+                          <PluginRow key={p.name} plugin={{ ...p, enabled: true }} disabled={false} locked onToggle={() => {}} />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Silent plugins note */}
+                <div className="flex items-center gap-2 mt-3 px-1">
+                  <Zap size={11} className="text-brand-400 shrink-0" />
+                  <p className="text-[11px] text-slate-600">
+                    {silentPlugins.map(p => p.name).join(', ')} instalado{silentPlugins.length > 1 ? 's' : ''} automaticamente para melhorar a performance
+                  </p>
+                </div>
+
+                {/* Optional plugins toggle */}
+                <button
+                  onClick={() => setShowOptional(v => !v)}
+                  className="mt-4 w-full flex items-center justify-between px-4 py-2.5 bg-dark-800 border border-dark-600 hover:border-dark-500 rounded-xl text-sm transition-colors"
+                >
+                  <span className="text-slate-400 font-medium">
+                    {showOptional ? 'Ocultar' : 'Ver'} plugins adicionais
+                    <span className="ml-2 text-[11px] text-slate-600">({optionalPlugins.length} disponíveis)</span>
+                  </span>
+                  <motion.div animate={{ rotate: showOptional ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <ChevronRight size={14} className="text-slate-500 rotate-90" />
+                  </motion.div>
+                </button>
+
+                <AnimatePresence>
+                  {showOptional && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-1.5 mt-2">
+                        {optionalPlugins.map(p => (
+                          <PluginRow
+                            key={p.name}
+                            plugin={p}
+                            disabled={type === 'bedrock'}
+                            onToggle={() => togglePlugin(p.name)}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </StepWrap>
             )}
 
@@ -502,6 +548,41 @@ export default function CreateServerWizard({ navigate }: Props) {
         )}
       </div>
     </div>
+  )
+}
+
+function PluginRow({ plugin, disabled, locked, onToggle }: {
+  plugin: { name: string; description: string; enabled: boolean }
+  disabled?: boolean
+  locked?: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      onClick={() => !disabled && !locked && onToggle()}
+      disabled={disabled}
+      className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all duration-150
+        ${disabled ? 'opacity-40 cursor-not-allowed border-dark-500 bg-dark-800'
+          : locked ? 'border-amber-500/30 bg-amber-500/[0.06] cursor-default'
+          : plugin.enabled ? 'border-brand-400/20 bg-brand-400/[0.05] hover:border-brand-400/35'
+          : 'border-dark-600 bg-dark-800 hover:border-dark-500'
+        }`}
+    >
+      <div className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 transition-all
+        ${locked ? 'bg-amber-500 border-amber-500'
+          : plugin.enabled && !disabled ? 'bg-brand-500 border-brand-500'
+          : 'border-dark-400'}`}>
+        {locked
+          ? <Lock size={8} className="text-white" strokeWidth={3} />
+          : plugin.enabled && !disabled && <Check size={9} className="text-white" strokeWidth={3} />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className={`text-sm font-semibold leading-none mb-0.5 ${locked ? 'text-amber-300' : plugin.enabled && !disabled ? 'text-white' : 'text-slate-500'}`}>
+          {plugin.name}
+        </p>
+        <p className="text-[11px] text-slate-700 truncate">{plugin.description}</p>
+      </div>
+    </button>
   )
 }
 

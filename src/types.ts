@@ -30,6 +30,8 @@ export interface PresetPlugin {
   enabled: boolean
   category: 'auth' | 'core' | 'compat' | 'protection' | 'perf' | 'map' | 'social' | 'qol' | 'rpg'
   modrinthSlug?: string
+  silent?: boolean      // always installed, never shown in wizard
+  offlineOnly?: boolean // only shown/installed when offline mode is active
 }
 
 export interface CreateServerOpts {
