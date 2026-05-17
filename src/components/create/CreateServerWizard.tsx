@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap, Shield, Globe, Lock, UserCheck } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap, Shield, Globe, Lock, UserCheck, Layers } from 'lucide-react'
 import type { Page } from '../../App'
 import type { ServerType } from '../../types'
 import { PRESET_PLUGINS } from '../../data/presetPlugins'
@@ -9,12 +9,59 @@ import { useServerStore } from '../../store/serverStore'
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
 const FALLBACK_VERSIONS: Record<string, string[]> = {
-  paper:   ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.8'],
-  purpur:  ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.19.2','1.18.2','1.16.5'],
-  fabric:  ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4','1.18.2','1.17.1'],
-  bedrock: ['1.21.60','1.21.50','1.21.30','1.21.0','1.20.80','1.20.50'],
-  hybrid:  ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.1','1.19.4'],
-  vanilla: ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.9'],
+  paper: [
+    '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
+    '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
+    '1.19.4','1.19.3','1.19.2','1.19.1','1.19',
+    '1.18.2','1.18.1','1.18',
+    '1.17.1','1.17',
+    '1.16.5','1.16.4','1.16.3','1.16.2','1.16.1',
+    '1.15.2','1.15.1','1.15',
+    '1.14.4','1.14.3','1.14.2','1.14.1','1.14',
+    '1.13.2','1.13.1','1.13',
+    '1.12.2','1.12.1','1.12',
+    '1.11.2','1.11','1.10.2','1.9.4','1.8.8',
+  ],
+  purpur: [
+    '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
+    '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
+    '1.19.4','1.19.3','1.19.2','1.19',
+    '1.18.2','1.18.1','1.18',
+    '1.17.1','1.17',
+    '1.16.5','1.16.4',
+  ],
+  fabric: [
+    '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
+    '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
+    '1.19.4','1.19.3','1.19.2','1.19',
+    '1.18.2','1.18.1','1.18',
+    '1.17.1','1.17',
+    '1.16.5','1.16.4','1.16.3','1.16.2','1.16.1',
+    '1.15.2','1.15','1.14.4','1.14','1.13.2',
+  ],
+  bedrock: [
+    '1.21.60','1.21.51','1.21.50','1.21.44','1.21.43','1.21.41','1.21.40',
+    '1.21.31','1.21.30','1.21.23','1.21.22','1.21.21','1.21.20',
+    '1.21.3','1.21.2','1.21.1','1.21.0',
+    '1.20.81','1.20.80','1.20.73','1.20.72','1.20.71','1.20.70',
+    '1.20.62','1.20.61','1.20.60','1.20.51','1.20.50',
+  ],
+  hybrid: [
+    '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
+    '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
+    '1.19.4','1.19.2','1.19',
+    '1.18.2','1.18',
+  ],
+  vanilla: [
+    '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
+    '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
+    '1.19.4','1.19.3','1.19.2','1.19.1','1.19',
+    '1.18.2','1.18.1','1.18',
+    '1.17.1','1.17',
+    '1.16.5','1.16.4','1.16.3','1.16.2','1.16.1',
+    '1.15.2','1.15','1.14.4','1.14','1.13.2','1.13',
+    '1.12.2','1.12','1.11.2','1.11','1.10.2','1.9.4','1.9','1.8.9',
+  ],
 }
 
 const SERVER_TYPES = [
@@ -88,6 +135,10 @@ export default function CreateServerWizard({ navigate }: Props) {
   const [progress, setProgress] = useState<string[]>([])
   const [done, setDone] = useState(false)
   const [showOptional, setShowOptional] = useState(false)
+  const [showChunkyModal, setShowChunkyModal] = useState(false)
+  const [chunkyRadius, setChunkyRadius] = useState<number>(10)
+  const [customRadius, setCustomRadius] = useState(10)
+  const [chunkyPreset, setChunkyPreset] = useState<'small'|'medium'|'large'|'huge'|'custom'>('medium')
 
   // Derived plugin buckets (based on static flags, not stateful enabled)
   const corePlugins    = plugins.filter(p => !p.silent && !p.offlineOnly && PRESET_PLUGINS.find(pp => pp.name === p.name)?.enabled)
@@ -127,11 +178,21 @@ export default function CreateServerWizard({ navigate }: Props) {
     setOfflineMode(v)
   }
 
-  const handleCreate = async () => {
+  const handleCreate = async (radius: number | null) => {
     if (!name.trim() || !version) return
+    setShowChunkyModal(false)
     setCreating(true)
     setProgress([])
     setDone(false)
+
+    // If user chose a Chunky radius, force-enable Chunky in the install list
+    const chunkyPlugin = PRESET_PLUGINS.find(p => p.name === 'Chunky')
+    const pluginsWithChunky = radius !== null && chunkyPlugin
+      ? plugins.map(p => p.name === 'Chunky' ? { ...p, enabled: true } : p)
+      : plugins
+
+    const coreList    = pluginsWithChunky.filter(p => !p.silent && !p.offlineOnly && PRESET_PLUGINS.find(pp => pp.name === p.name)?.enabled)
+    const optList     = pluginsWithChunky.filter(p => !p.silent && !p.offlineOnly && !PRESET_PLUGINS.find(pp => pp.name === p.name)?.enabled)
 
     const toInstall = [
       // silent: always included
@@ -139,12 +200,12 @@ export default function CreateServerWizard({ navigate }: Props) {
       // offline-only: only if offline mode
       ...(offlineMode ? offlinePlugins : []),
       // core + optional: only if enabled
-      ...corePlugins.filter(p => p.enabled),
-      ...optionalPlugins.filter(p => p.enabled),
+      ...coreList.filter(p => p.enabled),
+      ...optList.filter(p => p.enabled),
     ]
     const selectedPlugins = toInstall.map(p => ({ name: p.name, url: p.url, filename: p.filename, modrinthSlug: p.modrinthSlug }))
     const res = isElectron
-      ? await window.electron.createServer({ name: name.trim(), type, version, ram, port, plugins: selectedPlugins, offlineMode })
+      ? await window.electron.createServer({ name: name.trim(), type, version, ram, port, plugins: selectedPlugins, offlineMode, chunkyRadius: radius })
       : { ok: true, server: { id: Date.now().toString(), name, type, version, ram, port, dir: '', createdAt: Date.now(), playit: false } }
 
     if (res.ok) {
@@ -152,6 +213,16 @@ export default function CreateServerWizard({ navigate }: Props) {
       setServers(updated)
       setSelected(res.server.id)
       setTimeout(() => navigate('server'), 900)
+    }
+  }
+
+  const onClickCreate = () => {
+    if (!name.trim()) return
+    // Only show Chunky modal for Java-based servers (not Bedrock)
+    if (type !== 'bedrock') {
+      setShowChunkyModal(true)
+    } else {
+      handleCreate(null)
     }
   }
 
@@ -537,7 +608,7 @@ export default function CreateServerWizard({ navigate }: Props) {
               </button>
             ) : (
               <button
-                onClick={handleCreate}
+                onClick={onClickCreate}
                 disabled={!name.trim()}
                 className="flex items-center gap-2 px-6 py-2.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-30 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-500/20"
               >
@@ -547,6 +618,151 @@ export default function CreateServerWizard({ navigate }: Props) {
           </div>
         )}
       </div>
+
+      {/* Chunky Fullscreen Modal */}
+      <AnimatePresence>
+        {showChunkyModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 z-50 flex flex-col bg-[#0a0a0d]/95 backdrop-blur-xl"
+          >
+            {/* Ambient glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-brand-400/8 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-[400px] h-[300px] bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative flex-1 flex flex-col items-center justify-center px-8 py-10 max-w-2xl mx-auto w-full">
+
+              {/* Icon */}
+              <motion.div
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
+                className="w-20 h-20 rounded-3xl bg-brand-400/15 border border-brand-400/30 flex items-center justify-center mb-6 shadow-2xl shadow-brand-400/10"
+              >
+                <Layers size={36} className="text-brand-400" />
+              </motion.div>
+
+              {/* Title */}
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.15 }}
+                className="text-center mb-2"
+              >
+                <h2 className="text-3xl font-black text-white tracking-tight">Pré-carregar o mapa?</h2>
+                <p className="text-slate-400 text-sm mt-2 leading-relaxed max-w-md mx-auto">
+                  O <strong className="text-white">Chunky</strong> gera os chunks ao redor do spawn antes dos jogadores entrarem,
+                  eliminando o lag de geração de terreno para sempre.
+                </p>
+              </motion.div>
+
+              {/* Info strip */}
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="flex items-center gap-6 my-6 text-xs text-slate-500"
+              >
+                <span className="flex items-center gap-1.5"><Check size={11} className="text-brand-400" strokeWidth={3} /> Zero lag de geração</span>
+                <span className="w-px h-3 bg-dark-500" />
+                <span className="flex items-center gap-1.5"><Check size={11} className="text-brand-400" strokeWidth={3} /> Roda em background</span>
+                <span className="w-px h-3 bg-dark-500" />
+                <span className="flex items-center gap-1.5"><Check size={11} className="text-brand-400" strokeWidth={3} /> Para sozinho ao terminar</span>
+              </motion.div>
+
+              {/* Preset grid */}
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.25 }}
+                className="w-full grid grid-cols-4 gap-2.5 mb-3"
+              >
+                {([
+                  { id: 'small',  label: 'Pequeno',  radius: 5,  chunks: 121,   time: '~30 seg',  desc: 'Spawn + arredores' },
+                  { id: 'medium', label: 'Médio',    radius: 15, chunks: 961,   time: '~3 min',   desc: 'Área de vila' },
+                  { id: 'large',  label: 'Grande',   radius: 30, chunks: 3721,  time: '~15 min',  desc: 'Região de jogo' },
+                  { id: 'huge',   label: 'Enorme',   radius: 75, chunks: 22801, time: '~1 hora',  desc: 'Mapa completo' },
+                ] as const).map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => { setChunkyPreset(p.id); setChunkyRadius(p.radius); setCustomRadius(p.radius) }}
+                    className={`relative flex flex-col text-left p-3.5 rounded-2xl border transition-all duration-150
+                      ${chunkyPreset === p.id
+                        ? 'border-brand-400/40 bg-brand-400/[0.08] shadow-lg shadow-brand-400/5'
+                        : 'border-dark-500 bg-dark-800 hover:border-dark-400'}`}
+                  >
+                    <p className={`font-bold text-sm ${chunkyPreset === p.id ? 'text-brand-300' : 'text-slate-300'}`}>{p.label}</p>
+                    <p className="text-[11px] text-slate-600 mt-0.5">{p.desc}</p>
+                    <div className="mt-2.5 pt-2.5 border-t border-dark-600">
+                      <p className={`text-xs font-mono font-bold ${chunkyPreset === p.id ? 'text-brand-400' : 'text-slate-500'}`}>{p.radius} chunks</p>
+                      <p className="text-[10px] text-slate-700 mt-0.5">{p.time} · {p.chunks.toLocaleString()} chunks</p>
+                    </div>
+                    {chunkyPreset === p.id && (
+                      <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-500 flex items-center justify-center">
+                        <Check size={8} className="text-white" strokeWidth={3} />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </motion.div>
+
+              {/* Custom row */}
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className={`w-full p-3.5 rounded-2xl border transition-all duration-150 mb-6
+                  ${chunkyPreset === 'custom' ? 'border-brand-400/40 bg-brand-400/[0.06]' : 'border-dark-500 bg-dark-800'}`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <button
+                    onClick={() => setChunkyPreset('custom')}
+                    className={`text-sm font-bold ${chunkyPreset === 'custom' ? 'text-brand-300' : 'text-slate-400'}`}
+                  >
+                    Personalizado
+                  </button>
+                  <span className={`font-mono text-sm font-bold ${chunkyPreset === 'custom' ? 'text-brand-400' : 'text-slate-600'}`}>
+                    {customRadius} chunks · {((2*customRadius+1)**2).toLocaleString()} chunks totais
+                  </span>
+                </div>
+                <input
+                  type="range" min={1} max={200} step={1} value={customRadius}
+                  onChange={e => { const v = Number(e.target.value); setCustomRadius(v); setChunkyRadius(v); setChunkyPreset('custom') }}
+                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-brand-400 bg-dark-600"
+                />
+                <div className="flex justify-between text-[10px] text-slate-700 mt-1.5 font-mono">
+                  <span>1</span><span>50</span><span>100</span><span>150</span><span>200</span>
+                </div>
+              </motion.div>
+
+              {/* Actions */}
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.35 }}
+                className="flex items-center gap-3 w-full"
+              >
+                <button
+                  onClick={() => handleCreate(null)}
+                  className="flex-1 py-3 rounded-xl border border-dark-500 text-slate-400 hover:text-white hover:border-dark-400 text-sm font-semibold transition-colors"
+                >
+                  Pular por agora
+                </button>
+                <button
+                  onClick={() => handleCreate(chunkyRadius)}
+                  className="flex-[2] py-3 rounded-xl bg-brand-500 hover:bg-brand-400 text-white text-sm font-bold transition-all shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2"
+                >
+                  <Layers size={15} />
+                  Ativar Chunky ({chunkyPreset === 'custom' ? customRadius : chunkyRadius} chunks)
+                </button>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

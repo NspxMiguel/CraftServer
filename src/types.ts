@@ -41,6 +41,7 @@ export interface CreateServerOpts {
   ram: number
   port: number
   plugins: { name: string; url: string; filename: string }[]
+  chunkyRadius?: number | null
 }
 
 export interface WhitelistEntry {
