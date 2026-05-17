@@ -111,7 +111,7 @@ const SERVER_TYPES = [
 
 const STEPS = ['Tipo', 'Versão', 'Config', 'Plugins']
 
-interface Props { navigate: (p: Page) => void }
+interface Props { navigate: (p: Page) => void; quickSetup?: boolean; onCancelQuick?: () => void }
 
 // RAM reserved for the host machine (NOT given to the server)
 function calcOverhead(gaming: boolean, voice: boolean): number {
@@ -147,7 +147,7 @@ function calcRecommendedRam(
   return Math.max(512, Math.min(maxAllowed, Math.round(raw / 512) * 512))
 }
 
-export default function CreateServerWizard({ navigate }: Props) {
+export default function CreateServerWizard({ navigate, quickSetup = false, onCancelQuick }: Props) {
   const { setServers, setSelected } = useServerStore()
   const [step, setStep] = useState(0)
   const [type, setType] = useState<ServerType>('paper')
@@ -164,6 +164,7 @@ export default function CreateServerWizard({ navigate }: Props) {
   const [done, setDone] = useState(false)
   const [showOptional, setShowOptional] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
+  const quickNameRef = useRef<string>('')
 
   const [systemRam, setSystemRam] = useState<number>(0) // total MB
   const [gamingMode, setGamingMode] = useState(false)    // playing MC same PC
@@ -183,6 +184,16 @@ export default function CreateServerWizard({ navigate }: Props) {
     }
   }, [step])
 
+  // Fetch system RAM for quick setup smart defaults
+  useEffect(() => {
+    if (quickSetup && isElectron) {
+      window.electron.getSystemRam?.().then(({ totalMb }: { totalMb: number }) => {
+        setSystemRam(totalMb)
+        setRam(calcRecommendedRam(totalMb, false, false, 'small'))
+      }).catch(() => {})
+    }
+  }, [quickSetup])
+
   // Focus name input after step animation completes (autoFocus breaks on Windows Electron)
   useEffect(() => {
     if (step === 2) {
@@ -195,6 +206,8 @@ export default function CreateServerWizard({ navigate }: Props) {
   const [chunkyRadius, setChunkyRadius] = useState<number>(10)
   const [customRadius, setCustomRadius] = useState(10)
   const [chunkyPreset, setChunkyPreset] = useState<'small'|'medium'|'large'|'huge'|'custom'>('medium')
+  const [quickName, setQuickName] = useState('Meu Servidor')
+  const [hybridInfoOpen, setHybridInfoOpen] = useState(false)
 
   // Derived plugin buckets (based on static flags, not stateful enabled)
   const corePlugins    = plugins.filter(p => !p.silent && !p.offlineOnly && PRESET_PLUGINS.find(pp => pp.name === p.name)?.enabled)
@@ -234,8 +247,9 @@ export default function CreateServerWizard({ navigate }: Props) {
     setOfflineMode(v)
   }
 
-  const handleCreate = async (radius: number | null) => {
-    if (!name.trim() || !version) return
+  const handleCreate = async (radius: number | null, nameOverride?: string) => {
+    const effectiveName = nameOverride ?? name
+    if (!effectiveName.trim() || !version) return
     setShowChunkyModal(false)
     setCreating(true)
     setProgress([])
@@ -261,8 +275,8 @@ export default function CreateServerWizard({ navigate }: Props) {
     ]
     const selectedPlugins = toInstall.map(p => ({ name: p.name, url: p.url, filename: p.filename, modrinthSlug: p.modrinthSlug }))
     const res = isElectron
-      ? await window.electron.createServer({ name: name.trim(), type, version, ram, port, plugins: selectedPlugins, offlineMode, chunkyRadius: radius })
-      : { ok: true, server: { id: Date.now().toString(), name, type, version, ram, port, dir: '', createdAt: Date.now(), playit: false } }
+      ? await window.electron.createServer({ name: effectiveName.trim(), type, version, ram, port, plugins: selectedPlugins, offlineMode, chunkyRadius: radius })
+      : { ok: true, server: { id: Date.now().toString(), name: effectiveName.trim(), type, version, ram, port, dir: '', createdAt: Date.now(), playit: false } }
 
     if (res.ok) {
       const updated = isElectron ? await window.electron.getServers() : [res.server]
@@ -273,6 +287,23 @@ export default function CreateServerWizard({ navigate }: Props) {
   }
 
   const playitEnabled = !!plugins.find(p => p.name === 'PlayIt.gg')?.enabled
+
+  const handleQuickCreate = () => {
+    // Use quick setup defaults: paper, first available version, all recommended plugins, smart RAM, port 25565
+    const resolvedName = quickName.trim() || 'Meu Servidor'
+    quickNameRef.current = resolvedName
+    setName(resolvedName)
+    setType('paper')
+    setPort(25565)
+    // Enable all core (recommended) plugins
+    setPlugins(ps => ps.map(p => {
+      const preset = PRESET_PLUGINS.find(pp => pp.name === p.name)
+      if (preset?.enabled) return { ...p, enabled: true }
+      return p
+    }))
+    // Show PlayIt modal flow
+    setShowPlayitModal(true)
+  }
 
   const onClickCreate = () => {
     if (!name.trim()) return
@@ -291,6 +322,93 @@ export default function CreateServerWizard({ navigate }: Props) {
       {/* Background */}
       <div className="absolute inset-0 bg-grid-dark bg-grid opacity-60 pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-brand-400/5 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Quick Setup Screen */}
+      {quickSetup && !showPlayitModal && !showChunkyModal && !creating && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center px-8 py-10 bg-[#08080e]/98 backdrop-blur-xl">
+          {/* Glows */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-amber-400/8 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[250px] bg-brand-400/5 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative flex flex-col items-center max-w-md w-full">
+            {/* Icon */}
+            <motion.div
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.05, type: 'spring', stiffness: 280, damping: 20 }}
+              className="w-20 h-20 rounded-3xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center mb-6 shadow-2xl shadow-amber-400/15"
+            >
+              <Zap size={38} className="text-amber-400" />
+            </motion.div>
+
+            {/* Title */}
+            <motion.div
+              initial={{ y: 18, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.12 }}
+              className="text-center mb-2"
+            >
+              <h2 className="text-4xl font-black text-white tracking-tight">⚡ Configuração Rápida</h2>
+              <p className="text-slate-400 text-base mt-2">A gente configura tudo — só diz o nome!</p>
+            </motion.div>
+
+            {/* Auto-config bullets */}
+            <motion.div
+              initial={{ y: 18, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.19 }}
+              className="flex items-center justify-center gap-2 flex-wrap text-xs text-slate-500 mb-8 mt-4"
+            >
+              {['Paper (mais popular)', 'Última versão', 'Plugins recomendados', 'RAM ideal para seu PC'].map((item, i) => (
+                <span key={i} className="flex items-center gap-1.5 px-2.5 py-1 bg-dark-800 border border-dark-600 rounded-full">
+                  <Check size={9} className="text-brand-400" strokeWidth={3} />
+                  {item}
+                </span>
+              ))}
+            </motion.div>
+
+            {/* Name input */}
+            <motion.div
+              initial={{ y: 18, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.25 }}
+              className="w-full mb-4"
+            >
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Nome do servidor</label>
+              <input
+                autoFocus
+                value={quickName}
+                onChange={e => setQuickName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && quickName.trim()) handleQuickCreate() }}
+                placeholder="Meu Servidor"
+                className="w-full bg-dark-800 border border-dark-500 hover:border-amber-400/30 focus:border-amber-400/60 rounded-xl px-4 py-3.5 text-white placeholder-slate-700 focus:outline-none text-base font-bold transition-colors text-center"
+              />
+            </motion.div>
+
+            {/* Create button */}
+            <motion.div
+              initial={{ y: 18, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="w-full space-y-3"
+            >
+              <button
+                onClick={handleQuickCreate}
+                disabled={!quickName.trim()}
+                className="w-full py-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-30 disabled:cursor-not-allowed text-white text-base font-black transition-all shadow-xl shadow-amber-500/25 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Criar Agora →
+              </button>
+              <button
+                onClick={() => { onCancelQuick?.() }}
+                className="w-full text-sm text-slate-600 hover:text-slate-400 transition-colors py-2"
+              >
+                Configurar manualmente
+              </button>
+            </motion.div>
+          </div>
+        </div>
+      )}
 
       <div className="relative flex flex-col h-full max-w-3xl mx-auto w-full px-8 py-8">
         {/* Header */}
@@ -339,7 +457,7 @@ export default function CreateServerWizard({ navigate }: Props) {
                     return (
                       <button
                         key={t.id}
-                        onClick={() => setType(t.id as ServerType)}
+                        onClick={() => { setType(t.id as ServerType); if (t.id === 'hybrid') setHybridInfoOpen(true) }}
                         className={`relative text-left p-4 rounded-2xl border overflow-hidden transition-all duration-200
                           ${active ? `${t.border} border shadow-lg ${t.glow}` : 'border-dark-500 bg-dark-800 hover:border-dark-400'}`}
                       >
@@ -370,6 +488,63 @@ export default function CreateServerWizard({ navigate }: Props) {
                     )
                   })}
                 </div>
+
+                {/* Hybrid info panel */}
+                <AnimatePresence>
+                  {type === 'hybrid' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.22 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-3 p-4 bg-brand-400/[0.05] border border-brand-400/20 rounded-2xl">
+                        <button
+                          onClick={() => setHybridInfoOpen(v => !v)}
+                          className="w-full flex items-center justify-between text-left"
+                        >
+                          <span className="text-sm font-bold text-brand-300">⚡ Como funciona o servidor Híbrido (Geyser)?</span>
+                          <motion.span animate={{ rotate: hybridInfoOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                            <ChevronRight size={14} className="text-brand-400 rotate-90" />
+                          </motion.span>
+                        </button>
+                        <AnimatePresence>
+                          {hybridInfoOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="mt-3 space-y-2 text-xs text-slate-400 leading-relaxed">
+                                <p>O servidor roda normalmente em Java e o GeyserMC funciona como uma "ponte" que traduz o protocolo Bedrock em tempo real.</p>
+                                <div className="space-y-1.5 mt-2">
+                                  <div className="flex items-center gap-2 text-slate-300">
+                                    <span className="font-mono text-[11px] bg-dark-700 border border-dark-500 px-2 py-0.5 rounded">Java</span>
+                                    <span className="text-slate-500">→</span>
+                                    <span>entram na porta <code className="text-brand-300 font-mono">25565</code> (normal)</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-slate-300">
+                                    <span className="font-mono text-[11px] bg-dark-700 border border-dark-500 px-2 py-0.5 rounded">Bedrock</span>
+                                    <span className="text-slate-500">→</span>
+                                    <span>celular, console, Win10 entram na porta <code className="text-orange-300 font-mono">19132</code></span>
+                                  </div>
+                                </div>
+                                <div className="mt-3 p-2.5 bg-brand-400/[0.06] border border-brand-400/15 rounded-xl">
+                                  <p className="text-brand-300 font-semibold text-[11px] mb-1">Com PlayIt.gg: ambas as portas são tuneladas automaticamente!</p>
+                                  <p className="text-slate-500 text-[11px]">→ Java: <code className="text-brand-300">xxxx.playit.gg:25565</code></p>
+                                  <p className="text-slate-500 text-[11px]">→ Bedrock: <code className="text-orange-300">xxxx.playit.gg:19132</code></p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </StepWrap>
             )}
 
@@ -796,128 +971,18 @@ export default function CreateServerWizard({ navigate }: Props) {
       {/* PlayIt.gg Fullscreen Onboarding */}
       <AnimatePresence>
         {showPlayitModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="absolute inset-0 z-50 flex flex-col bg-[#08080e]/97 backdrop-blur-xl"
-          >
-            {/* Background glows */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 right-0 w-[350px] h-[250px] bg-indigo-400/6 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative flex-1 flex flex-col items-center justify-center px-8 py-10 max-w-[680px] mx-auto w-full">
-
-              {/* Icon */}
-              <motion.div
-                initial={{ scale: 0.6, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.08, type: 'spring', stiffness: 280, damping: 20 }}
-                className="w-24 h-24 rounded-3xl bg-violet-500/15 border border-violet-400/30 flex items-center justify-center mb-7 shadow-2xl shadow-violet-500/15"
-              >
-                <Globe size={42} className="text-violet-400" />
-              </motion.div>
-
-              {/* Heading */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.14 }}
-                className="text-center mb-3"
-              >
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">Recomendado para você</p>
-                <h2 className="text-4xl font-black text-white tracking-tight leading-tight">Deixa seus amigos<br/>entrarem sem dor de cabeça</h2>
-              </motion.div>
-
-              {/* Problem / solution explanation */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-center mb-7 max-w-lg"
-              >
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Normalmente para jogar online você precisaria <span className="text-slate-300 font-semibold">abrir portas no roteador</span> —
-                  uma configuração técnica chata que varia de roteador pra roteador e muita gente não consegue fazer.
-                </p>
-                <p className="text-slate-400 text-sm leading-relaxed mt-2">
-                  O <strong className="text-violet-300">PlayIt.gg</strong> resolve isso automaticamente. Ele cria um endereço público
-                  pro seu servidor que seus amigos usam pra conectar — <span className="text-slate-300 font-semibold">sem mexer em nada no roteador</span>.
-                </p>
-              </motion.div>
-
-              {/* Feature cards */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.26 }}
-                className="w-full grid grid-cols-3 gap-3 mb-6"
-              >
-                {[
-                  { emoji: '🚫', title: 'Sem abrir portas', desc: 'Nada de mexer no roteador. Funciona na primeira tentativa.' },
-                  { emoji: '🆓', title: '100% grátis', desc: 'Sem limite de tempo, dados ou jogadores. Sempre gratuito.' },
-                  { emoji: '🌍', title: 'Acesso de qualquer lugar', desc: 'Seus amigos recebem um endereço público pra conectar.' },
-                ].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ y: 16, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 + i * 0.06 }}
-                    className="flex flex-col gap-2 p-4 bg-violet-500/[0.05] border border-violet-400/15 rounded-2xl text-center"
-                  >
-                    <span className="text-2xl">{item.emoji}</span>
-                    <p className="text-xs font-bold text-slate-200">{item.title}</p>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">{item.desc}</p>
-                  </motion.div>
-                ))}
-              </motion.div>
-
-              {/* Tip */}
-              <motion.div
-                initial={{ y: 16, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.42 }}
-                className="w-full p-3.5 bg-violet-500/[0.06] border border-violet-400/20 rounded-2xl mb-6 flex items-start gap-2.5"
-              >
-                <span className="text-base mt-0.5">⚡</span>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Depois que o servidor estiver rodando, execute{' '}
-                  <code className="font-mono text-violet-300 bg-violet-500/15 px-1.5 py-0.5 rounded text-[11px]">/playit</code>{' '}
-                  no console para vincular uma conta gratuita e ver o endereço que seus amigos vão usar.
-                </p>
-              </motion.div>
-
-              {/* Actions */}
-              <motion.div
-                initial={{ y: 16, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.48 }}
-                className="flex items-center gap-3 w-full"
-              >
-                <button
-                  onClick={() => {
-                    setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: true } : p))
-                    setShowPlayitModal(false)
-                    setShowChunkyModal(true)
-                  }}
-                  className="flex-[2] py-3.5 rounded-xl bg-violet-500 hover:bg-violet-400 active:bg-violet-600 text-white text-sm font-bold transition-all shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2"
-                >
-                  <Globe size={15} /> Sim, quero jogar online!
-                </button>
-                <button
-                  onClick={() => {
-                    setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: false } : p))
-                    setShowPlayitModal(false)
-                    setShowChunkyModal(true)
-                  }}
-                  className="flex-1 py-3.5 rounded-xl border border-dark-500 hover:border-dark-400 text-slate-500 hover:text-slate-300 text-sm font-semibold transition-colors"
-                >
-                  Não preciso
-                </button>
-              </motion.div>
-            </div>
-          </motion.div>
+          <PlayItModal
+            onUsePlayit={() => {
+              setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: true } : p))
+              setShowPlayitModal(false)
+              setShowChunkyModal(true)
+            }}
+            onSkipPlayit={() => {
+              setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: false } : p))
+              setShowPlayitModal(false)
+              setShowChunkyModal(true)
+            }}
+          />
         )}
       </AnimatePresence>
 
@@ -956,8 +1021,9 @@ export default function CreateServerWizard({ navigate }: Props) {
               >
                 <h2 className="text-3xl font-black text-white tracking-tight">Pré-carregar o mapa?</h2>
                 <p className="text-slate-400 text-sm mt-2 leading-relaxed max-w-md mx-auto">
-                  O <strong className="text-white">Chunky</strong> gera os chunks ao redor do spawn antes dos jogadores entrarem,
-                  eliminando o lag de geração de terreno para sempre.
+                  O <strong className="text-white">Chunky</strong> gera os pedaços do mundo ao redor do spawn <em>antes</em> dos jogadores entrarem.
+                  Resultado: <span className="text-white font-semibold">zero lag de terreno</span> quando alguém explora — o mapa já está pronto.
+                  Roda em background e para sozinho quando terminar.
                 </p>
               </motion.div>
 
@@ -1066,6 +1132,200 @@ export default function CreateServerWizard({ navigate }: Props) {
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+function PlayItModal({ onUsePlayit, onSkipPlayit }: { onUsePlayit: () => void; onSkipPlayit: () => void }) {
+  const [manualMode, setManualMode] = useState(false)
+
+  const openExternal = (url: string) => {
+    if (typeof window !== 'undefined' && window.electron?.openExternal) {
+      window.electron.openExternal(url)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="absolute inset-0 z-50 flex flex-col bg-[#08080e]/97 backdrop-blur-xl overflow-auto"
+    >
+      {/* Background glows */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[350px] h-[250px] bg-indigo-400/6 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative flex-1 flex flex-col items-center justify-center px-8 py-10 max-w-[700px] mx-auto w-full">
+        <AnimatePresence mode="wait">
+          {!manualMode ? (
+            <motion.div
+              key="playit-main"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="w-full flex flex-col items-center"
+            >
+              {/* Icon */}
+              <motion.div
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.08, type: 'spring', stiffness: 280, damping: 20 }}
+                className="w-20 h-20 rounded-3xl bg-violet-500/15 border border-violet-400/30 flex items-center justify-center mb-6 shadow-2xl shadow-violet-500/15"
+              >
+                <Globe size={38} className="text-violet-400" />
+              </motion.div>
+
+              {/* Heading */}
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.12 }}
+                className="text-center mb-4"
+              >
+                <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">Jogar com amigos online?</p>
+                <h2 className="text-3xl font-black text-white tracking-tight leading-tight">Quer jogar com amigos online?</h2>
+              </motion.div>
+
+              {/* Two-column layout */}
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.18 }}
+                className="w-full grid grid-cols-2 gap-4 mb-6"
+              >
+                {/* Problem */}
+                <div className="p-4 bg-red-500/[0.05] border border-red-400/15 rounded-2xl">
+                  <p className="text-xs font-bold text-red-300 mb-2">⚠️ O problema</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Normalmente você precisaria <span className="text-slate-300 font-semibold">abrir portas no roteador</span> — uma configuração técnica que varia de aparelho pra aparelho e muita gente não consegue fazer.
+                  </p>
+                </div>
+                {/* Solution */}
+                <div className="p-4 bg-violet-500/[0.06] border border-violet-400/15 rounded-2xl">
+                  <p className="text-xs font-bold text-violet-300 mb-2">✅ A solução</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    O <span className="text-violet-300 font-bold">PlayIt.gg</span> resolve automaticamente criando um <span className="text-slate-300 font-semibold">endereço público gratuito</span> pro seu servidor. Sem mexer no roteador.
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Tutorial steps — shown after choosing PlayIt */}
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.22 }}
+                className="w-full mb-6"
+              >
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Como configurar (depois de criar o servidor)</p>
+                <div className="space-y-2">
+                  {[
+                    { icon: '🌐', text: <>Acesse <span className="text-violet-300 font-semibold">playit.gg</span> e crie sua conta gratuita</> },
+                    { icon: '🚀', text: 'Inicie o servidor no CraftServer' },
+                    { icon: '💬', text: <>No console do servidor, execute o comando: <code className="font-mono text-violet-300 bg-violet-500/15 px-1.5 py-0.5 rounded text-[11px]">/playit</code></> },
+                    { icon: '🔗', text: 'Siga o link que aparecer para vincular sua conta PlayIt' },
+                    { icon: '🎉', text: <>Você receberá um endereço tipo <code className="font-mono text-violet-300 text-[11px]">xxxx.playit.gg:25565</code> para compartilhar</> },
+                    { icon: '🎮', text: <>Para testar localmente: entre no Minecraft com endereço <code className="font-mono text-slate-300 text-[11px]">localhost</code> (sem porta)</> },
+                  ].map((step, i) => (
+                    <div key={i} className="flex items-start gap-3 text-xs text-slate-400">
+                      <span className="text-base leading-none mt-0.5 shrink-0">{step.icon}</span>
+                      <span className="leading-relaxed">{step.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Actions */}
+              <motion.div
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.28 }}
+                className="flex flex-col gap-2.5 w-full"
+              >
+                <button
+                  onClick={onUsePlayit}
+                  className="w-full py-3.5 rounded-xl bg-violet-500 hover:bg-violet-400 active:bg-violet-600 text-white text-sm font-bold transition-all shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2"
+                >
+                  <Globe size={15} /> ✅ Sim, usar PlayIt.gg
+                </button>
+                <button
+                  onClick={() => setManualMode(true)}
+                  className="w-full py-3 rounded-xl border border-dark-500 hover:border-dark-400 text-slate-500 hover:text-slate-300 text-sm font-semibold transition-colors"
+                >
+                  🔧 Prefiro configurar o roteador manualmente
+                </button>
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="manual-mode"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="w-full flex flex-col items-center"
+            >
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-slate-500/15 border border-slate-400/25 flex items-center justify-center mb-6">
+                <Server size={30} className="text-slate-400" />
+              </div>
+
+              <h2 className="text-2xl font-black text-white mb-2">Configuração manual de porta</h2>
+              <p className="text-sm text-slate-400 mb-6 text-center max-w-md">
+                Seus amigos precisarão do seu <span className="text-slate-300 font-semibold">IP público</span> + porta <code className="font-mono text-slate-300">25565</code>
+              </p>
+
+              {/* Steps */}
+              <div className="w-full space-y-2.5 mb-6">
+                {[
+                  { icon: '🌍', text: <>Descubra seu IP público em: <span className="text-slate-300 font-semibold">whatismyip.com</span></> },
+                  { icon: '🔓', text: <>Abra a porta <code className="font-mono text-slate-300">25565</code> no seu roteador (protocolo TCP)</> },
+                  { icon: '📤', text: <>Passe seu IP público para os amigos — eles entram com <code className="font-mono text-slate-300">IP:25565</code></> },
+                ].map((step, i) => (
+                  <div key={i} className="flex items-start gap-3 text-sm text-slate-400 p-3 bg-dark-800 border border-dark-600 rounded-xl">
+                    <span className="text-base leading-none mt-0.5 shrink-0">{step.icon}</span>
+                    <span className="leading-relaxed">{step.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Resource links */}
+              <div className="w-full flex gap-2.5 mb-6">
+                <button
+                  onClick={() => openExternal('https://portforward.com')}
+                  className="flex-1 py-2.5 rounded-xl border border-dark-500 hover:border-dark-400 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-colors"
+                >
+                  📖 Tutorial completo → portforward.com
+                </button>
+                <button
+                  onClick={() => openExternal('https://www.youtube.com/results?search_query=como+abrir+porta+minecraft')}
+                  className="flex-1 py-2.5 rounded-xl border border-dark-500 hover:border-dark-400 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-colors"
+                >
+                  🎥 Ver tutorial no YouTube
+                </button>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setManualMode(false)}
+                  className="flex-1 py-3 rounded-xl border border-dark-600 hover:border-dark-400 text-slate-500 hover:text-slate-300 text-sm font-semibold transition-colors"
+                >
+                  ← Voltar
+                </button>
+                <button
+                  onClick={onSkipPlayit}
+                  className="flex-[2] py-3 rounded-xl bg-dark-700 hover:bg-dark-600 border border-dark-500 text-slate-300 text-sm font-bold transition-colors"
+                >
+                  Continuar sem PlayIt →
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
   )
 }
 

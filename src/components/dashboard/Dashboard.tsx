@@ -15,9 +15,9 @@ const TYPE_META: Record<string, { label: string; color: string; border: string; 
   hybrid:  { label: 'Java+Bedrock', color: 'text-brand-300',   border: 'border-brand-500/25',   bg: 'bg-brand-500/10',   icon: <Zap size={16} />,     glow: 'from-brand-500/20' },
 }
 
-interface Props { navigate: (p: Page) => void }
+interface Props { navigate: (p: Page) => void; onQuickSetup: () => void }
 
-export default function Dashboard({ navigate }: Props) {
+export default function Dashboard({ navigate, onQuickSetup }: Props) {
   const { servers, runningIds, setServers, setSelected, markRunning, markStopped, removeServer } = useServerStore()
 
   useEffect(() => {
@@ -68,13 +68,22 @@ export default function Dashboard({ navigate }: Props) {
                 : `${servers.length} servidor${servers.length !== 1 ? 'es' : ''} · ${runningIds.size} online`}
             </p>
           </div>
-          <button
-            onClick={() => navigate('create')}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-400/35 hover:scale-[1.03] active:scale-[0.98]"
-          >
-            <Plus size={15} strokeWidth={2.5} />
-            Novo servidor
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onQuickSetup}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/30 text-amber-300 rounded-xl text-sm font-bold transition-all hover:scale-[1.03] active:scale-[0.98]"
+            >
+              <Zap size={14} strokeWidth={2.5} />
+              Configuração Rápida
+            </button>
+            <button
+              onClick={() => navigate('create')}
+              className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-400/35 hover:scale-[1.03] active:scale-[0.98]"
+            >
+              <Plus size={15} strokeWidth={2.5} />
+              Novo servidor
+            </button>
+          </div>
         </div>
 
         {/* Empty state */}
@@ -92,12 +101,21 @@ export default function Dashboard({ navigate }: Props) {
               <p className="text-slate-200 font-bold">Nenhum servidor ainda</p>
               <p className="text-slate-600 text-sm mt-1.5 max-w-xs">Crie um servidor Java, Bedrock ou híbrido e comece a jogar em minutos</p>
             </div>
-            <button
-              onClick={() => navigate('create')}
-              className="px-5 py-2.5 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-brand-500/25 hover:scale-[1.03]"
-            >
-              Criar meu primeiro servidor
-            </button>
+            <div className="flex flex-col items-center gap-2.5">
+              <button
+                onClick={onQuickSetup}
+                className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-amber-500/30 hover:scale-[1.03]"
+              >
+                <Zap size={15} strokeWidth={2.5} />
+                ⚡ Configuração Rápida
+              </button>
+              <button
+                onClick={() => navigate('create')}
+                className="text-sm text-slate-600 hover:text-slate-400 transition-colors underline"
+              >
+                Criar meu primeiro servidor
+              </button>
+            </div>
           </div>
         )}
 

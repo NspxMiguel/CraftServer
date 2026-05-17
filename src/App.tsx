@@ -15,6 +15,7 @@ const isElectron = typeof window !== 'undefined' && !!window.electron
 
 export default function App() {
   const [page, setPage] = useState<Page>('dashboard')
+  const [quickSetup, setQuickSetup] = useState(false)
   const { setServers, setRunning, selectedId } = useServerStore()
 
   useEffect(() => {
@@ -23,7 +24,9 @@ export default function App() {
     window.electron.getRunningServers().then(setRunning)
   }, [])
 
-  const navigate = (p: Page) => setPage(p)
+  const navigate = (p: Page) => { setPage(p); if (p !== 'create') setQuickSetup(false) }
+  const handleQuickSetup = () => { setQuickSetup(true); setPage('create') }
+  const handleCancelQuick = () => setQuickSetup(false)
 
   return (
     <DependencyGate>
@@ -34,12 +37,12 @@ export default function App() {
         <AnimatePresence mode="wait">
           {page === 'dashboard' && (
             <PageWrap key="dashboard">
-              <Dashboard navigate={navigate} />
+              <Dashboard navigate={navigate} onQuickSetup={handleQuickSetup} />
             </PageWrap>
           )}
           {page === 'create' && (
             <PageWrap key="create">
-              <CreateServerWizard navigate={navigate} />
+              <CreateServerWizard navigate={navigate} quickSetup={quickSetup} onCancelQuick={handleCancelQuick} />
             </PageWrap>
           )}
           {page === 'server' && selectedId && (

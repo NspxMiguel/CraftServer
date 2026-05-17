@@ -93,7 +93,7 @@ export default function DependencyGate({ children }: Props) {
                     className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-brand-500/20 hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Download size={14} />
-                    Baixar Java 25 (Adoptium)
+                    Clique aqui para instalar o Java 25
                   </button>
                 </motion.div>
               )}
