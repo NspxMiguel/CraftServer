@@ -1,0 +1,21 @@
+name: 💡 Sugestão / Feature Request
+description: Tem uma ideia? Compartilhe! / Got an idea? Share it!
+title: "[FEAT] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Sua ideia / Your idea
+      description: Descreva o que você gostaria de ver no CraftServer / Describe what you'd like to see in CraftServer
+      placeholder: "Seria legal se o CraftServer pudesse..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Por que seria útil? / Why would it be useful?
+      placeholder: "Isso ajudaria porque..."
+    validations:
+      required: false

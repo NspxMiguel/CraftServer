@@ -1,178 +1,198 @@
 # 🔥 CraftServer
 
-> **Crie, configure e gerencie servidores Minecraft com uma interface bonita — sem complicação.**  
-> Create, configure, and manage Minecraft servers with a beautiful UI — no hassle.
-
 <div align="center">
 
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-brightgreen?style=flat-square)
 ![Stack](https://img.shields.io/badge/stack-Electron%20%2B%20React%20%2B%20TypeScript-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow?style=flat-square)
-![Language](https://img.shields.io/badge/idioma-PT%20%7C%20EN-orange?style=flat-square)
+![Status](https://img.shields.io/badge/status-em%20desenvolvimento%20%7C%20in%20development-orange?style=flat-square)
+![Language](https://img.shields.io/badge/idioma-PT%20%7C%20EN-blueviolet?style=flat-square)
+
+**[🇧🇷 Português](#-português) · [🇺🇸🇬🇧 English](#-english)**
 
 </div>
 
 ---
 
-## ✨ Funcionalidades
+## 🇧🇷 Português
+
+> **Crie, configure e gerencie servidores Minecraft com uma interface bonita — sem complicação.**
+
+### ⚠️ Em Desenvolvimento
+
+> **Este projeto está em desenvolvimento ativo.** Podem existir bugs, instabilidades ou recursos incompletos. Sua ajuda é muito bem-vinda!
+>
+> Encontrou um problema? **[Reporte aqui →](../../issues/new/choose)**
+>
+> Toda issue relatada ajuda a tornar o CraftServer melhor para todo mundo. Não tenha vergonha — bugs fazem parte do processo!
+
+### ✨ Funcionalidades
 
 | Feature | Descrição |
 |---|---|
+| 🎮 **Modos de Jogo** | Skyblock, OneBlock, KitPvP, SkyWars, Survival, Hardcore — tudo pré-configurado |
 | ⚡ **Configuração Rápida** | Servidor pronto em segundos — Paper, última versão, plugins ideais, RAM otimizada |
 | 🧙 **Wizard manual** | Escolha tipo, versão, plugins e RAM no detalhe |
-| 🖥️ **Console real-time** | Logs coloridos, envio de comandos, copiar/limpar com um clique |
+| 🖥️ **Console amigável** | Logs traduzidos para linguagem simples + modo técnico com um clique |
 | 🔌 **Browser de plugins** | Busca e instala plugins do Modrinth + Hangar simultaneamente |
 | 🌐 **playit.gg integrado** | Túnel gratuito para jogar com amigos sem abrir portas no roteador |
 | 🔄 **Auto-atualização** | Detecta nova versão do servidor e atualiza com um clique |
 | 🌍 **Multilingual** | Interface em Português 🇧🇷 e Inglês 🇺🇸 |
 | 🍎 **Cross-platform** | macOS (Apple Silicon + Intel) e Windows 10/11 |
 
-### Tipos de servidor suportados
+### 🎮 Modos de Jogo pré-configurados
 
-- **Paper** — Performance máxima + suporte a todos os plugins Bukkit/Spigot *(recomendado)*
-- **Purpur** — Fork do Paper com centenas de configurações extras
-- **Vanilla** — Servidor oficial da Mojang, sem mods
-- **Fabric** — Para mods técnicos e datapacks
-- **Bedrock (PowerNukkit)** — Suporte a mobile (iOS/Android), console, Windows 10/11
-- **Hybrid (Java + Bedrock)** — Permite Java e Bedrock no mesmo servidor via Geyser
+| Modo | Descrição | Pronto para jogar |
+|---|---|:---:|
+| 🌿 Survival Padrão | Survival clássico com plugins essenciais | ✅ |
+| 💀 Hardcore | Morte permanente, dificuldade máxima | ✅ |
+| 🏝️ Skyblock | Ilha no vácuo com desafios e ranking | ✅ |
+| ⬛ OneBlock | Um bloco infinito, fases de progressão | ✅ |
+| 💰 Ilha Economia | Skyblock com loja, empregos e banco | ✅ |
+| 🥊 KitPvP | PvP com 4 kits prontos, mundo plano | ✅ |
+| 🌌 SkyWars | 2 arenas incluídas, último a sobreviver | ✅ |
+| 🛏️ BedWars | Precisa de mapa personalizado | ⚙️ |
 
----
+### 🚀 Download
 
-## 🚀 Download
-
-> Baixe o instalador para seu sistema na página de [Releases](../../releases).
+> Baixe o instalador na página de [Releases](../../releases).
 
 | Sistema | Arquivo |
 |---|---|
 | macOS (Apple Silicon / Intel) | `CraftServer-*.pkg` |
 | Windows 10/11 | `CraftServer-Setup-*.exe` |
 
-### Pré-requisitos
+**Pré-requisitos:** Java 21+ (Adoptium Temurin) — [Baixar aqui](https://adoptium.net/temurin/releases/)
 
-- **Java 25** (Adoptium Temurin) — [Baixar aqui](https://adoptium.net/temurin/releases/?version=25)  
-  O app detecta automaticamente e guia a instalação se o Java não estiver presente.
+### 🐛 Reportar um Bug
 
----
+1. Clique em **[Issues → New Issue](../../issues/new/choose)**
+2. Escolha o template **"Bug Report"**
+3. Descreva o que aconteceu, o que você esperava e passos para reproduzir
+4. Se tiver screenshot ou log, anexe — ajuda muito!
 
-## 🛠️ Desenvolvimento
-
-### Requisitos
-
-- Node.js 18+
-- npm ou yarn
-
-### Instalação
+### 🛠️ Desenvolvimento Local
 
 ```bash
-git clone https://github.com/seuusuario/craftnest.git
-cd craftnest
+git clone https://github.com/spxmiguel/CraftServer.git
+cd CraftServer
 npm install
+npm run electron:dev   # hot reload
 ```
 
-### Dev mode (hot reload)
+**Build:**
+```bash
+npm run electron:build:mac   # macOS (.pkg)
+npm run electron:build:win   # Windows (.exe)
+```
+
+### 🤝 Contribuindo
+
+1. Fork o repositório
+2. Crie uma branch: `git checkout -b feat/minha-feature`
+3. Commit: `git commit -m "feat: descrição"`
+4. Push e abra um Pull Request
+
+---
+
+## 🇺🇸🇬🇧 English
+
+> **Create, configure and manage Minecraft servers with a beautiful UI — no hassle.**
+
+### ⚠️ In Development
+
+> **This project is under active development.** Bugs, instabilities or incomplete features may exist. Your help is very welcome!
+>
+> Found an issue? **[Report it here →](../../issues/new/choose)**
+>
+> Every bug report helps make CraftServer better for everyone. Don't be shy — bugs are part of the process!
+
+### ✨ Features
+
+| Feature | Description |
+|---|---|
+| 🎮 **Game Modes** | Skyblock, OneBlock, KitPvP, SkyWars, Survival, Hardcore — all pre-configured |
+| ⚡ **Quick Setup** | Server ready in seconds — Paper, latest version, ideal plugins, optimized RAM |
+| 🧙 **Manual Wizard** | Choose type, version, plugins and RAM in detail |
+| 🖥️ **Friendly Console** | Logs translated to plain language + technical mode with one click |
+| 🔌 **Plugin Browser** | Search and install plugins from Modrinth + Hangar simultaneously |
+| 🌐 **playit.gg built-in** | Free tunnel to play with friends without port forwarding |
+| 🔄 **Auto-update** | Detects new server version and updates with one click |
+| 🌍 **Multilingual** | Interface in Portuguese 🇧🇷 and English 🇺🇸 |
+| 🍎 **Cross-platform** | macOS (Apple Silicon + Intel) and Windows 10/11 |
+
+### 🎮 Pre-configured Game Modes
+
+| Mode | Description | Ready to play |
+|---|---|:---:|
+| 🌿 Standard Survival | Classic survival with essential plugins | ✅ |
+| 💀 Hardcore | Permanent death, max difficulty | ✅ |
+| 🏝️ Skyblock | Island in the void with challenges and ranking | ✅ |
+| ⬛ OneBlock | One infinite block, progression phases | ✅ |
+| 💰 Island Economy | Skyblock with pre-configured shop, jobs and bank | ✅ |
+| 🥊 KitPvP | PvP with 4 ready-to-use kits, flat world | ✅ |
+| 🌌 SkyWars | 2 built-in arenas, last one standing wins | ✅ |
+| 🛏️ BedWars | Requires a custom map | ⚙️ |
+
+### 🚀 Download
+
+> Download the installer from the [Releases](../../releases) page.
+
+| System | File |
+|---|---|
+| macOS (Apple Silicon / Intel) | `CraftServer-*.pkg` |
+| Windows 10/11 | `CraftServer-Setup-*.exe` |
+
+**Prerequisites:** Java 21+ (Adoptium Temurin) — [Download here](https://adoptium.net/temurin/releases/)
+
+### 🐛 Report a Bug
+
+1. Go to **[Issues → New Issue](../../issues/new/choose)**
+2. Choose the **"Bug Report"** template
+3. Describe what happened, what you expected, and steps to reproduce
+4. Attach a screenshot or log if you have one — it helps a lot!
+
+### 🛠️ Local Development
 
 ```bash
-npm run electron:dev
+git clone https://github.com/spxmiguel/CraftServer.git
+cd CraftServer
+npm install
+npm run electron:dev   # hot reload
 ```
 
-### Build para produção
-
+**Build:**
 ```bash
-# macOS (PKG)
-npm run electron:build:mac
-
-# Windows (NSIS installer)
-npm run electron:build:win
+npm run electron:build:mac   # macOS (.pkg)
+npm run electron:build:win   # Windows (.exe)
 ```
 
-Os builds são gerados automaticamente via GitHub Actions em cada push para a tag `v*.*.*`.
+### 🤝 Contributing
+
+1. Fork the repository
+2. Create a branch: `git checkout -b feat/my-feature`
+3. Commit: `git commit -m "feat: description"`
+4. Push and open a Pull Request
 
 ---
 
-## 📁 Estrutura do projeto
+## 🔧 Tech Stack
 
-```
-craftnest/
-├── electron/
-│   ├── main.cjs          # Processo principal Electron (IPC, servidor Java, playit)
-│   └── preload.cjs       # Bridge segura renderer ↔ main
-├── src/
-│   ├── i18n/             # Sistema de tradução PT/EN
-│   ├── components/
-│   │   ├── layout/       # TopBar (drag, nav, win controls)
-│   │   ├── dashboard/    # Lista de servidores
-│   │   ├── create/       # Wizard de criação (Quick + Manual)
-│   │   ├── server/       # Console, Config, Whitelist
-│   │   ├── plugins/      # Browser Modrinth + Hangar
-│   │   └── settings/     # Configurações + idioma
-│   ├── data/
-│   │   └── presetPlugins.ts  # Plugins pré-configurados
-│   └── store/
-│       └── serverStore.ts    # Estado global (Zustand)
-└── .github/workflows/
-    └── release.yml       # CI/CD — Mac + Windows
-```
-
----
-
-## 🎮 Como usar
-
-### 1. Criar um servidor — Configuração Rápida
-
-1. Clique em **"Novo servidor"** no dashboard
-2. Escolha **"⚡ Configuração Rápida"**
-3. Digite o nome do servidor
-4. Clique em **"Criar Agora"** — pronto!
-
-O app escolhe automaticamente: Paper, última versão disponível, plugins essenciais (EssentialsX, LuckPerms, Vault, WorldEdit) e RAM ideal para seu PC.
-
-### 2. Criar um servidor — Manual
-
-1. Clique em **"Novo servidor"** → **"⚙️ Configurar Manualmente"**
-2. Selecione o tipo (Paper, Vanilla, Fabric…)
-3. Escolha a versão
-4. Configure nome, porta e RAM
-5. Ative os plugins desejados
-6. Configure o playit.gg se quiser jogar online sem abrir portas
-
-### 3. Jogar online com amigos (playit.gg)
-
-- Durante a criação, aceite a instalação do playit.gg
-- No painel do servidor, clique no botão **"playit.gg"** → aguarde a conexão
-- Copie o endereço gerado e passe para os amigos
-
-### 4. Instalar plugins extras
-
-- Clique em **Plugins** na nav ou no botão de plugins do servidor
-- Busque pelo nome — resultados chegam do Modrinth e Hangar
-- Clique em **Instalar** — o `.jar` vai direto para a pasta `plugins/`
-
----
-
-## 🔧 Stack técnica
-
-| Camada | Tecnologia |
+| Layer | Technology |
 |---|---|
 | UI | React 19 + TypeScript + TailwindCSS + Framer Motion |
 | Desktop | Electron 33 |
-| Estado | Zustand |
-| Ícones | Lucide React |
+| State | Zustand |
+| Icons | Lucide React |
 | Build | electron-builder (PKG + NSIS) |
 | CI/CD | GitHub Actions |
 
 ---
 
-## 🤝 Contribuindo
+<div align="center">
 
-1. Fork o repositório
-2. Crie uma branch: `git checkout -b feat/minha-feature`
-3. Commit: `git commit -m "feat: adiciona minha feature"`
-4. Push: `git push origin feat/minha-feature`
-5. Abra um Pull Request
+MIT © 2025 — Made with ☕ and lots of love for Minecraft.
 
----
+**[🇧🇷 PT](#-português) · [🇺🇸🇬🇧 EN](#-english) · [Issues](../../issues) · [Releases](../../releases)**
 
-## 📄 Licença
-
-MIT © 2025 — Feito com ☕ e muito amor por Minecraft.
+</div>

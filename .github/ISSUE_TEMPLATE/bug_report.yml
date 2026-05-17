@@ -1,0 +1,80 @@
+name: 🐛 Bug Report
+description: Encontrou um problema? Reporte aqui! / Found a bug? Report it here!
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🇧🇷 Obrigado por reportar!
+        Quanto mais detalhes você der, mais fácil fica pra resolver. Não precisa ter vergonha — bugs fazem parte do processo!
+
+        ## 🇺🇸🇬🇧 Thanks for reporting!
+        The more details you provide, the easier it is to fix. Don't be shy — bugs are part of the process!
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: O que aconteceu? / What happened?
+      description: Descreva o bug com suas próprias palavras / Describe the bug in your own words
+      placeholder: "Ex: Quando clico em 'Iniciar servidor', nada acontece e o console fica vazio..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir? / How to reproduce?
+      description: Passos para reproduzir o bug / Steps to reproduce the bug
+      placeholder: |
+        1. Abri o CraftServer
+        2. Cliquei em "Novo servidor"
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: O que você esperava? / What did you expect?
+      placeholder: "Esperava que o servidor iniciasse normalmente..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Sistema Operacional / Operating System
+      options:
+        - macOS (Apple Silicon / M1/M2/M3/M4)
+        - macOS (Intel)
+        - Windows 11
+        - Windows 10
+        - Outro / Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Versão do CraftServer / CraftServer Version
+      placeholder: "Ex: v0.2.0"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Console output (opcional)
+      description: Cole aqui qualquer log ou mensagem de erro que aparecer / Paste any log or error message here
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot (opcional)
+      description: Arraste e solte uma imagem aqui se tiver / Drag and drop an image here if you have one
+    validations:
+      required: false

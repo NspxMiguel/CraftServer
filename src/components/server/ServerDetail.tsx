@@ -3,13 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Play, Square, FolderOpen, Wifi, WifiOff, Puzzle,
   RefreshCw, ChevronLeft, Copy, Check, AlertTriangle,
-  Server, Terminal, Settings, Shield, Circle, Loader2
+  Server, Terminal, Settings, Shield, Circle, Loader2,
+  Sparkles, Code2
 } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
 import ServerSettings from './ServerSettings'
 import WhitelistManager from './WhitelistManager'
-import { useT } from '../../i18n'
+import { useT, getLang } from '../../i18n'
+import { translateLog, rawLogType } from '../../utils/logTranslator'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
@@ -24,6 +26,7 @@ export default function ServerDetail({ navigate }: Props) {
   const running = selectedId ? runningIds.has(selectedId) : false
 
   const [logs, setLogs] = useState<{ text: string; type: 'info' | 'warn' | 'error' | 'cmd' }[]>([])
+  const [friendlyMode, setFriendlyMode] = useState(true) // translate logs by default
   const [cmd, setCmd] = useState('')
   const [tab, setTab] = useState<Tab>('console')
   const [playitAddr, setPlayitAddr] = useState('')
@@ -49,8 +52,7 @@ export default function ServerDetail({ navigate }: Props) {
       const text = line.trimEnd()
       if (!text) return
       if (text.includes('Java não encontrado')) setJavaError(true)
-      const type = text.includes('ERROR') || text.includes('SEVERE') ? 'error'
-        : text.includes('WARN') ? 'warn' : 'info'
+      const type = rawLogType(text)
       setLogs(l => [...l.slice(-800), { text, type }])
     })
     window.electron.on('server-stopped', ({ id }: any) => {
@@ -132,12 +134,27 @@ export default function ServerDetail({ navigate }: Props) {
     setUpdating(false)
   }
 
+  const lang = getLang()
+
   const logColor = (type: string) => {
     if (type === 'error') return 'text-red-400'
     if (type === 'warn') return 'text-amber-400/90'
     if (type === 'cmd') return 'text-brand-300'
+    if (type === 'success') return 'text-green-400'
+    if (type === 'player') return 'text-sky-300'
     return 'text-slate-400'
   }
+
+  // In friendly mode: translate and filter logs
+  const friendlyLogs = logs.reduce<{ text: string; emoji: string; type: string }[]>((acc, log) => {
+    if (log.type === 'cmd') {
+      acc.push({ text: log.text, emoji: '⌨️', type: 'cmd' })
+      return acc
+    }
+    const friendly = translateLog(log.text, lang)
+    if (friendly) acc.push(friendly)
+    return acc
+  }, [])
 
   const TABS: { id: Tab; icon: React.ReactNode; label: string }[] = [
     { id: 'console',   icon: <Terminal size={13} />,  label: t.console    },
@@ -278,8 +295,29 @@ export default function ServerDetail({ navigate }: Props) {
             <motion.div key="console" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col">
               {/* Console toolbar */}
               <div className="flex items-center justify-between px-4 py-1.5 border-b border-dark-700 bg-dark-900/80">
-                <span className="text-[10px] text-slate-700 font-mono">{logs.length} {t.consoleLines}</span>
+                {/* Left: friendly mode toggle — always visible */}
+                <button
+                  onClick={() => setFriendlyMode(v => !v)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold border transition-all
+                    ${friendlyMode
+                      ? 'bg-brand-500/15 border-brand-500/25 text-brand-300'
+                      : 'bg-dark-700 border-dark-600 text-slate-500 hover:text-slate-300'
+                    }`}
+                  title={friendlyMode
+                    ? (lang === 'en' ? 'Click to see raw technical logs' : 'Clique para ver logs técnicos brutos')
+                    : (lang === 'en' ? 'Click to see friendly logs' : 'Clique para ver logs amigáveis')
+                  }
+                >
+                  {friendlyMode
+                    ? <><Sparkles size={9} />{lang === 'en' ? 'Friendly' : 'Traduzido'}</>
+                    : <><Code2 size={9} />{lang === 'en' ? 'Technical' : 'Técnico'}</>
+                  }
+                </button>
+
                 <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-700 font-mono mr-2">
+                    {friendlyMode ? friendlyLogs.length : logs.length} {t.consoleLines}
+                  </span>
                   <button
                     onClick={() => {
                       const text = logs.map(l => l.text).join('\n')
@@ -289,7 +327,7 @@ export default function ServerDetail({ navigate }: Props) {
                     }}
                     disabled={logs.length === 0}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold text-slate-600 hover:text-slate-300 hover:bg-white/[0.04] transition-colors disabled:opacity-30"
-                    title="Copiar todos os logs (Ctrl+A depois Ctrl+C também funciona)"
+                    title="Copiar todos os logs"
                   >
                     {copied ? <Check size={10} className="text-brand-400" /> : <Copy size={10} />}
                     {copied ? t.copied : t.copyAll}
@@ -304,16 +342,43 @@ export default function ServerDetail({ navigate }: Props) {
                 </div>
               </div>
 
-              {/* Log area — select-text enables Ctrl+C on selected text */}
+              {/* Log area */}
               <div className="flex-1 overflow-auto p-5 font-mono text-xs leading-5 bg-dark-950 select-text cursor-text">
-                {logs.length === 0 ? (
-                  <div className="flex items-center gap-2 text-slate-700 mt-2 select-none">
-                    <Circle size={5} />{t.noLogs}
-                  </div>
+                {friendlyMode ? (
+                  /* ── Friendly mode ── */
+                  friendlyLogs.length === 0 ? (
+                    <div className="flex flex-col items-center gap-3 mt-10 select-none text-center">
+                      <span className="text-3xl">🎮</span>
+                      <p className="text-slate-600 text-xs">
+                        {lang === 'en'
+                          ? 'Waiting for the server to start...'
+                          : 'Aguardando o servidor iniciar...'}
+                      </p>
+                      <p className="text-slate-700 text-[10px]">
+                        {lang === 'en'
+                          ? 'Click the ✨ Friendly button to see raw logs'
+                          : 'Clique no botão ✨ Traduzido para ver logs brutos'}
+                      </p>
+                    </div>
+                  ) : (
+                    friendlyLogs.map((log, i) => (
+                      <div key={i} className={`flex items-start gap-2 py-0.5 ${logColor(log.type)}`}>
+                        <span className="shrink-0 text-sm leading-5">{log.emoji}</span>
+                        <span className="font-sans leading-5">{log.text}</span>
+                      </div>
+                    ))
+                  )
                 ) : (
-                  logs.map((log, i) => (
-                    <div key={i} className={`${logColor(log.type)} whitespace-pre-wrap break-all`}>{log.text}</div>
-                  ))
+                  /* ── Raw / Technical mode ── */
+                  logs.length === 0 ? (
+                    <div className="flex items-center gap-2 text-slate-700 mt-2 select-none">
+                      <Circle size={5} />{t.noLogs}
+                    </div>
+                  ) : (
+                    logs.map((log, i) => (
+                      <div key={i} className={`${logColor(log.type)} whitespace-pre-wrap break-all`}>{log.text}</div>
+                    ))
+                  )
                 )}
                 <div ref={logsEnd} />
               </div>
