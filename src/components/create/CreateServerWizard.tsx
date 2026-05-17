@@ -113,6 +113,22 @@ const STEPS = ['Tipo', 'Versão', 'Config', 'Plugins']
 
 interface Props { navigate: (p: Page) => void }
 
+// RAM reserved for the host machine (NOT given to the server)
+function calcOverhead(gaming: boolean, voice: boolean): number {
+  let overhead = 1024          // OS baseline (1 GB)
+  if (gaming) overhead += 3072 // Minecraft client + GPU (~3 GB)
+  if (voice)  overhead += 512  // Discord / Spotify
+  return overhead
+}
+
+// How much RAM the Minecraft server itself needs for a given player count
+const PLAYER_RAM: Record<string, number> = {
+  small:  1024,  // 2–5   players → 1 GB minimum
+  medium: 2048,  // 6–15  players → 2 GB
+  large:  4096,  // 16–30 players → 4 GB
+  huge:   8192,  // 30+   players → 8 GB
+}
+
 function calcRecommendedRam(
   totalMb: number,
   gaming: boolean,
@@ -120,20 +136,15 @@ function calcRecommendedRam(
   players: 'small'|'medium'|'large'|'huge'
 ): number {
   if (totalMb < 512) return 512
-  // OS + background overhead
-  let overhead = 1536
-  // If gaming MC on same PC: reserve 3GB for game + GPU
-  if (gaming) overhead += 3072
-  // Discord/Spotify: reserve 512MB
-  if (voice) overhead += 512
-  // Player count base requirement
-  const playerRam: Record<string, number> = { small: 512, medium: 1024, large: 2048, huge: 4096 }
-  const needed = overhead + playerRam[players]
-  const available = totalMb - needed
-  // Clamp to multiples of 512, min 512, max 75% of total
-  const maxAllowed = Math.floor(totalMb * 0.75 / 512) * 512
-  const clamped = Math.max(512, Math.min(maxAllowed, Math.round(available / 512) * 512))
-  return clamped
+
+  const overhead    = calcOverhead(gaming, voice)
+  const wantedByMC  = PLAYER_RAM[players]               // what the server needs
+  const freeForSrv  = Math.max(512, totalMb - overhead) // what's left after host apps
+  const maxAllowed  = Math.floor(totalMb * 0.75 / 512) * 512 // hard 75% cap
+
+  // Give the server what it needs — but never more than what's actually free
+  const raw = Math.min(wantedByMC, freeForSrv)
+  return Math.max(512, Math.min(maxAllowed, Math.round(raw / 512) * 512))
 }
 
 export default function CreateServerWizard({ navigate }: Props) {
@@ -417,18 +428,9 @@ export default function CreateServerWizard({ navigate }: Props) {
                   <div>
                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 block">RAM do servidor</label>
 
-                    {/* System info chip */}
-                    {systemRam > 0 && (
-                      <div className="flex items-center gap-2 mb-3 text-[11px] text-slate-500">
-                        <span className="px-2 py-0.5 bg-dark-700 border border-dark-500 rounded-full font-mono font-bold text-slate-400">
-                          💻 {systemRam >= 1024 ? `${Math.round(systemRam/1024)}GB` : `${systemRam}MB`} no PC
-                        </span>
-                        <span className="text-slate-700">→ responda abaixo para calcular o ideal</span>
-                      </div>
-                    )}
-
                     {/* Smart questions */}
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-2 mb-3">
+
                       {/* Gaming toggle */}
                       <button
                         type="button"
@@ -464,63 +466,89 @@ export default function CreateServerWizard({ navigate }: Props) {
                       </button>
 
                       {/* Player count */}
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {([
-                          { id: 'small',  label: '2–5',   emoji: '👥' },
-                          { id: 'medium', label: '5–15',  emoji: '👥' },
-                          { id: 'large',  label: '15–30', emoji: '👥' },
-                          { id: 'huge',   label: '30+',   emoji: '🏟️' },
-                        ] as const).map(opt => (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => {
-                              setPlayerCount(opt.id)
-                              if (!manualRam && systemRam > 0) setRam(calcRecommendedRam(systemRam, gamingMode, voiceApp, opt.id))
-                            }}
-                            className={`py-2 rounded-xl border text-xs font-bold transition-all
-                              ${playerCount === opt.id
-                                ? 'border-brand-400/40 bg-brand-400/[0.08] text-brand-300'
-                                : 'border-dark-600 bg-dark-800 text-slate-500 hover:border-dark-500'}`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-slate-700 px-0.5">Jogadores simultâneos esperados</p>
-                    </div>
-
-                    {/* Recommendation + manual override */}
-                    <div className={`flex items-center justify-between px-4 py-3 rounded-xl border mb-2
-                      ${manualRam ? 'border-dark-500 bg-dark-800' : 'border-brand-400/25 bg-brand-400/[0.06]'}`}>
                       <div>
-                        <p className="text-[11px] text-slate-600 font-medium">
-                          {manualRam ? 'Manual' : '✨ Recomendado'}
-                        </p>
-                        <p className={`text-lg font-black font-mono ${manualRam ? 'text-slate-300' : 'text-brand-300'}`}>
-                          {ram >= 1024 ? `${ram/1024}GB` : `${ram}MB`}
-                        </p>
+                        <p className="text-[10px] text-slate-600 font-semibold mb-1.5 px-0.5">Quantos jogadores ao mesmo tempo?</p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {([
+                            { id: 'small',  label: '2–5',   sub: '1 GB min' },
+                            { id: 'medium', label: '6–15',  sub: '2 GB min' },
+                            { id: 'large',  label: '16–30', sub: '4 GB min' },
+                            { id: 'huge',   label: '30+',   sub: '8 GB min' },
+                          ] as const).map(opt => (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => {
+                                setPlayerCount(opt.id)
+                                if (!manualRam && systemRam > 0) setRam(calcRecommendedRam(systemRam, gamingMode, voiceApp, opt.id))
+                              }}
+                              className={`py-2 px-1 rounded-xl border text-center transition-all flex flex-col items-center gap-0.5
+                                ${playerCount === opt.id
+                                  ? 'border-brand-400/40 bg-brand-400/[0.08] text-brand-300'
+                                  : 'border-dark-600 bg-dark-800 text-slate-500 hover:border-dark-500'}`}
+                            >
+                              <span className="text-xs font-bold">{opt.label}</span>
+                              <span className={`text-[10px] font-mono ${playerCount === opt.id ? 'text-brand-400/70' : 'text-slate-700'}`}>{opt.sub}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setManualRam(v => !v)}
-                        className="text-[11px] text-slate-600 hover:text-slate-400 underline transition-colors"
-                      >
-                        {manualRam ? 'Usar recomendado' : 'Ajustar manual'}
-                      </button>
                     </div>
 
-                    {/* Manual slider (only when manualRam) */}
+                    {/* Result card */}
+                    <div className={`rounded-xl border mb-2 overflow-hidden ${manualRam ? 'border-dark-500 bg-dark-800' : 'border-brand-400/25 bg-brand-400/[0.04]'}`}>
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <div>
+                          <p className="text-[10px] text-slate-600 font-semibold uppercase tracking-wide">
+                            {manualRam ? 'Manual' : '✨ Recomendado para seu PC'}
+                          </p>
+                          <p className={`text-2xl font-black font-mono leading-tight ${manualRam ? 'text-slate-300' : 'text-brand-300'}`}>
+                            {ram >= 1024 ? `${ram/1024}GB` : `${ram}MB`}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !manualRam
+                            setManualRam(next)
+                            if (!next && systemRam > 0) setRam(calcRecommendedRam(systemRam, gamingMode, voiceApp, playerCount))
+                          }}
+                          className="text-[11px] text-slate-600 hover:text-slate-400 underline transition-colors"
+                        >
+                          {manualRam ? 'Usar recomendado' : 'Ajustar manual'}
+                        </button>
+                      </div>
+
+                      {/* Breakdown — only shown in auto mode with known system RAM */}
+                      {!manualRam && systemRam > 0 && (
+                        <div className="px-4 pb-3 flex items-center gap-3 text-[10px] font-mono text-slate-700">
+                          <span>💻 {Math.round(systemRam/1024)}GB total</span>
+                          <span className="text-dark-500">─</span>
+                          <span>{Math.round(calcOverhead(gamingMode, voiceApp)/1024)}GB reservado (SO{gamingMode ? ' + jogo' : ''}{voiceApp ? ' + Discord' : ''})</span>
+                          <span className="text-dark-500">─</span>
+                          <span className="text-brand-400/60">{ram >= 1024 ? `${ram/1024}GB` : `${ram}MB`} pro servidor ✓</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Manual slider */}
                     {manualRam && (
-                      <div className="px-1">
+                      <div className="px-1 mb-1">
                         <input
-                          type="range" min={512} max={systemRam > 0 ? Math.floor(systemRam * 0.9 / 512) * 512 : 8192} step={512} value={ram}
+                          type="range"
+                          min={512}
+                          max={systemRam > 0 ? Math.floor(systemRam * 0.85 / 512) * 512 : 16384}
+                          step={512}
+                          value={ram}
                           onChange={e => setRam(Number(e.target.value))}
                           className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-brand-400 bg-dark-600"
                         />
                         <div className="flex justify-between text-[10px] text-slate-700 mt-1.5 font-mono font-bold">
-                          <span>512MB</span><span>2GB</span><span>4GB</span><span>6GB</span>
-                          {systemRam >= 8192 && <span>8GB</span>}
+                          <span>512MB</span>
+                          <span>2GB</span>
+                          <span>4GB</span>
+                          <span>8GB</span>
+                          {systemRam >= 12288 && <span>12GB</span>}
                           {systemRam >= 16384 && <span>16GB</span>}
                         </div>
                       </div>
