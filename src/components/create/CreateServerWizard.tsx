@@ -134,7 +134,7 @@ export default function CreateServerWizard({ navigate }: Props) {
     setProgress([])
     setDone(false)
 
-    const selectedPlugins = plugins.filter(p => p.enabled).map(p => ({ name: p.name, url: p.url, filename: p.filename }))
+    const selectedPlugins = plugins.filter(p => p.enabled).map(p => ({ name: p.name, url: p.url, filename: p.filename, modrinthSlug: p.modrinthSlug }))
     const res = isElectron
       ? await window.electron.createServer({ name: name.trim(), type, version, ram, port, plugins: selectedPlugins, offlineMode })
       : { ok: true, server: { id: Date.now().toString(), name, type, version, ram, port, dir: '', createdAt: Date.now(), playit: false } }
