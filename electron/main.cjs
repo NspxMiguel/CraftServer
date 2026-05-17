@@ -294,7 +294,7 @@ ipcMain.handle('get-versions', async (_, type) => {
 
 // ── Create server ─────────────────────────────────────────────────────────────
 ipcMain.handle('create-server', async (event, opts) => {
-  const { name, type, version, ram, port, plugins: selectedPlugins, offlineMode = false } = opts
+  const { name, type, version, ram, port, plugins: selectedPlugins, offlineMode = false, extraServerProperties = {}, gamePresetId } = opts
   const id = Date.now().toString()
   const serverDir = path.join(SERVERS_DIR, id)
   fs.mkdirSync(serverDir, { recursive: true })
@@ -313,8 +313,12 @@ ipcMain.handle('create-server', async (event, opts) => {
 
     const isJava = type !== 'bedrock'
     if (isJava) {
-      fs.writeFileSync(path.join(serverDir, 'server.properties'), buildServerProperties(port, name, offlineMode))
+      // Build base properties then merge any preset overrides
+      const baseProps = parseServerProperties(buildServerProperties(port, name, offlineMode))
+      const merged = { ...baseProps, ...extraServerProperties }
+      fs.writeFileSync(path.join(serverDir, 'server.properties'), stringifyServerProperties(merged))
       fs.writeFileSync(path.join(serverDir, 'whitelist.json'), '[]')
+      if (gamePresetId) send(`Modo de jogo: ${gamePresetId}`)
     }
 
     // Hybrid: also install Geyser + Floodgate

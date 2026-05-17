@@ -43,6 +43,10 @@ export interface CreateServerOpts {
   port: number
   plugins: { name: string; url: string; filename: string }[]
   chunkyRadius?: number | null
+  offlineMode?: boolean
+  // Game preset extras
+  extraServerProperties?: Record<string, string | number | boolean>
+  gamePresetId?: string
 }
 
 export interface WhitelistEntry {

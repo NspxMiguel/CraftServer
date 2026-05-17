@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap, Shield, Globe, Lock, UserCheck, Layers } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap, Shield, Globe, Lock, UserCheck, Layers, Gamepad2 } from 'lucide-react'
 import type { Page } from '../../App'
 import type { ServerType } from '../../types'
 import { PRESET_PLUGINS } from '../../data/presetPlugins'
+import { GAME_PRESETS, type GamePreset } from '../../data/gamePresets'
+import GameModeSelector from './GameModeSelector'
 import { useServerStore } from '../../store/serverStore'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
@@ -113,7 +115,7 @@ const STEPS = ['Tipo', 'Versão', 'Config', 'Plugins']
 
 interface Props { navigate: (p: Page) => void; quickSetup?: boolean; onCancelQuick?: () => void }
 
-type WizardMode = 'choose' | 'quick' | 'manual'
+type WizardMode = 'choose' | 'quick' | 'manual' | 'gamemode'
 
 // RAM reserved for the host machine (NOT given to the server)
 function calcOverhead(gaming: boolean, voice: boolean): number {
@@ -318,6 +320,65 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
     }
   }
 
+  // ── Game Preset create ─────────────────────────────────────────────────────
+  const handlePresetCreate = async (preset: GamePreset, serverName: string) => {
+    setCreating(true)
+    setMode('manual') // use the creating overlay from manual mode
+
+    const versions = await (isElectron
+      ? window.electron.getVersions('paper')
+      : Promise.resolve(['1.21.5', '1.21.4']))
+    const version = versions[0] || '1.21.5'
+
+    // Smart RAM
+    let ramMb = 2048
+    if (isElectron) {
+      try {
+        const { totalMb } = await window.electron.getSystemRam?.() ?? { totalMb: 4096 }
+        ramMb = calcRecommendedRam(totalMb, false, false, 'medium')
+      } catch {}
+    }
+
+    // Deduplicate plugins by filename
+    const seen = new Set<string>()
+    const pluginList = preset.plugins.filter(p => {
+      if (seen.has(p.filename)) return false
+      seen.add(p.filename)
+      return true
+    })
+
+    const progressHandler = ({ msg }: any) => setProgress(p => [...p, msg])
+    if (isElectron) window.electron.on('create-progress', progressHandler)
+
+    const res = isElectron
+      ? await window.electron.createServer({
+          name: serverName,
+          type: 'paper',
+          version,
+          ram: ramMb,
+          port: 25565,
+          plugins: pluginList,
+          offlineMode: false,
+          extraServerProperties: preset.serverProperties ?? {},
+          gamePresetId: preset.id,
+        })
+      : { ok: true, server: { id: Date.now().toString(), name: serverName, type: 'paper' as const, version, ram: ramMb, port: 25565, dir: '', createdAt: Date.now(), playit: false } }
+
+    if (isElectron) window.electron.off('create-progress', progressHandler)
+
+    if (res.ok) {
+      setDone(true)
+      const updated = isElectron ? await window.electron.getServers() : [res.server]
+      setServers(updated)
+      setSelected(res.server.id)
+      setTimeout(() => navigate('server'), 900)
+    } else {
+      setCreating(false)
+      setProgress([])
+      alert(`Erro: ${res.error}`)
+    }
+  }
+
   const selectedTypeMeta = SERVER_TYPES.find(t => t.id === type)!
   const canNext = step === 0 || (step === 1 && !!version) || (step === 2 && !!name.trim()) || step === 3
 
@@ -326,6 +387,14 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
       {/* Background */}
       <div className="absolute inset-0 bg-grid-dark bg-grid opacity-60 pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-brand-400/5 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Game Mode Selector */}
+      {mode === 'gamemode' && !creating && (
+        <GameModeSelector
+          onSelect={handlePresetCreate}
+          onBack={() => setMode('choose')}
+        />
+      )}
 
       {/* Mode Choice Screen */}
       {mode === 'choose' && !showPlayitModal && !showChunkyModal && !creating && (
@@ -383,6 +452,33 @@ export default function CreateServerWizard({ navigate, quickSetup = false, onCan
                 <p className="text-slate-500 text-sm leading-relaxed">
                   Escolha o tipo de servidor, versão, plugins e RAM no detalhe.
                 </p>
+              </motion.button>
+
+              {/* Game modes card */}
+              <motion.button
+                initial={{ y: 18, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.22 }}
+                onClick={() => setMode('gamemode')}
+                className="group text-left p-5 rounded-2xl bg-brand-500/8 border-2 border-brand-500/30 hover:border-brand-500/60 hover:bg-brand-500/12 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/25 flex items-center justify-center">
+                    <Gamepad2 size={18} className="text-brand-400" />
+                  </div>
+                  <div>
+                    <p className="text-white font-black text-base">🎮 Modo de Jogo</p>
+                    <span className="text-[10px] font-bold text-brand-400 bg-brand-400/10 border border-brand-400/20 px-2 py-0.5 rounded-full">Novo!</span>
+                  </div>
+                </div>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Skyblock, OneBlock, BedWars, SkyWars, KitPvP e mais — tudo pré-configurado, só jogar!
+                </p>
+                <div className="flex gap-1.5 mt-3 flex-wrap">
+                  {['🏝️ Skyblock', '⬛ OneBlock', '💰 Ilha Eco', '🛏️ BedWars', '🌌 SkyWars', '🥊 KitPvP'].map(m => (
+                    <span key={m} className="text-[10px] px-2 py-0.5 bg-dark-700 border border-dark-600 text-slate-500 rounded-full">{m}</span>
+                  ))}
+                </div>
               </motion.button>
             </div>
 
