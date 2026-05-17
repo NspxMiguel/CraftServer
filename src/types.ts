@@ -28,7 +28,8 @@ export interface PresetPlugin {
   url: string
   filename: string
   enabled: boolean
-  category: 'auth' | 'core' | 'compat' | 'protection' | 'qol'
+  category: 'auth' | 'core' | 'compat' | 'protection' | 'perf' | 'map' | 'social' | 'qol' | 'rpg'
+  modrinthSlug?: string
 }
 
 export interface CreateServerOpts {

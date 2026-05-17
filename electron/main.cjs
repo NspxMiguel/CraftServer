@@ -6,6 +6,9 @@ const { spawn, execFile } = require('child_process')
 const https = require('https')
 const http = require('http')
 
+let autoUpdater
+try { autoUpdater = require('electron-updater').autoUpdater } catch {}
+
 const isDev = !app.isPackaged
 
 // ── Paths ─────────────────────────────────────────────────────────────────────
@@ -172,6 +175,29 @@ const FALLBACK_VERSIONS = {
   vanilla: ['1.21.5','1.21.4','1.21.3','1.21.1','1.20.6','1.20.4','1.20.2','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.8.9'],
 }
 
+async function resolvePluginUrl(plugin, mcVersion) {
+  if (plugin.modrinthSlug) {
+    try {
+      const encodedLoaders = encodeURIComponent(JSON.stringify(['paper','spigot','bukkit']))
+      const encodedVersions = encodeURIComponent(JSON.stringify([mcVersion]))
+      const url = `https://api.modrinth.com/v2/project/${plugin.modrinthSlug}/version?loaders=${encodedLoaders}&game_versions=${encodedVersions}`
+      const versions = await fetchJson(url)
+      if (Array.isArray(versions) && versions.length > 0) {
+        const file = versions[0].files.find(f => f.primary) || versions[0].files[0]
+        if (file) return { url: file.url, filename: file.filename }
+      }
+      // If no version matches exactly, try without game_version filter
+      const urlNoVer = `https://api.modrinth.com/v2/project/${plugin.modrinthSlug}/version?loaders=${encodedLoaders}`
+      const versionsNoVer = await fetchJson(urlNoVer)
+      if (Array.isArray(versionsNoVer) && versionsNoVer.length > 0) {
+        const file = versionsNoVer[0].files.find(f => f.primary) || versionsNoVer[0].files[0]
+        if (file) return { url: file.url, filename: file.filename }
+      }
+    } catch {}
+  }
+  return { url: plugin.url, filename: plugin.filename }
+}
+
 ipcMain.handle('get-versions', async (_, type) => {
   try {
     if (type === 'paper') {
@@ -245,11 +271,13 @@ ipcMain.handle('create-server', async (event, opts) => {
 
     if (selectedPlugins && selectedPlugins.length > 0) {
       send('Instalando plugins...')
-      for (const plugin of selectedPlugins) {
-        send(`Instalando ${plugin.name}...`)
+      for (const pl of selectedPlugins) {
+        send(`Instalando ${pl.name}...`)
         try {
-          await downloadFile(plugin.url, path.join(serverDir, 'plugins', plugin.filename))
-        } catch { send(`Aviso: falha ao instalar ${plugin.name}`) }
+          const { url: plUrl, filename: plFilename } = await resolvePluginUrl(pl, version)
+          const pluginDest = path.join(serverDir, 'plugins', plFilename || pl.filename)
+          await downloadFile(plUrl, pluginDest, pct => send(`Plugin ${pl.name}: ${pct}%`))
+        } catch { send(`Aviso: falha ao instalar ${pl.name}`) }
       }
     }
 
@@ -645,7 +673,12 @@ function createWindow() {
   else win.loadFile(path.join(__dirname, '../dist/index.html'))
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  createWindow()
+  if (!isDev && autoUpdater) {
+    autoUpdater.checkForUpdatesAndNotify().catch(() => {})
+  }
+})
 app.on('window-all-closed', () => {
   Object.values(serverProcesses).forEach(p => p.kill())
   Object.values(playitProcesses).forEach(p => p.kill())

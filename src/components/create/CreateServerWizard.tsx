@@ -253,8 +253,8 @@ export default function CreateServerWizard({ navigate }: Props) {
                     <span className="text-sm">Buscando versões...</span>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-5 gap-2 max-h-64 overflow-auto pr-1">
-                    {versions.slice(0, 50).map(v => (
+                  <div className="grid grid-cols-5 gap-2 max-h-96 overflow-auto pr-1">
+                    {versions.map(v => (
                       <button
                         key={v}
                         onClick={() => setVersion(v)}
