@@ -396,7 +396,6 @@ ipcMain.handle('update-server', async (event, { serverId }) => {
 
   const send = msg => event.sender.send('create-progress', { id: serverId, msg })
   try {
-    const checkResult = await ipcMain.emit // just get latest version
     let latestVersion
     if (server.type === 'paper') {
       const data = await fetchJson('https://api.papermc.io/v2/projects/paper')

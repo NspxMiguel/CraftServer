@@ -2,6 +2,7 @@
   "name": "craftnest",
   "version": "0.1.0",
   "description": "Minecraft Server Manager — create, manage and share servers with ease",
+  "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
@@ -9,6 +10,7 @@
     "build:mac": "vite build && electron-builder --mac",
     "build:win": "vite build && electron-builder --win",
     "preview": "vite preview",
+    "preview-web": "vite",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -40,21 +42,37 @@
   "build": {
     "appId": "com.craftnest.app",
     "productName": "CraftNest",
-    "icon": "public/icon.png",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "node_modules/**/*"
+      "!node_modules/**/*"
     ],
+    "asar": true,
     "mac": {
       "category": "public.app-category.utilities",
-      "target": ["dmg", "zip"]
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ]
+    },
+    "dmg": {
+      "title": "CraftNest",
+      "background": null
     },
     "win": {
-      "target": ["nsis", "zip"]
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
     },
-    "extraResources": [
-      { "from": "resources/", "to": "resources/", "filter": ["**/*"] }
-    ]
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
