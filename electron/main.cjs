@@ -561,23 +561,49 @@ ipcMain.handle('check-dependencies', async () => {
 ipcMain.handle('open-external', (_, url) => shell.openExternal(url))
 
 async function findJava() {
-  const candidates = [
-    'java',
-    '/usr/bin/java',
-    '/usr/local/bin/java',
-    '/Library/Java/JavaVirtualMachines/jdk-25.jdk/Contents/Home/bin/java',
-    '/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home/bin/java',
-    '/Library/Java/JavaVirtualMachines/temurin-25.jdk/Contents/Home/bin/java',
-    '/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home/bin/java',
-    process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin', 'java') : null,
-    readConfig().javaPath || null,
-    // Windows paths
-    'C:\\Program Files\\Java\\jdk-25\\bin\\java.exe',
-    'C:\\Program Files\\Java\\jdk-21\\bin\\java.exe',
-    'C:\\Program Files\\Eclipse Adoptium\\jdk-25\\bin\\java.exe',
-    'C:\\Program Files\\Eclipse Adoptium\\jdk-21\\bin\\java.exe',
-  ].filter(Boolean)
-  for (const cmd of candidates) {
+  const candidates = []
+
+  // User-configured path first (highest priority)
+  const cfgPath = readConfig().javaPath
+  if (cfgPath) candidates.push(cfgPath)
+
+  // JAVA_HOME env var
+  if (process.env.JAVA_HOME) candidates.push(path.join(process.env.JAVA_HOME, 'bin', 'java'))
+
+  // PATH lookup (works if Java is properly on PATH — may not work right after install)
+  candidates.push('java')
+
+  if (process.platform === 'darwin') {
+    // Scan all JVMs installed via /Library/Java/JavaVirtualMachines (catches any version/build)
+    const jvmBase = '/Library/Java/JavaVirtualMachines'
+    try {
+      const dirs = fs.readdirSync(jvmBase).sort().reverse() // newest (25 > 21) first
+      for (const d of dirs) candidates.push(path.join(jvmBase, d, 'Contents', 'Home', 'bin', 'java'))
+    } catch {}
+    // Homebrew & common explicit paths
+    candidates.push(
+      '/usr/bin/java',
+      '/usr/local/bin/java',
+      '/opt/homebrew/opt/openjdk/bin/java',
+      '/opt/homebrew/opt/openjdk@21/bin/java',
+    )
+  }
+
+  if (process.platform === 'win32') {
+    const win32Bases = [
+      'C:\\Program Files\\Eclipse Adoptium',
+      'C:\\Program Files\\Java',
+      'C:\\Program Files\\Microsoft',
+    ]
+    for (const base of win32Bases) {
+      try {
+        const dirs = fs.readdirSync(base).sort().reverse() // newest build first
+        for (const d of dirs) candidates.push(path.join(base, d, 'bin', 'java.exe'))
+      } catch {}
+    }
+  }
+
+  for (const cmd of candidates.filter(Boolean)) {
     try {
       await new Promise((res, rej) => execFile(cmd, ['-version'], err => err ? rej() : res()))
       return cmd

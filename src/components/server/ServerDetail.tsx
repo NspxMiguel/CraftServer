@@ -221,7 +221,7 @@ export default function ServerDetail({ navigate }: Props) {
             className="flex items-center gap-2 px-5 py-2.5 bg-red-500/8 border-b border-red-500/20 overflow-hidden"
           >
             <AlertTriangle size={13} className="text-red-400 shrink-0" />
-            <p className="text-xs text-slate-400">Java não encontrado — instale Java 17+ em <span className="text-brand-300 font-medium">adoptium.net</span></p>
+            <p className="text-xs text-slate-400">Java não encontrado — instale <span className="text-brand-300 font-medium">Java 25 (Adoptium)</span> e clique em verificar novamente na tela inicial</p>
           </motion.div>
         )}
       </AnimatePresence>

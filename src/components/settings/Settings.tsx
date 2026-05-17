@@ -37,15 +37,15 @@ export default function Settings() {
           />
           <p className="text-xs text-zinc-600 mt-2 flex items-center gap-1">
             <Info size={11} />
-            Java 17 ou superior é necessário para Minecraft 1.17+
+            Java 25 recomendado (Minecraft 26.x+). Java 21 para versões antigas.
           </p>
           <a
-            href="https://adoptium.net"
+            href="https://adoptium.net/temurin/releases/?version=25"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300 mt-1 transition-colors"
           >
-            Baixar Java (Adoptium) <ExternalLink size={10} />
+            Baixar Java 25 (Adoptium) <ExternalLink size={10} />
           </a>
         </div>
 

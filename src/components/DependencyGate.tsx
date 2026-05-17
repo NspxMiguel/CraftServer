@@ -79,9 +79,9 @@ export default function DependencyGate({ children }: Props) {
                       <XCircle size={18} className="text-red-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-bold text-sm">Java 17+</p>
+                      <p className="text-white font-bold text-sm">Java 25</p>
                       <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">
-                        Necessário para executar servidores Minecraft (Java, Bedrock via PowerNukkit e Hybrid).
+                        Necessário para executar servidores Minecraft. Minecraft 26.x+ requer Java 25.
                       </p>
                       <p className="text-red-400/70 text-[11px] font-mono mt-1.5">
                         {deps.java.version ? `Versão instalada: ${deps.java.version} (muito antiga)` : 'Java não encontrado no sistema'}
@@ -89,11 +89,11 @@ export default function DependencyGate({ children }: Props) {
                     </div>
                   </div>
                   <button
-                    onClick={() => isElectron && window.electron.openExternal('https://adoptium.net/temurin/releases/?version=21')}
+                    onClick={() => isElectron && window.electron.openExternal('https://adoptium.net/temurin/releases/?version=25')}
                     className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-brand-500/20 hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Download size={14} />
-                    Baixar Java 21 (Adoptium)
+                    Baixar Java 25 (Adoptium)
                   </button>
                 </motion.div>
               )}
@@ -117,15 +117,15 @@ export default function DependencyGate({ children }: Props) {
             <button
               onClick={recheck}
               disabled={rechecking}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-dark-700 hover:bg-dark-600 border border-dark-500 hover:border-dark-400 text-slate-400 hover:text-white rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-dark-700 hover:bg-dark-600 border border-brand-500/30 hover:border-brand-500/60 text-slate-300 hover:text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
             >
-              <RefreshCw size={13} className={rechecking ? 'animate-spin' : ''} />
-              {rechecking ? 'Verificando...' : 'Já instalei, verificar novamente'}
+              <RefreshCw size={14} className={rechecking ? 'animate-spin text-brand-400' : 'text-brand-400'} />
+              {rechecking ? 'Verificando...' : 'Já instalei o Java — verificar agora'}
             </button>
 
-            <p className="text-center text-xs text-dark-400 flex items-center justify-center gap-1.5 mt-2">
+            <p className="text-center text-xs text-dark-400 flex items-center justify-center gap-1.5">
               <Coffee size={11} />
-              Após instalar, clique em "verificar novamente"
+              Instale e clique no botão acima — não precisa reiniciar o app
             </p>
           </div>
         )}
