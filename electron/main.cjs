@@ -976,8 +976,8 @@ ipcMain.handle('start-server', async (event, id) => {
   })
   serverProcesses[id] = proc
 
-  proc.stdout.on('data', d => safeSend(event.sender, 'server-log', { id, line: d.toString() }))
-  proc.stderr.on('data', d => safeSend(event.sender, 'server-log', { id, line: d.toString() }))
+  proc.stdout.on('data', d => safeSend(event.sender, 'server-log', { id, text: d.toString() }))
+  proc.stderr.on('data', d => safeSend(event.sender, 'server-log', { id, text: d.toString() }))
   proc.on('close', code => {
     delete serverProcesses[id]
     safeSend(event.sender, 'server-stopped', { id, code })
@@ -1223,13 +1223,17 @@ ipcMain.handle('install-playit-plugin', async (event, { serverId }) => {
     const server = servers.find(s => s.id === serverId)
     if (!server) return { ok: false, error: 'Servidor não encontrado' }
 
-    const pluginPath = path.join(server.dir, 'plugins', 'playit-minecraft.jar')
-    if (fs.existsSync(pluginPath)) return { ok: true, alreadyInstalled: true }
+    // Check if any playit JAR already exists
+    const pluginsDir = path.join(server.dir, 'plugins')
+    const alreadyHasPlayit = fs.existsSync(pluginsDir) && fs.readdirSync(pluginsDir).some(f => f.toLowerCase().startsWith('playit'))
+    if (alreadyHasPlayit) return { ok: true, alreadyInstalled: true }
 
-    safeSend(event.sender, 'server-log', { id: serverId, text: '── Baixando plugin playit.gg... ──' })
-    const url = 'https://github.com/playit-cloud/playit-minecraft-plugin/releases/latest/download/playit-minecraft.jar'
-    await downloadFile(url, pluginPath)
-    safeSend(event.sender, 'server-log', { id: serverId, text: '── Plugin playit.gg instalado! Reinicie o servidor. ──' })
+    safeSend(event.sender, 'server-log', { id: serverId, text: '── Baixando plugin PlayIt.gg... ──' })
+    // Resolve via Modrinth for the correct JAR filename (fallback to direct GitHub URL)
+    const playitDef = { name: 'PlayIt.gg', modrinthSlug: 'playit', url: 'https://github.com/playit-cloud/playit-minecraft-plugin/releases/latest/download/playit-minecraft.jar', filename: 'playit-minecraft.jar' }
+    const { url: resolvedUrl, filename: resolvedFilename } = await resolvePluginUrl(playitDef, server.version || '1.21.4')
+    await downloadFile(resolvedUrl, path.join(server.dir, 'plugins', resolvedFilename))
+    safeSend(event.sender, 'server-log', { id: serverId, text: '── Plugin PlayIt.gg instalado! Reinicie o servidor e use /playit ──' })
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e.message }
@@ -1240,8 +1244,10 @@ ipcMain.handle('check-playit-plugin', (_, { serverId }) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
   if (!server) return { installed: false }
-  const pluginPath = path.join(server.dir, 'plugins', 'playit-minecraft.jar')
-  return { installed: fs.existsSync(pluginPath) }
+  const pluginsDir = path.join(server.dir, 'plugins')
+  if (!fs.existsSync(pluginsDir)) return { installed: false }
+  const installed = fs.readdirSync(pluginsDir).some(f => f.toLowerCase().startsWith('playit'))
+  return { installed }
 })
 
 // ── Auto-update ───────────────────────────────────────────────────────────────

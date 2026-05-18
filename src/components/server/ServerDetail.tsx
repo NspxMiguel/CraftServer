@@ -45,9 +45,9 @@ export default function ServerDetail({ navigate }: Props) {
     setJavaError(false)
     setUpdateAvail(null)
 
-    const onLog = ({ id, text }: any) => {
+    const onLog = ({ id, text, line }: any) => {
       if (id !== selectedId) return
-      const trimmed = (text ?? '').trimEnd()
+      const trimmed = ((text ?? line) ?? '').trimEnd()
       if (!trimmed) return
       if (trimmed.includes('Java não encontrado')) setJavaError(true)
       const type = rawLogType(trimmed)
