@@ -204,6 +204,8 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
   const [customRadius, setCustomRadius] = useState(10)
   const [chunkyPreset, setChunkyPreset] = useState<'small'|'medium'|'large'|'huge'|'custom'>('medium')
   const [hybridInfoOpen, setHybridInfoOpen] = useState(false)
+  // Pending game mode create — set when user picks a preset, waiting for PlayIt decision
+  const [pendingPresetCreate, setPendingPresetCreate] = useState<{ preset: GamePreset; serverName: string } | null>(null)
 
   // Derived plugin buckets (based on static flags, not stateful enabled)
   const corePlugins    = plugins.filter(p => !p.silent && !p.offlineOnly && PRESET_PLUGINS.find(pp => pp.name === p.name)?.enabled)
@@ -292,7 +294,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
   }
 
   // ── Game Preset create ─────────────────────────────────────────────────────
-  const handlePresetCreate = async (preset: GamePreset, serverName: string) => {
+  const handlePresetCreate = async (preset: GamePreset, serverName: string, includePlayit = false) => {
     setCreating(true)
     setMode('manual') // use the creating overlay from manual mode
 
@@ -314,9 +316,12 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       } catch {}
     }
 
-    // Deduplicate plugins by filename
+    // Build plugin list: preset plugins + optional PlayIt.gg
     const seen = new Set<string>()
-    const pluginList = preset.plugins.filter(p => {
+    const basePlugins = includePlayit
+      ? [...preset.plugins, { name: 'PlayIt.gg', filename: 'playit-minecraft.jar', modrinthSlug: 'playit', url: 'https://github.com/playit-cloud/playit-minecraft-plugin/releases/latest/download/playit-minecraft.jar' }]
+      : preset.plugins
+    const pluginList = basePlugins.filter(p => {
       if (seen.has(p.filename)) return false
       seen.add(p.filename)
       return true
@@ -367,7 +372,11 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       {mode === 'gamemode' && !creating && (
         <div className="absolute inset-0 z-40">
           <GameModeSelector
-            onSelect={handlePresetCreate}
+            onSelect={(preset, serverName) => {
+              // Don't create immediately — show PlayIt modal first
+              setPendingPresetCreate({ preset, serverName })
+              setShowPlayitModal(true)
+            }}
             onBack={() => setMode('choose')}
           />
         </div>
@@ -1015,14 +1024,28 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
         {showPlayitModal && (
           <PlayItModal
             onUsePlayit={() => {
-              setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: true } : p))
               setShowPlayitModal(false)
-              setShowChunkyModal(true)
+              if (pendingPresetCreate) {
+                // Game mode flow: create directly with PlayIt included — no Chunky (void/flat worlds)
+                handlePresetCreate(pendingPresetCreate.preset, pendingPresetCreate.serverName, true)
+                setPendingPresetCreate(null)
+              } else {
+                // Manual wizard flow: enable PlayIt in plugins state → Chunky modal
+                setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: true } : p))
+                setShowChunkyModal(true)
+              }
             }}
             onSkipPlayit={() => {
-              setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: false } : p))
               setShowPlayitModal(false)
-              setShowChunkyModal(true)
+              if (pendingPresetCreate) {
+                // Game mode flow: create directly without PlayIt — no Chunky
+                handlePresetCreate(pendingPresetCreate.preset, pendingPresetCreate.serverName, false)
+                setPendingPresetCreate(null)
+              } else {
+                // Manual wizard flow: disable PlayIt → Chunky modal
+                setPlugins(ps => ps.map(p => p.name === 'PlayIt.gg' ? { ...p, enabled: false } : p))
+                setShowChunkyModal(true)
+              }
             }}
           />
         )}

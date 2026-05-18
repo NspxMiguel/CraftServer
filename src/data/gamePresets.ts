@@ -4,7 +4,8 @@
 export interface PresetPluginDef {
   name: string
   filename: string
-  url: string   // HTTPS direct download URL
+  url: string           // HTTPS direct download URL (fallback)
+  modrinthSlug?: string // preferred — resolves the best JAR for the MC version
 }
 
 export interface GamePreset {
@@ -42,41 +43,42 @@ export interface GamePreset {
   worldNoteEN?: string
 }
 
-// ─── Shared plugin URLs (all from reliable GitHub releases) ──────────────────
-const P = {
-  essentialsX:    { name: 'EssentialsX',       filename: 'EssentialsX.jar',         url: 'https://github.com/EssentialsX/Essentials/releases/latest/download/EssentialsX.jar' },
-  essentialsChat: { name: 'EssentialsX Chat',   filename: 'EssentialsXChat.jar',     url: 'https://github.com/EssentialsX/Essentials/releases/latest/download/EssentialsXChat.jar' },
-  luckPerms:      { name: 'LuckPerms',          filename: 'LuckPerms-Bukkit.jar',    url: 'https://download.luckperms.net/1567/bukkit/loader/LuckPerms-Bukkit-5.4.148.jar' },
-  vault:          { name: 'Vault',              filename: 'Vault.jar',               url: 'https://github.com/milkbowl/Vault/releases/latest/download/Vault.jar' },
-  papi:           { name: 'PlaceholderAPI',     filename: 'PlaceholderAPI.jar',      url: 'https://github.com/PlaceholderAPI/PlaceholderAPI/releases/latest/download/PlaceholderAPI.jar' },
-  protocolLib:    { name: 'ProtocolLib',        filename: 'ProtocolLib.jar',         url: 'https://github.com/dmulloy2/ProtocolLib/releases/latest/download/ProtocolLib.jar' },
-  viaVersion:     { name: 'ViaVersion',         filename: 'ViaVersion.jar',          url: 'https://github.com/ViaVersion/ViaVersion/releases/latest/download/ViaVersion.jar' },
-  spark:          { name: 'Spark',              filename: 'spark-bukkit.jar',        url: 'https://github.com/lucko/spark/releases/latest/download/spark-bukkit.jar' },
-  worldEdit:      { name: 'WorldEdit',          filename: 'WorldEdit.jar',           url: 'https://mediafilez.forgecdn.net/files/5637/592/worldedit-bukkit-7.3.12.jar' },
-  worldGuard:     { name: 'WorldGuard',         filename: 'WorldGuard.jar',          url: 'https://mediafilez.forgecdn.net/files/5637/604/worldguard-bukkit-7.0.13.jar' },
-  coreProtect:    { name: 'CoreProtect',        filename: 'CoreProtect.jar',         url: 'https://github.com/PlayPro/CoreProtect/releases/latest/download/CoreProtect.jar' },
-  tab:            { name: 'TAB',                filename: 'TAB.jar',                 url: 'https://github.com/NEZNAMY/TAB/releases/latest/download/TAB.jar' },
-  decentHolo:     { name: 'DecentHolograms',    filename: 'DecentHolograms.jar',     url: 'https://github.com/decentsoftware-eu/decentholograms/releases/latest/download/DecentHolograms.jar' },
-  griefPrev:      { name: 'GriefPrevention',    filename: 'GriefPrevention.jar',     url: 'https://github.com/TechFortress/GriefPrevention/releases/latest/download/GriefPrevention.jar' },
-  mcMMO:          { name: 'mcMMO',              filename: 'mcMMO.jar',               url: 'https://github.com/mcMMO-Dev/mcMMO/releases/latest/download/mcMMO.jar' },
-  jobs:           { name: 'Jobs Reborn',        filename: 'Jobs.jar',                url: 'https://github.com/Zrips/Jobs/releases/latest/download/Jobs.jar' },
-  authMe:         { name: 'AuthMe',             filename: 'AuthMe.jar',              url: 'https://github.com/AuthMe/AuthMeReloaded/releases/latest/download/AuthMe.jar' },
-  skinsRestorer:  { name: 'SkinsRestorer',      filename: 'SkinsRestorer.jar',       url: 'https://github.com/SkinsRestorer/SkinsRestorer/releases/latest/download/SkinsRestorer.jar' },
-  chairs:         { name: 'Chairs',             filename: 'Chairs.jar',              url: 'https://github.com/Betrayd/Chairs/releases/latest/download/Chairs.jar' },
-  multiverse:     { name: 'Multiverse-Core',    filename: 'Multiverse-Core.jar',     url: 'https://github.com/Multiverse/Multiverse-Core/releases/latest/download/multiverse-core.jar' },
+// ─── Shared plugin definitions — modrinthSlug preferred, url is fallback ──────
+const P: Record<string, PresetPluginDef> = {
+  essentialsX:    { name: 'EssentialsX',       filename: 'EssentialsX.jar',         modrinthSlug: 'essentialsx',           url: 'https://github.com/EssentialsX/Essentials/releases/latest/download/EssentialsX.jar' },
+  essentialsChat: { name: 'EssentialsX Chat',   filename: 'EssentialsXChat.jar',     modrinthSlug: 'essentialsx-chat',      url: 'https://github.com/EssentialsX/Essentials/releases/latest/download/EssentialsXChat.jar' },
+  luckPerms:      { name: 'LuckPerms',          filename: 'LuckPerms-Bukkit.jar',    modrinthSlug: 'luckperms',             url: 'https://download.luckperms.net/1567/bukkit/loader/LuckPerms-Bukkit-5.4.148.jar' },
+  vault:          { name: 'Vault',              filename: 'Vault.jar',                                                      url: 'https://github.com/milkbowl/Vault/releases/latest/download/Vault.jar' },
+  papi:           { name: 'PlaceholderAPI',     filename: 'PlaceholderAPI.jar',      modrinthSlug: 'placeholderapi',        url: 'https://github.com/PlaceholderAPI/PlaceholderAPI/releases/latest/download/PlaceholderAPI.jar' },
+  protocolLib:    { name: 'ProtocolLib',        filename: 'ProtocolLib.jar',                                               url: 'https://github.com/dmulloy2/ProtocolLib/releases/latest/download/ProtocolLib.jar' },
+  viaVersion:     { name: 'ViaVersion',         filename: 'ViaVersion.jar',          modrinthSlug: 'viaversion',            url: 'https://github.com/ViaVersion/ViaVersion/releases/latest/download/ViaVersion.jar' },
+  spark:          { name: 'Spark',              filename: 'spark.jar',               modrinthSlug: 'spark',                 url: 'https://ci.lucko.me/job/spark/lastSuccessfulBuild/artifact/spark-bukkit/build/libs/spark-bukkit.jar' },
+  worldEdit:      { name: 'WorldEdit',          filename: 'WorldEdit.jar',           modrinthSlug: 'worldedit',             url: 'https://mediafilez.forgecdn.net/files/5637/592/worldedit-bukkit-7.3.12.jar' },
+  worldGuard:     { name: 'WorldGuard',         filename: 'WorldGuard.jar',          modrinthSlug: 'worldguard',            url: 'https://mediafilez.forgecdn.net/files/5637/604/worldguard-bukkit-7.0.13.jar' },
+  coreProtect:    { name: 'CoreProtect',        filename: 'CoreProtect.jar',         modrinthSlug: 'coreprotect',           url: 'https://github.com/PlayPro/CoreProtect/releases/latest/download/CoreProtect.jar' },
+  tab:            { name: 'TAB',                filename: 'TAB.jar',                 modrinthSlug: 'tab-was-taken',         url: 'https://github.com/NEZNAMY/TAB/releases/latest/download/TAB.jar' },
+  decentHolo:     { name: 'DecentHolograms',    filename: 'DecentHolograms.jar',     modrinthSlug: 'decentholograms',       url: 'https://github.com/decentsoftware-eu/decentholograms/releases/latest/download/DecentHolograms.jar' },
+  griefPrev:      { name: 'GriefPrevention',    filename: 'GriefPrevention.jar',                                           url: 'https://github.com/TechFortress/GriefPrevention/releases/latest/download/GriefPrevention.jar' },
+  mcMMO:          { name: 'mcMMO',              filename: 'mcMMO.jar',                                                      url: 'https://github.com/mcMMO-Dev/mcMMO/releases/latest/download/mcMMO.jar' },
+  jobs:           { name: 'Jobs Reborn',        filename: 'Jobs.jar',                modrinthSlug: 'jobs-reborn',           url: 'https://github.com/Zrips/Jobs/releases/latest/download/Jobs.jar' },
+  authMe:         { name: 'AuthMe',             filename: 'AuthMe.jar',                                                     url: 'https://github.com/AuthMe/AuthMeReloaded/releases/latest/download/AuthMe.jar' },
+  skinsRestorer:  { name: 'SkinsRestorer',       filename: 'SkinsRestorer.jar',                                              url: 'https://github.com/SkinsRestorer/SkinsRestorer/releases/latest/download/SkinsRestorer.jar' },
+  chairs:         { name: 'Chairs',             filename: 'Chairs.jar',              modrinthSlug: 'chairs',                url: 'https://github.com/nicuch/Chairs/releases/latest/download/Chairs.jar' },
+  multiverse:     { name: 'Multiverse-Core',    filename: 'Multiverse-Core.jar',                                            url: 'https://github.com/Multiverse/Multiverse-Core/releases/latest/download/multiverse-core.jar' },
+  playit:         { name: 'PlayIt.gg',          filename: 'playit-minecraft.jar',    modrinthSlug: 'playit',                url: 'https://github.com/playit-cloud/playit-minecraft-plugin/releases/latest/download/playit-minecraft.jar' },
   // BentoBox ecosystem
-  bentoBox:       { name: 'BentoBox',           filename: 'BentoBox.jar',            url: 'https://github.com/BentoBoxWorld/BentoBox/releases/latest/download/BentoBox.jar' },
-  bSkyBlock:      { name: 'BSkyBlock',          filename: 'BSkyBlock.jar',           url: 'https://github.com/BentoBoxWorld/BSkyBlock/releases/latest/download/BSkyBlock.jar' },
-  aOneBlock:      { name: 'AOneBlock',          filename: 'AOneBlock.jar',           url: 'https://github.com/BentoBoxWorld/AOneBlock/releases/latest/download/AOneBlock.jar' },
-  levelAddon:     { name: 'Level',              filename: 'Level.jar',               url: 'https://github.com/BentoBoxWorld/Level/releases/latest/download/Level.jar' },
-  challenges:     { name: 'Challenges',         filename: 'Challenges.jar',          url: 'https://github.com/BentoBoxWorld/Challenges/releases/latest/download/Challenges.jar' },
-  bankAddon:      { name: 'Bank',               filename: 'Bank.jar',                url: 'https://github.com/BentoBoxWorld/Bank/releases/latest/download/Bank.jar' },
-  shopAddon:      { name: 'Shop',               filename: 'Shop.jar',                url: 'https://github.com/BentoBoxWorld/Shop/releases/latest/download/Shop.jar' },
-  warps:          { name: 'Warps',              filename: 'Warps.jar',               url: 'https://github.com/BentoBoxWorld/Warps/releases/latest/download/Warps.jar' },
+  bentoBox:       { name: 'BentoBox',           filename: 'BentoBox.jar',                                                   url: 'https://github.com/BentoBoxWorld/BentoBox/releases/latest/download/BentoBox.jar' },
+  bSkyBlock:      { name: 'BSkyBlock',          filename: 'BSkyBlock.jar',                                                  url: 'https://github.com/BentoBoxWorld/BSkyBlock/releases/latest/download/BSkyBlock.jar' },
+  aOneBlock:      { name: 'AOneBlock',          filename: 'AOneBlock.jar',                                                  url: 'https://github.com/BentoBoxWorld/AOneBlock/releases/latest/download/AOneBlock.jar' },
+  levelAddon:     { name: 'Level',              filename: 'Level.jar',                                                      url: 'https://github.com/BentoBoxWorld/Level/releases/latest/download/Level.jar' },
+  challenges:     { name: 'Challenges',         filename: 'Challenges.jar',                                                  url: 'https://github.com/BentoBoxWorld/Challenges/releases/latest/download/Challenges.jar' },
+  bankAddon:      { name: 'Bank',               filename: 'Bank.jar',                                                       url: 'https://github.com/BentoBoxWorld/Bank/releases/latest/download/Bank.jar' },
+  shopAddon:      { name: 'Shop',               filename: 'Shop.jar',                                                       url: 'https://github.com/BentoBoxWorld/Shop/releases/latest/download/Shop.jar' },
+  warps:          { name: 'Warps',              filename: 'Warps.jar',                                                      url: 'https://github.com/BentoBoxWorld/Warps/releases/latest/download/Warps.jar' },
   // Minigame plugins
-  bedWars:        { name: 'BedWars1058',        filename: 'BedWars1058.jar',         url: 'https://github.com/andrei1058/BedWars1058/releases/latest/download/BedWars1058.jar' },
-  skyWars:        { name: 'SkyWars',            filename: 'SkyWars.jar',             url: 'https://github.com/SkyWars/SkyWars/releases/latest/download/SkyWars.jar' },
-  combatLog:      { name: 'CombatLogX',         filename: 'CombatLogX.jar',          url: 'https://github.com/SirBlobman/CombatLogX/releases/latest/download/CombatLogX.jar' },
+  bedWars:        { name: 'BedWars1058',        filename: 'BedWars1058.jar',                                                url: 'https://github.com/andrei1058/BedWars1058/releases/latest/download/BedWars1058.jar' },
+  skyWars:        { name: 'SkyWars',            filename: 'SkyWars.jar',                                                    url: 'https://github.com/SkyWars/SkyWars/releases/latest/download/SkyWars.jar' },
+  combatLog:      { name: 'CombatLogX',         filename: 'CombatLogX.jar',                                                 url: 'https://github.com/SirBlobman/CombatLogX/releases/latest/download/CombatLogX.jar' },
 }
 
 // ─── Presets ──────────────────────────────────────────────────────────────────
