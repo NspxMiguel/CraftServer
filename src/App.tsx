@@ -40,7 +40,7 @@ export default function App() {
       <TopBar page={page} navigate={navigate} />
 
       <main className="flex-1 overflow-hidden relative">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {page === 'dashboard' && (
             <PageWrap key="dashboard">
               <Dashboard navigate={navigate} onQuickSetup={handleQuickSetup} />

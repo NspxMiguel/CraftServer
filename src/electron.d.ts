@@ -26,7 +26,8 @@ declare global {
       getInstalledPlugins: (sid: string) => Promise<string[]>
       removePlugin: (sid: string, filename: string) => Promise<{ ok: boolean }>
 
-      togglePlayit: (sid: string, enable: boolean) => Promise<{ ok: boolean }>
+      installPlayitPlugin?: (sid: string) => Promise<{ ok: boolean; alreadyInstalled?: boolean; error?: string }>
+      checkPlayitPlugin?: (sid: string) => Promise<{ installed: boolean }>
       checkUpdate: (sid: string) => Promise<{ hasUpdate: boolean; currentVersion?: string; latestVersion?: string }>
       updateServer: (sid: string) => Promise<{ ok: boolean; newVersion?: string; error?: string }>
 

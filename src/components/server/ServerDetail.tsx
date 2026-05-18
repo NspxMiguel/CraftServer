@@ -29,8 +29,7 @@ export default function ServerDetail({ navigate }: Props) {
   const [friendlyMode, setFriendlyMode] = useState(true) // translate logs by default
   const [cmd, setCmd] = useState('')
   const [tab, setTab] = useState<Tab>('console')
-  const [playitAddr, setPlayitAddr] = useState('')
-  const [playitRunning, setPlayitRunning] = useState(false)
+  const [playitInstalled, setPlayitInstalled] = useState(false)
   const [playitLoading, setPlayitLoading] = useState(false)
   const [updateAvail, setUpdateAvail] = useState<{ latestVersion: string } | null>(null)
   const [updating, setUpdating] = useState(false)
@@ -41,32 +40,37 @@ export default function ServerDetail({ navigate }: Props) {
   useEffect(() => {
     if (!isElectron || !selectedId) return
     setLogs([])
-    setPlayitAddr('')
-    setPlayitRunning(false)
+    setPlayitInstalled(false)
     setPlayitLoading(false)
     setJavaError(false)
     setUpdateAvail(null)
 
-    window.electron.on('server-log', ({ id, line }: any) => {
+    const onLog = ({ id, text }: any) => {
       if (id !== selectedId) return
-      const text = line.trimEnd()
-      if (!text) return
-      if (text.includes('Java não encontrado')) setJavaError(true)
-      const type = rawLogType(text)
-      setLogs(l => [...l.slice(-800), { text, type }])
-    })
-    window.electron.on('server-stopped', ({ id }: any) => {
+      const trimmed = (text ?? '').trimEnd()
+      if (!trimmed) return
+      if (trimmed.includes('Java não encontrado')) setJavaError(true)
+      const type = rawLogType(trimmed)
+      setLogs(l => [...l.slice(-800), { text: trimmed, type }])
+    }
+    const onStopped = ({ id }: any) => {
       if (id === selectedId) { markStopped(id); addLog(t.serverStopped, 'warn') }
-    })
-    window.electron.on('playit-address', ({ serverId, address }: any) => {
-      if (serverId === selectedId) setPlayitAddr(address)
-    })
-    window.electron.on('playit-stopped', ({ serverId }: any) => {
-      if (serverId === selectedId) { setPlayitRunning(false); setPlayitAddr('') }
-    })
+    }
+    window.electron.on('server-log', onLog)
+    window.electron.on('server-stopped', onStopped)
+
     window.electron.checkUpdate(selectedId).then((r: any) => {
       if (r.hasUpdate) setUpdateAvail({ latestVersion: r.latestVersion })
     })
+    window.electron.checkPlayitPlugin?.(selectedId).then((r: any) => {
+      if (r?.installed) setPlayitInstalled(true)
+    })
+
+    // Cleanup listeners when component unmounts or selectedId changes
+    return () => {
+      window.electron.off?.('server-log', onLog)
+      window.electron.off?.('server-stopped', onStopped)
+    }
   }, [selectedId])
 
   useEffect(() => { logsEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, [logs])
@@ -98,30 +102,24 @@ export default function ServerDetail({ navigate }: Props) {
     setCmd('')
   }
 
+  // playit.gg: install the Minecraft plugin (JAR) into plugins/ folder
+  // After install, user needs to restart the server — the plugin handles the tunnel inside the JVM.
   const handlePlayit = async () => {
     if (!isElectron || playitLoading) return
-    const enable = !playitRunning
-    if (!enable) {
-      setPlayitRunning(false)
-      setPlayitAddr('')
-      window.electron.togglePlayit(server.id, false)
-      return
-    }
     setPlayitLoading(true)
-    addLog('── Iniciando playit.gg... ──')
-    // Listen to download progress
-    const onProgress = ({ msg }: any) => addLog(`[playit] ${msg}`)
-    window.electron.on('create-progress', onProgress)
-    const res = await window.electron.togglePlayit(server.id, true)
-    window.electron.off('create-progress', onProgress)
-    if (!res.ok) {
-      addLog('Erro ao iniciar playit.gg — verifique sua conexão', 'error')
-      setPlayitLoading(false)
+    addLog('── Baixando plugin playit.gg... ──')
+    const res = await window.electron.installPlayitPlugin?.(server.id)
+    setPlayitLoading(false)
+    if (!res?.ok) {
+      addLog(`Erro ao instalar playit.gg: ${res?.error ?? 'erro desconhecido'}`, 'error')
       return
     }
-    setPlayitRunning(true)
-    setPlayitLoading(false)
-    addLog('── playit.gg conectado — aguardando endereço... ──')
+    if (res.alreadyInstalled) {
+      addLog('── Plugin playit.gg já está instalado! Use /playit no servidor. ──')
+    } else {
+      setPlayitInstalled(true)
+      addLog('── Plugin playit.gg instalado! Reinicie o servidor e use /playit in-game ──')
+    }
   }
 
   const handleUpdate = async () => {
@@ -202,11 +200,13 @@ export default function ServerDetail({ navigate }: Props) {
 
           <button
             onClick={handlePlayit}
-            disabled={playitLoading}
-            title={playitRunning ? 'Desconectar playit.gg' : 'Conectar via playit.gg (túnel gratuito)'}
+            disabled={playitLoading || playitInstalled}
+            title={playitInstalled
+              ? 'Plugin playit.gg instalado — use /playit no servidor para ativar o túnel'
+              : 'Instalar plugin playit.gg para jogar com amigos sem abrir portas'}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all
-              ${playitRunning
-                ? 'bg-brand-500/15 border-brand-500/30 text-brand-300'
+              ${playitInstalled
+                ? 'bg-brand-500/15 border-brand-500/30 text-brand-300 cursor-default'
                 : playitLoading
                   ? 'bg-dark-700 border-brand-500/30 text-brand-400 cursor-wait'
                   : 'bg-dark-700 border-dark-600 text-slate-500 hover:text-white hover:border-dark-500'
@@ -214,8 +214,8 @@ export default function ServerDetail({ navigate }: Props) {
           >
             {playitLoading
               ? <Loader2 size={12} className="animate-spin" />
-              : playitRunning ? <Wifi size={12} /> : <WifiOff size={12} />}
-            {playitLoading ? 'Instalando...' : playitRunning ? 'Desconectar' : 'playit.gg'}
+              : playitInstalled ? <Wifi size={12} /> : <WifiOff size={12} />}
+            {playitLoading ? 'Instalando...' : playitInstalled ? 'PlayIt.gg ✓' : 'PlayIt.gg'}
           </button>
 
           <button onClick={() => isElectron && window.electron.openServerFolder(server.id)}
@@ -241,21 +241,17 @@ export default function ServerDetail({ navigate }: Props) {
         </div>
       </div>
 
-      {/* playit address bar */}
+      {/* Info bars */}
       <AnimatePresence>
-        {playitAddr && (
+        {playitInstalled && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="flex items-center gap-3 px-5 py-2.5 bg-brand-400/8 border-b border-brand-400/20 overflow-hidden"
+            className="flex items-center gap-3 px-5 py-2.5 bg-brand-400/8 border-b border-brand-400/15 overflow-hidden"
           >
             <Wifi size={13} className="text-brand-400 shrink-0" />
-            <span className="text-xs font-mono text-slate-300 flex-1">{playitAddr}</span>
-            <button onClick={() => { navigator.clipboard.writeText(playitAddr); setCopied(true); setTimeout(() => setCopied(false), 1800) }}
-              className="text-slate-500 hover:text-white transition-colors">
-              {copied ? <Check size={12} className="text-brand-400" /> : <Copy size={12} />}
-            </button>
+            <span className="text-xs text-slate-400">Plugin <span className="text-brand-300 font-semibold">PlayIt.gg</span> instalado — inicie o servidor e use <span className="font-mono text-brand-300">/playit</span> para criar o túnel gratuito</span>
           </motion.div>
         )}
         {javaError && (
@@ -356,8 +352,8 @@ export default function ServerDetail({ navigate }: Props) {
                       </p>
                       <p className="text-slate-700 text-[10px]">
                         {lang === 'en'
-                          ? 'Click the ✨ Friendly button to see raw logs'
-                          : 'Clique no botão ✨ Traduzido para ver logs brutos'}
+                          ? 'Click the ⌨️ Technical button to see all raw logs'
+                          : 'Clique no botão ⌨️ Técnico para ver todos os logs brutos'}
                       </p>
                     </div>
                   ) : (

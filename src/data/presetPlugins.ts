@@ -47,6 +47,7 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'EssentialsX Chat',
     description: 'Formatação de chat com prefixos e cores. Integra com LuckPerms.',
+    modrinthSlug: 'essentialsx-chat',
     url: 'https://github.com/EssentialsX/Essentials/releases/latest/download/EssentialsXChat.jar',
     filename: 'EssentialsXChat.jar',
     enabled: true,
@@ -107,7 +108,8 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'Chairs (Sit)',
     description: 'Sente em escadas e slabs com shift+clique direito.',
-    url: 'https://github.com/Betrayd/Chairs/releases/latest/download/Chairs.jar',
+    modrinthSlug: 'chairs',
+    url: 'https://github.com/nicuch/Chairs/releases/latest/download/Chairs.jar',
     filename: 'Chairs.jar',
     enabled: true,
     category: 'qol',

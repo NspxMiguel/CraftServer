@@ -31,6 +31,7 @@ export interface GamePreset {
   featuresEN: string[]
 
   // server setup
+  type?: string  // server type override ('purpur', 'paper', etc.) — defaults to 'purpur'
   plugins: PresetPluginDef[]
   serverProperties?: Record<string, string | number | boolean>
 
@@ -209,18 +210,16 @@ export const GAME_PRESETS: GamePreset[] = [
     emoji: '🛏️',
     taglinePT: 'Destrua as camas, elimine os inimigos',
     taglineEN: 'Destroy beds, eliminate enemies',
-    descPT: 'Times competindo para destruir camas inimigas. Gerador de recursos, loja de upgrades e múltiplos mapas com 2 a 4 times de 1 a 4 jogadores cada.',
-    descEN: 'Teams competing to destroy enemy beds. Resource generator, upgrade shop and multiple maps with 2 to 4 teams of 1 to 4 players each.',
+    descPT: 'Arena 2v2 pré-construída incluída — ilhas Red e Blue, geradores de ferro/ouro/diamante/esmeralda, loja e upgrades configurados. Liga imediatamente ao criar.',
+    descEN: 'Pre-built 2v2 arena included — Red and Blue islands, iron/gold/diamond/emerald generators, shop and upgrades configured. Ready to play on first start.',
     color: 'text-red-300', border: 'border-red-500/30', bg: 'bg-red-500/8', glow: 'shadow-red-500/15',
     gradient: 'from-red-500/20 to-transparent',
-    players: '2–16', difficultyPT: 'Médio — requer mapa personalizado', difficultyEN: 'Medium — requires custom map',
-    readyToPlay: false,
-    featuresPT: ['Times de 1v1 a 4v4', 'Geradores de ferro, ouro e diamante', 'Loja de upgrades e equipamentos', 'Múltiplos mapas', 'Ranking de partidas e winstreak'],
-    featuresEN: ['1v1 to 4v4 teams', 'Iron, gold and diamond generators', 'Upgrade and equipment shop', 'Multiple maps', 'Match ranking and winstreak'],
+    players: '2–4', difficultyPT: 'Fácil — arena 2v2 incluída', difficultyEN: 'Easy — 2v2 arena included',
+    readyToPlay: true,
+    featuresPT: ['Arena 2v2 pré-configurada', 'Geradores de ferro, ouro, diamante e esmeralda', 'Loja de itens e upgrades', 'Lobby de espera com teletransporte', 'Camas se reconstroem ao reiniciar'],
+    featuresEN: ['Pre-configured 2v2 arena', 'Iron, gold, diamond and emerald generators', 'Item shop and upgrades', 'Waiting lobby with teleport', 'Beds auto-rebuild on restart'],
     plugins: [P.spark, P.luckPerms, P.vault, P.papi, P.viaVersion, P.tab, P.decentHolo, P.protocolLib, P.bedWars, P.multiverse],
-    serverProperties: { difficulty: 'easy', pvp: true, 'max-players': 32, 'allow-nether': false, 'allow-end': false },
-    worldNotePT: 'BedWars precisa de um mapa construído. Baixe um em planet.minecraft.com e coloque na pasta do servidor como "world_bedwars". Depois use /bw setup.',
-    worldNoteEN: 'BedWars needs a built map. Download one at planet.minecraft.com and place it in the server folder as "world_bedwars". Then use /bw setup.',
+    serverProperties: { difficulty: 'easy', pvp: true, 'max-players': 16, 'allow-nether': false, 'allow-end': false },
   },
 
   // ── 🌌 SkyWars ───────────────────────────────────────────────────────────────

@@ -25,6 +25,7 @@ const isDev = !app.isPackaged
 const DATA_DIR = path.join(os.homedir(), 'CraftServer')
 const SERVERS_DIR = path.join(DATA_DIR, 'servers')
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json')
+// playit.gg binary path (kept for legacy cleanup; new approach uses the Minecraft plugin JAR)
 const PLAYIT_BIN = path.join(DATA_DIR, 'playit' + (process.platform === 'win32' ? '.exe' : ''))
 
 ;[DATA_DIR, SERVERS_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }) })
@@ -64,11 +65,20 @@ function fetchJson(url) {
 
 function downloadFile(url, dest, onProgress) {
   return new Promise((resolve, reject) => {
-    const doDownload = (u) => {
+    const doDownload = (u, redirects = 0) => {
+      if (redirects > 10) return reject(new Error('Muitos redirecionamentos'))
       const mod = u.startsWith('https') ? https : http
       mod.get(u, { headers: { 'User-Agent': 'CraftServer/0.1.0' } }, res => {
-        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location)
-          return doDownload(res.headers.location)
+        // Follow redirects
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          res.destroy()
+          return doDownload(res.headers.location, redirects + 1)
+        }
+        // Reject non-200 so HTML error pages don't get saved as JARs
+        if (res.statusCode !== 200) {
+          res.destroy()
+          return reject(new Error(`HTTP ${res.statusCode}: ${u}`))
+        }
         const total = parseInt(res.headers['content-length'] || '0', 10)
         let received = 0
         const file = fs.createWriteStream(dest)
@@ -79,6 +89,7 @@ function downloadFile(url, dest, onProgress) {
         res.pipe(file)
         file.on('finish', () => file.close(resolve))
         file.on('error', err => { fs.unlink(dest, () => {}); reject(err) })
+        res.on('error', err => { fs.unlink(dest, () => {}); reject(err) })
       }).on('error', reject)
     }
     doDownload(url)
@@ -344,8 +355,20 @@ ipcMain.handle('create-server', async (event, opts) => {
           const { url: plUrl, filename: plFilename } = await resolvePluginUrl(pl, version)
           const pluginDest = path.join(serverDir, 'plugins', plFilename || pl.filename)
           await downloadFile(plUrl, pluginDest, pct => send(`Plugin ${pl.name}: ${pct}%`))
-        } catch { send(`Aviso: falha ao instalar ${pl.name}`) }
+        } catch (e) { send(`Aviso: falha ao instalar ${pl.name} — ${e.message}`) }
       }
+    }
+
+    // LuckPerms: pre-configure default permissions (YAML storage + common commands)
+    const hasLuckPerms = selectedPlugins && selectedPlugins.some(p => p.name === 'LuckPerms')
+    if (hasLuckPerms) {
+      send('Configurando permissões padrão (LuckPerms)...')
+      const lpDir = path.join(serverDir, 'plugins', 'LuckPerms')
+      const lpGroupsDir = path.join(lpDir, 'yaml-storage', 'groups')
+      fs.mkdirSync(lpGroupsDir, { recursive: true })
+      // Use YAML storage so we can write the files directly
+      fs.writeFileSync(path.join(lpDir, 'config.yml'), buildLuckPermsConfig())
+      fs.writeFileSync(path.join(lpGroupsDir, 'default.yml'), buildLuckPermsDefaultGroup())
     }
 
     // Offline mode: generate AuthMe + SkinsRestorer configs pre-configured
@@ -377,6 +400,42 @@ ipcMain.handle('create-server', async (event, opts) => {
       const shopDir = path.join(serverDir, 'plugins', 'BentoBox', 'addons', 'Shop')
       fs.mkdirSync(shopDir, { recursive: true })
       fs.writeFileSync(path.join(shopDir, 'config.yml'), buildShopConfig())
+    }
+
+    if (gamePresetId === 'bedwars') {
+      send('Criando arena BedWars pré-configurada...')
+
+      // ── 1. Write void world (bw_arena) with level.dat + data pack ────────────
+      const arenaWorldDir = path.join(serverDir, 'bw_arena')
+      const dpDir         = path.join(arenaWorldDir, 'datapacks', 'bw_setup')
+      const mcTagDir      = path.join(dpDir, 'data', 'minecraft', 'tags', 'function')   // 1.21+ path
+      const mcTagDirLegacy= path.join(dpDir, 'data', 'minecraft', 'tags', 'functions')  // pre-1.21 path
+      const bwFuncDir     = path.join(dpDir, 'data', 'bw', 'functions')
+
+      fs.mkdirSync(mcTagDir,       { recursive: true })
+      fs.mkdirSync(mcTagDirLegacy, { recursive: true })
+      fs.mkdirSync(bwFuncDir,      { recursive: true })
+
+      // Minimal void-superflat level.dat (Minecraft 1.21.4, gzip-compressed NBT)
+      fs.writeFileSync(path.join(arenaWorldDir, 'level.dat'), Buffer.from(BEDWARS_LEVEL_DAT_B64, 'base64'))
+
+      // Data pack descriptor
+      fs.writeFileSync(path.join(dpDir, 'pack.mcmeta'), buildBedWarsDataPackMeta())
+
+      // Load tag — both paths for cross-version compat
+      const loadJson = JSON.stringify({ values: ['bw:setup'] })
+      fs.writeFileSync(path.join(mcTagDir,       'load.json'), loadJson)
+      fs.writeFileSync(path.join(mcTagDirLegacy, 'load.json'), loadJson)
+
+      // Arena builder function
+      fs.writeFileSync(path.join(bwFuncDir, 'setup.mcfunction'), buildBedWarsSetupFunction())
+
+      // ── 2. Write BedWars1058 arena config ─────────────────────────────────────
+      const arenaDir = path.join(serverDir, 'plugins', 'BedWars1058', 'Arenas')
+      fs.mkdirSync(arenaDir, { recursive: true })
+      fs.writeFileSync(path.join(arenaDir, 'bw_arena.yml'), buildBedWarsArenaYaml())
+
+      send('Arena BedWars pronta — 2 times, loja, upgrades e geradores configurados ✅')
     }
 
     const server = { id, name, type, version, ram, port, dir: serverDir, createdAt: Date.now(), playit: false }
@@ -692,6 +751,201 @@ categories:
 `
 }
 
+// ── LuckPerms: default permissions ───────────────────────────────────────────
+function buildLuckPermsConfig() {
+  return `# LuckPerms config — generated by CraftServer
+# Using YAML storage so permissions are pre-configurable
+storage-method: yaml
+data:
+  address: localhost
+  database: minecraft
+  username: sa
+  password: ''
+  prefix: luckperms_
+  max-pool-size: 10
+  min-idle: 10
+  max-lifetime: 1800000
+  keepalive-time: 0
+  connection-timeout: 5000
+  properties: {}
+`
+}
+
+function buildLuckPermsDefaultGroup() {
+  return `# LuckPerms default group — generated by CraftServer
+# All players inherit these permissions by default.
+name: default
+permissions:
+  - essentials.tpa=true
+  - essentials.tpaccept=true
+  - essentials.tpdeny=true
+  - essentials.tpahere=true
+  - essentials.msg=true
+  - essentials.msg.color=true
+  - essentials.reply=true
+  - essentials.home=true
+  - essentials.home.others=true
+  - essentials.sethome=true
+  - essentials.delhome=true
+  - essentials.spawn=true
+  - essentials.kit=true
+  - essentials.kit.list=true
+  - essentials.warp=true
+  - essentials.warp.list=true
+  - essentials.list=true
+  - essentials.info=true
+  - essentials.motd=true
+  - essentials.rules=true
+  - essentials.balance=true
+  - essentials.pay=true
+  - essentials.seen=true
+  - essentials.near=true
+  - essentials.afk=true
+  - essentials.ignore=true
+  - essentials.helpop=true
+  - essentials.back=true
+  - essentials.back.ondeath=true
+  - essentials.signs.use.info=true
+  - bukkit.command.help=true
+  - bukkit.command.list=true
+  - bukkit.command.me=true
+  - bukkit.command.say=false
+weight: 0
+display-name: Member
+prefix: ''
+suffix: ''
+metadata: {}
+parents: []
+`
+}
+
+// ── BedWars plug-and-play assets ─────────────────────────────────────────────
+
+// Minimal void-superflat level.dat for Minecraft 1.21.4 (gzip-compressed NBT).
+// Contains: DataVersion=4189, WorldGenSettings with minecraft:flat + the_void biome,
+// legacy generatorName=flat, DataPacks.Enabled includes "file/bw_setup".
+// Generated by craftnest/scripts/gen-level-dat.py
+const BEDWARS_LEVEL_DAT_B64 =
+  'H4sIAOgjCmoC/3VUzW7TQBAeN27iuA1NfyTuPldFRRxQLrRp2goIECkVLUVVtIknyar2brS7ThSqXDnx' +
+  'AiAOvAgPwFsxaztxy89e7Jlvduabb2fXB/DBbTHDSrBhP+9RaS4FQP2mBJXp0nr104dKjpVg7WVoAzxw' +
+  '37IYoXx48PTw4JkH5S4qjhrcmHHhgNcVbKLH0gB4UG3jFKM03uvPekyhoJreOTku5hMEWg74LT4c8kES' +
+  'mfmaA/XCasvBLYbggnvB4zQY4PHEhUqLze97HKgoqs3FyGYz40SERIksKmWBNNb5/IO6zcHCU+5O2Exc' +
+  '2URL4wP9Hy+Na4usg58ax2IU5aS9MVPhQCpKAzUWRXJ2IuOYiVA7DmwQGcNZxD9h6Ljgt5k2nYjNqZl8' +
+  'laHWlIqYnKAwqK7+478u/H7m71LO4y/fn2fOvcLZRjW5YGqEZgm7sPMHvNLM7n2Ug2yI11Lg0d4SyJO2' +
+  'WMxG2EHVjOgcXvz6ate3Muxm8CVTVvEU1MXm7QeorXh0kGE+1C+lisJzFF00hlBNJ6uxEMWB7REKVMxg' +
+  'b4jMJIrGitTsS5Ho3mCM2lAWP6Skws6k9mE35gIHig1NQ9LczmwBmlBjh+tfmA/VvIRUy7hHRdwwYsYH' +
+  'T+f8PFjvc0mi7RQhZoy9qeQhjcA9jusRu6WfKuxqo5KBdfdsUcVDpDS0qlC2E6CINHVqM1vloFZkZlzR' +
+  '1I2Rj8YmVSNdHtRWjNOL5FqSJaivvKvba4ML97uJsRpBfBekTQSN4O8ugv0gYxU0PlKcpfQgjjhRSMYp' +
+  'aBwubvaDVYO05+6htVgsSGD7onQYTUUVvBbXrB9hmEtQORUrc41eGiZ4FDGoDXmET+iBIOGTCZ3xFmZx' +
+  'Z0uFaXhOEm1k3JRan07pcljfRkuxkRRnlp0Dm5n1mlLStaOXpKNwymWio3nuIwZbXZqjMCEry+JnxDbp' +
+  'EaPjaip7g71U/SU72nXJ9BsZhumk/gZwFFDnPQUAAA=='
+
+function buildBedWarsDataPackMeta() {
+  return JSON.stringify({
+    pack: {
+      pack_format: 48,
+      supported_formats: [26, 99],
+      description: 'BedWars Arena Setup — generated by CraftServer',
+    },
+  }, null, 2)
+}
+
+// Arena builder mcfunction — runs every server start via #minecraft:load tag.
+// Rebuilds the essential structure so beds and platforms are always intact.
+function buildBedWarsSetupFunction() {
+  return `# BedWars Arena Auto-Setup — generated by CraftServer
+# Runs on every server start: ensures beds and islands are always intact.
+# Layout: 2 teams (Red / Blue), Y=64 islands, waiting lobby Y=80.
+
+# ── Waiting lobby (y=79 platform, spawn at y=80) ─────────────────────
+fill -5 79 -5 5 79 5 minecraft:polished_andesite
+setblock 0 79 0 minecraft:gold_block
+
+# ── Center island ─────────────────────────────────────────────────────
+fill -3 63 -3 3 64 3 minecraft:stone
+
+# ── Diamond mid-islands ───────────────────────────────────────────────
+fill -3 63 -37 3 64 -33 minecraft:smooth_stone
+fill -3 63  33 3 64  37 minecraft:smooth_stone
+
+# ── Red island (center at z=-70) ──────────────────────────────────────
+fill -4 64 -74 4 64 -66 minecraft:red_wool
+setblock 0 65 -74 minecraft:red_bed[facing=south,part=foot]
+setblock 0 65 -73 minecraft:red_bed[facing=south,part=head]
+
+# ── Blue island (center at z=70) ──────────────────────────────────────
+fill -4 64 66 4 64 74 minecraft:blue_wool
+setblock 0 65 74 minecraft:blue_bed[facing=north,part=foot]
+setblock 0 65 73 minecraft:blue_bed[facing=north,part=head]
+
+# ── Game rules ────────────────────────────────────────────────────────
+gamerule doDaylightCycle false
+gamerule announceAdvancements false
+gamerule doInsomnia false
+gamerule doImmediateRespawn true
+gamerule doWeatherCycle false
+`
+}
+
+// BedWars1058 arena YAML — coordinates match the mcfunction layout above.
+// World name: bw_arena (matches the folder name Minecraft creates).
+function buildBedWarsArenaYaml() {
+  return `# BedWars1058 arena — generated by CraftServer
+# World: bw_arena | Teams: Red vs Blue | Max players per team: 2
+# Coordinates match the data pack layout in bw_arena/datapacks/bw_setup/
+group: Default
+display-name: ''
+minPlayers: 2
+maxInTeam: 2
+allowSpectate: true
+spawn-protection: 0
+shop-protection: 0
+upgrades-protection: 0
+island-radius: 0
+worldBorder: 200
+voidKill: true
+max-build-y: 120
+disable-generator-for-empty-teams: false
+disable-npcs-for-empty-teams: true
+vanilla-death-drops: false
+use-bed-hologram: true
+allow-map-break: false
+game-rules:
+- doDaylightCycle:false
+- announceAdvancements:false
+- doInsomnia:false
+- doImmediateRespawn:true
+- doWeatherCycle:false
+waiting:
+  Loc: 0.5,80.0,0.5,0.0,0.0
+  Pos1: -5.0,85.0,-5.0,0.0,0.0
+  Pos2: 5.0,79.0,5.0,0.0,0.0
+Team:
+  Red:
+    Color: RED
+    Spawn: 0.5,66.0,-70.0,0.0,0.0
+    Bed: 0.0,65.0,-73.0,0.0,0.0
+    Iron: -2.0,64.5,-70.0,0.0,90.0
+    Gold: 2.0,64.5,-70.0,0.0,90.0
+    Shop: 3.5,65.0,-74.0,90.0,0.0
+    Upgrade: -2.5,65.0,-74.0,90.0,0.0
+  Blue:
+    Color: BLUE
+    Spawn: 0.5,66.0,70.0,180.0,0.0
+    Bed: 0.0,65.0,73.0,0.0,0.0
+    Iron: -2.0,64.5,70.0,0.0,90.0
+    Gold: 2.0,64.5,70.0,0.0,90.0
+    Shop: 3.5,65.0,74.0,-90.0,0.0
+    Upgrade: -2.5,65.0,74.0,-90.0,0.0
+generator:
+  Diamond:
+  - 0.5,65.0,-35.0,0.0,90.0
+  - 0.5,65.0,35.0,0.0,90.0
+  Emerald:
+  - 0.5,65.0,0.0,0.0,90.0
+`
+}
+
 // ── Start / Stop ──────────────────────────────────────────────────────────────
 ipcMain.handle('start-server', async (event, id) => {
   if (serverProcesses[id]) return { ok: false, error: 'Servidor já está rodando' }
@@ -960,49 +1214,34 @@ ipcMain.handle('remove-plugin', (_, { serverId, filename }) => {
   return { ok: true }
 })
 
-// ── playit.gg ─────────────────────────────────────────────────────────────────
-ipcMain.handle('toggle-playit', async (event, { serverId, enable }) => {
-  if (!enable) {
-    const proc = playitProcesses[serverId]
-    if (proc) { proc.kill(); delete playitProcesses[serverId] }
+// ── playit.gg — plugin approach ───────────────────────────────────────────────
+// Downloads the playit.gg Minecraft PLUGIN (jar) into plugins/.
+// No separate binary/agent needed — the plugin handles the tunnel inside the server JVM.
+ipcMain.handle('install-playit-plugin', async (event, { serverId }) => {
+  try {
+    const servers = readServers()
+    const server = servers.find(s => s.id === serverId)
+    if (!server) return { ok: false, error: 'Servidor não encontrado' }
+
+    const pluginPath = path.join(server.dir, 'plugins', 'playit-minecraft.jar')
+    if (fs.existsSync(pluginPath)) return { ok: true, alreadyInstalled: true }
+
+    safeSend(event.sender, 'server-log', { id: serverId, text: '── Baixando plugin playit.gg... ──' })
+    const url = 'https://github.com/playit-cloud/playit-minecraft-plugin/releases/latest/download/playit-minecraft.jar'
+    await downloadFile(url, pluginPath)
+    safeSend(event.sender, 'server-log', { id: serverId, text: '── Plugin playit.gg instalado! Reinicie o servidor. ──' })
     return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e.message }
   }
-  if (!fs.existsSync(PLAYIT_BIN)) {
-    safeSend(event.sender, 'create-progress', { id: serverId, msg: 'Baixando playit.gg...' })
-    const arch = process.arch === 'arm64' ? 'aarch64' : 'x86_64'
-    const urls = {
-      darwin: `https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-darwin-${arch}`,
-      win32:  `https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-windows-${arch}.exe`,
-      linux:  `https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-${arch}`,
-    }
-    await downloadFile(urls[process.platform] || urls.linux, PLAYIT_BIN)
-    if (process.platform !== 'win32') fs.chmodSync(PLAYIT_BIN, 0o755)
-  }
+})
+
+ipcMain.handle('check-playit-plugin', (_, { serverId }) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
-  if (!server) return { ok: false }
-
-  const proc = spawn(PLAYIT_BIN, [], { cwd: server.dir, stdio: ['ignore', 'pipe', 'pipe'] })
-  playitProcesses[serverId] = proc
-
-  proc.stdout.on('data', d => {
-    const text = d.toString()
-    // Capture tunnel address
-    const addrMatch = text.match(/address[:\s]+([^\s]+:\d+)/i)
-      || text.match(/([\w.-]+\.playit\.gg[:\d]*)/i)
-      || text.match(/tunnel[:\s]+([^\s]+:\d+)/i)
-    if (addrMatch) safeSend(event.sender, 'playit-address', { serverId, address: addrMatch[1] })
-    // Capture claim URL (new auth flow)
-    const claimMatch = text.match(/https:\/\/playit\.gg\/[^\s]+/i)
-    if (claimMatch) safeSend(event.sender, 'playit-address', { serverId, address: claimMatch[0], isClaim: true })
-    safeSend(event.sender, 'playit-log', { serverId, line: text })
-  })
-  proc.stderr.on('data', d => safeSend(event.sender, 'playit-log', { serverId, line: d.toString() }))
-  proc.on('close', () => { delete playitProcesses[serverId]; safeSend(event.sender, 'playit-stopped', { serverId }) })
-
-  const idx = servers.findIndex(s => s.id === serverId)
-  if (idx !== -1) { servers[idx].playit = true; writeServers(servers) }
-  return { ok: true }
+  if (!server) return { installed: false }
+  const pluginPath = path.join(server.dir, 'plugins', 'playit-minecraft.jar')
+  return { installed: fs.existsSync(pluginPath) }
 })
 
 // ── Auto-update ───────────────────────────────────────────────────────────────

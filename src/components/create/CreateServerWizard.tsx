@@ -127,10 +127,10 @@ function calcOverhead(gaming: boolean, voice: boolean): number {
 
 // How much RAM the Minecraft server itself needs for a given player count
 const PLAYER_RAM: Record<string, number> = {
-  small:  1024,  // 2–5   players → 1 GB minimum
-  medium: 2048,  // 6–15  players → 2 GB
-  large:  4096,  // 16–30 players → 4 GB
-  huge:   8192,  // 30+   players → 8 GB
+  small:  2048,  // 2–5   players → 2 GB (1 GB was barely enough; Paper + plugins needs 2 GB)
+  medium: 4096,  // 6–15  players → 4 GB
+  large:  6144,  // 16–30 players → 6 GB
+  huge:   10240, // 30+   players → 10 GB
 }
 
 function calcRecommendedRam(
@@ -156,12 +156,12 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
   // 'choose' = show mode selection; 'manual' = step wizard; 'gamemode' = game mode grid
   const [mode, setMode] = useState<WizardMode>('choose')
   const [step, setStep] = useState(0)
-  const [type, setType] = useState<ServerType>('paper')
+  const [type, setType] = useState<ServerType>('purpur')
   const [versions, setVersions] = useState<string[]>([])
   const [version, setVersion] = useState('')
   const [loadingVersions, setLoadingVersions] = useState(false)
   const [name, setName] = useState('')
-  const [ram, setRam] = useState(1024)
+  const [ram, setRam] = useState(2048)  // 2 GB default; updated by getSystemRam on mount
   const [port, setPort] = useState(25565)
   const [plugins, setPlugins] = useState(PRESET_PLUGINS.map(p => ({ ...p })))
   const [offlineMode, setOfflineMode] = useState(false)
@@ -177,17 +177,19 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
   const [playerCount, setPlayerCount] = useState<'small'|'medium'|'large'|'huge'>('small')
   const [manualRam, setManualRam] = useState(false)
 
-  // Fetch system RAM when entering step 2
+  // Fetch system RAM on mount so it's ready for both wizard and preset create
   useEffect(() => {
-    if (step === 2 && isElectron) {
-      window.electron.getSystemRam?.().then(({ totalMb }: { totalMb: number }) => {
-        setSystemRam(totalMb)
-        // Set smart default immediately
-        const rec = calcRecommendedRam(totalMb, false, false, 'small')
-        setRam(rec)
-      }).catch(() => {})
-    }
-  }, [step])
+    if (!isElectron) return
+    window.electron.getSystemRam?.().then(({ totalMb }: { totalMb: number }) => {
+      setSystemRam(totalMb)
+      // Set smart default (will be refined when user picks player count at step 2)
+      const rec = calcRecommendedRam(totalMb, false, false, 'small')
+      setRam(rec)
+    }).catch(() => {
+      // Sane fallback if RAM detection fails
+      setRam(2048)
+    })
+  }, [])
 
   // Focus name input after step animation completes (autoFocus breaks on Windows Electron)
   useEffect(() => {
@@ -294,14 +296,18 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
     setCreating(true)
     setMode('manual') // use the creating overlay from manual mode
 
+    // Use purpur for game modes (better performance than paper)
+    const serverType = preset.type || 'purpur'
     const versions = await (isElectron
-      ? window.electron.getVersions('paper')
+      ? window.electron.getVersions(serverType)
       : Promise.resolve(['1.21.5', '1.21.4']))
     const version = versions[0] || '1.21.5'
 
-    // Smart RAM
-    let ramMb = 2048
-    if (isElectron) {
+    // Smart RAM — prefer already-fetched systemRam, otherwise refetch
+    let ramMb = systemRam > 0
+      ? calcRecommendedRam(systemRam, false, false, 'medium')
+      : 2048
+    if (!systemRam && isElectron) {
       try {
         const { totalMb } = await window.electron.getSystemRam?.() ?? { totalMb: 4096 }
         ramMb = calcRecommendedRam(totalMb, false, false, 'medium')
@@ -322,7 +328,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
     const res = isElectron
       ? await window.electron.createServer({
           name: serverName,
-          type: 'paper',
+          type: serverType as any,
           version,
           ram: ramMb,
           port: 25565,
@@ -331,7 +337,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
           extraServerProperties: preset.serverProperties ?? {},
           gamePresetId: preset.id,
         })
-      : { ok: true, server: { id: Date.now().toString(), name: serverName, type: 'paper' as const, version, ram: ramMb, port: 25565, dir: '', createdAt: Date.now(), playit: false } }
+      : { ok: true as const, server: { id: Date.now().toString(), name: serverName, type: serverType as any, version, ram: ramMb, port: 25565, dir: '', createdAt: Date.now(), playit: false }, error: undefined }
 
     if (isElectron) window.electron.off('create-progress', progressHandler)
 
@@ -344,7 +350,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
     } else {
       setCreating(false)
       setProgress([])
-      alert(`Erro: ${res.error}`)
+      alert(`Erro: ${(res as any).error ?? 'erro desconhecido'}`)
     }
   }
 
@@ -357,12 +363,14 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       <div className="absolute inset-0 bg-grid-dark bg-grid opacity-60 pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-brand-400/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Game Mode Selector */}
+      {/* Game Mode Selector — fullscreen overlay, same treatment as choose screen */}
       {mode === 'gamemode' && !creating && (
-        <GameModeSelector
-          onSelect={handlePresetCreate}
-          onBack={() => setMode('choose')}
-        />
+        <div className="absolute inset-0 z-40">
+          <GameModeSelector
+            onSelect={handlePresetCreate}
+            onBack={() => setMode('choose')}
+          />
+        </div>
       )}
 
       {/* Mode Choice Screen */}
@@ -443,7 +451,8 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       )}
 
 
-      <div className="relative flex flex-col h-full max-w-3xl mx-auto w-full px-8 py-8">
+      {/* Wizard body — hidden when choose/gamemode overlays are active so they don't bleed through */}
+      <div className={`relative flex flex-col h-full max-w-3xl mx-auto w-full px-8 py-8 ${(mode === 'choose' || mode === 'gamemode') && !creating ? 'invisible pointer-events-none' : ''}`}>
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button

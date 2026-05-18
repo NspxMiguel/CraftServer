@@ -27,8 +27,9 @@ contextBridge.exposeInMainWorld('electron', {
   getInstalledPlugins: (sid) => ipcRenderer.invoke('get-installed-plugins', sid),
   removePlugin: (sid, filename) => ipcRenderer.invoke('remove-plugin', { serverId: sid, filename }),
 
-  // playit.gg
-  togglePlayit: (sid, enable) => ipcRenderer.invoke('toggle-playit', { serverId: sid, enable }),
+  // playit.gg plugin
+  installPlayitPlugin: (sid) => ipcRenderer.invoke('install-playit-plugin', { serverId: sid }),
+  checkPlayitPlugin: (sid) => ipcRenderer.invoke('check-playit-plugin', { serverId: sid }),
 
   // Updates
   checkUpdate: (sid) => ipcRenderer.invoke('check-update', sid),
@@ -47,7 +48,7 @@ contextBridge.exposeInMainWorld('electron', {
   windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
 
   on: (channel, cb) => {
-    const allowed = ['server-log', 'server-stopped', 'create-progress', 'playit-address', 'playit-log', 'playit-stopped']
+    const allowed = ['server-log', 'server-stopped', 'create-progress']
     if (allowed.includes(channel)) ipcRenderer.on(channel, (_e, d) => cb(d))
   },
   off: (channel, cb) => ipcRenderer.removeListener(channel, cb),
