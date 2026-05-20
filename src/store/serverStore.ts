@@ -5,13 +5,13 @@ interface ServerState {
   servers: Server[]
   runningIds: Set<string>
   selectedId: string | null
-  activeTab: 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs'
+  activeTab: 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs' | 'backups'
   customRam?: number
   maxRam?: number
   setServers: (s: Server[]) => void
   setRunning: (ids: string[]) => void
   setSelected: (id: string | null) => void
-  setActiveTab: (tab: 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs') => void
+  setActiveTab: (tab: 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs' | 'backups') => void
   setCustomRam: (ram: number) => void
   setMaxRam: (ram: number) => void
   markRunning: (id: string) => void

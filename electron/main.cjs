@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron')
 const log = require('./logger.cjs')
 
 // Wrap all ipcMain.handle calls with error logging
@@ -20,6 +20,7 @@ const os = require('os')
 const { spawn, execFile } = require('child_process')
 const https = require('https')
 const http = require('http')
+const archiver = require('archiver')
 
 // Suppress uncaught errors during shutdown (e.g. IPC to destroyed windows on Windows)
 process.on('uncaughtException', (err) => {
@@ -39,11 +40,12 @@ const isDev = !app.isPackaged
 // ── Paths ─────────────────────────────────────────────────────────────────────
 const DATA_DIR = path.join(os.homedir(), 'CraftServer')
 const SERVERS_DIR = path.join(DATA_DIR, 'servers')
+const BACKUPS_DIR = path.join(DATA_DIR, 'backups')
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json')
 // playit.gg binary path (kept for legacy cleanup; new approach uses the Minecraft plugin JAR)
 const PLAYIT_BIN = path.join(DATA_DIR, 'playit' + (process.platform === 'win32' ? '.exe' : ''))
 
-;[DATA_DIR, SERVERS_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }) })
+;[DATA_DIR, SERVERS_DIR, BACKUPS_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }) })
 
 const serverProcesses = {}
 const playitProcesses = {}
@@ -64,6 +66,60 @@ function readServers() {
   try { return JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'servers.json'), 'utf8')) } catch { return [] }
 }
 function writeServers(s) { fs.writeFileSync(path.join(DATA_DIR, 'servers.json'), JSON.stringify(s, null, 2)) }
+
+function sanitizeFilePart(value) {
+  return String(value || 'server')
+    .normalize('NFKD')
+    .replace(/[^\w.-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64) || 'server'
+}
+
+function detectGoogleDriveDirs() {
+  const home = os.homedir()
+  const found = []
+  const candidates = [
+    path.join(home, 'Google Drive'),
+    path.join(home, 'My Drive'),
+    path.join(home, 'Library', 'CloudStorage'),
+  ]
+
+  for (const candidate of candidates) {
+    try {
+      if (!fs.existsSync(candidate)) continue
+      const stat = fs.statSync(candidate)
+      if (stat.isDirectory() && candidate.endsWith('CloudStorage')) {
+        for (const child of fs.readdirSync(candidate)) {
+          if (/GoogleDrive/i.test(child)) {
+            const driveRoot = path.join(candidate, child)
+            const myDrive = path.join(driveRoot, 'My Drive')
+            found.push(fs.existsSync(myDrive) ? myDrive : driveRoot)
+          }
+        }
+      } else if (stat.isDirectory()) {
+        found.push(candidate)
+      }
+    } catch {}
+  }
+
+  if (process.platform === 'win32') {
+    for (const envName of ['USERPROFILE', 'HOMEDRIVE']) {
+      const root = process.env[envName]
+      if (!root) continue
+      for (const name of ['Google Drive', 'My Drive']) {
+        const candidate = path.join(root, name)
+        try { if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) found.push(candidate) } catch {}
+      }
+    }
+  }
+
+  return [...new Set(found)]
+}
+
+function getBackupDir() {
+  const cfg = readConfig()
+  return cfg.backupDir || BACKUPS_DIR
+}
 
 function fetchJson(url) {
   return new Promise((resolve, reject) => {
@@ -1168,6 +1224,89 @@ ipcMain.handle('send-command', (_, { id, command }) => {
 })
 
 ipcMain.handle('get-running-servers', () => Object.keys(serverProcesses))
+
+// ── Backups ──────────────────────────────────────────────────────────────────
+ipcMain.handle('get-backup-config', () => {
+  const backupDir = getBackupDir()
+  return {
+    backupDir,
+    defaultBackupDir: BACKUPS_DIR,
+    googleDriveDirs: detectGoogleDriveDirs(),
+  }
+})
+
+ipcMain.handle('set-backup-dir', (_, backupDir) => {
+  if (!backupDir || typeof backupDir !== 'string') return { ok: false, error: 'Pasta inválida' }
+  fs.mkdirSync(backupDir, { recursive: true })
+  writeConfig({ ...readConfig(), backupDir })
+  return { ok: true, backupDir }
+})
+
+ipcMain.handle('choose-backup-dir', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Escolher pasta de backups',
+    properties: ['openDirectory', 'createDirectory'],
+  })
+  if (result.canceled || !result.filePaths?.[0]) return { ok: false, canceled: true }
+  const backupDir = result.filePaths[0]
+  fs.mkdirSync(backupDir, { recursive: true })
+  writeConfig({ ...readConfig(), backupDir })
+  return { ok: true, backupDir }
+})
+
+ipcMain.handle('list-server-backups', (_, serverId) => {
+  const dir = getBackupDir()
+  try {
+    if (!fs.existsSync(dir)) return []
+    return fs.readdirSync(dir)
+      .filter(name => name.endsWith('.zip') && name.includes(`-${serverId}-`))
+      .map(name => {
+        const file = path.join(dir, name)
+        const stat = fs.statSync(file)
+        return { name, path: file, size: stat.size, createdAt: stat.mtimeMs }
+      })
+      .sort((a, b) => b.createdAt - a.createdAt)
+  } catch (e) {
+    log.error('Failed to list backups', { serverId, message: e.message })
+    return []
+  }
+})
+
+ipcMain.handle('create-server-backup', async (event, serverId) => {
+  const servers = readServers()
+  const server = servers.find(s => s.id === serverId)
+  if (!server) return { ok: false, error: 'Servidor não encontrado' }
+  if (serverProcesses[serverId]) return { ok: false, error: 'Pare o servidor antes de criar backup para evitar arquivos corrompidos.' }
+  if (!fs.existsSync(server.dir)) return { ok: false, error: 'Pasta do servidor não encontrada' }
+
+  const backupDir = getBackupDir()
+  fs.mkdirSync(backupDir, { recursive: true })
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const filename = `${sanitizeFilePart(server.name)}-${server.id}-${stamp}.zip`
+  const dest = path.join(backupDir, filename)
+  safeSend(event.sender, 'create-progress', { id: serverId, msg: `Criando backup ${filename}...` })
+
+  await new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(dest)
+    const archive = archiver('zip', { zlib: { level: 9 } })
+    output.on('close', resolve)
+    output.on('error', reject)
+    archive.on('error', reject)
+    archive.pipe(output)
+    archive.directory(server.dir, false)
+    archive.finalize()
+  })
+
+  log.info('Server backup created', { serverId, dest })
+  safeSend(event.sender, 'create-progress', { id: serverId, msg: 'Backup criado com sucesso!' })
+  return { ok: true, backup: { name: filename, path: dest, size: fs.statSync(dest).size, createdAt: Date.now() } }
+})
+
+ipcMain.handle('reveal-backup', (_, backupPath) => {
+  if (backupPath && fs.existsSync(backupPath)) shell.showItemInFolder(backupPath)
+  else shell.openPath(getBackupDir())
+  return { ok: true }
+})
 
 // ── Dependency check ─────────────────────────────────────────────────────────
 ipcMain.handle('check-dependencies', async () => {

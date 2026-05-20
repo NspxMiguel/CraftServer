@@ -40,6 +40,14 @@ contextBridge.exposeInMainWorld('electron', {
   checkUpdate: (sid) => ipcRenderer.invoke('check-update', sid),
   updateServer: (sid) => ipcRenderer.invoke('update-server', sid),
 
+  // Backups
+  getBackupConfig: () => ipcRenderer.invoke('get-backup-config'),
+  setBackupDir: (dir) => ipcRenderer.invoke('set-backup-dir', dir),
+  chooseBackupDir: () => ipcRenderer.invoke('choose-backup-dir'),
+  listServerBackups: (sid) => ipcRenderer.invoke('list-server-backups', sid),
+  createServerBackup: (sid) => ipcRenderer.invoke('create-server-backup', sid),
+  revealBackup: (backupPath) => ipcRenderer.invoke('reveal-backup', backupPath),
+
   // Config
   getConfig: () => ipcRenderer.invoke('get-config'),
   setConfig: (cfg) => ipcRenderer.invoke('set-config', cfg),

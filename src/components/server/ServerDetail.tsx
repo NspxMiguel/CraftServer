@@ -4,7 +4,7 @@ import {
   Play, Square, FolderOpen, Wifi, WifiOff, Puzzle,
   RefreshCw, ChevronLeft, Copy, Check, AlertTriangle,
   Server, Terminal, Settings, Shield, Circle, Loader2,
-  Sparkles, Code2, FileText
+  Sparkles, Code2, FileText, Archive
 } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
@@ -12,12 +12,13 @@ import ServerSettings from './ServerSettings'
 import WhitelistManager from './WhitelistManager'
 import PluginBrowser from '../plugins/PluginBrowser'
 import ErrorLogViewer from '../settings/ErrorLogViewer'
+import BackupManager from './BackupManager'
 import { useT, getLang } from '../../i18n'
 import { translateLog, rawLogType } from '../../utils/logTranslator'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
-type Tab = 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs'
+type Tab = 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs' | 'backups'
 
 interface Props { navigate: (p: Page) => void }
 
@@ -160,6 +161,7 @@ export default function ServerDetail({ navigate }: Props) {
   const TABS: { id: Tab; icon: React.ReactNode; label: string }[] = [
     { id: 'console',   icon: <Terminal size={13} />,  label: t.console    },
     { id: 'plugins',   icon: <Puzzle size={13} />,    label: t.nav_plugins },
+    { id: 'backups',   icon: <Archive size={13} />,   label: 'Backups'    },
     { id: 'settings',  icon: <Settings size={13} />,  label: t.settings   },
     { id: 'whitelist', icon: <Shield size={13} />,    label: t.whitelist  },
     { id: 'logs',      icon: <FileText size={13} />,  label: 'Logs'       },
@@ -406,6 +408,12 @@ export default function ServerDetail({ navigate }: Props) {
           {tab === 'plugins' && (
             <motion.div key="plugins" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full overflow-hidden">
               <PluginBrowser />
+            </motion.div>
+          )}
+
+          {tab === 'backups' && (
+            <motion.div key="backups" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full overflow-hidden">
+              <BackupManager serverId={server.id} running={running} />
             </motion.div>
           )}
 

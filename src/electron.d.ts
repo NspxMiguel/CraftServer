@@ -33,6 +33,13 @@ declare global {
       checkUpdate: (sid: string) => Promise<{ hasUpdate: boolean; currentVersion?: string; latestVersion?: string }>
       updateServer: (sid: string) => Promise<{ ok: boolean; newVersion?: string; error?: string }>
 
+      getBackupConfig?: () => Promise<{ backupDir: string; defaultBackupDir: string; googleDriveDirs: string[] }>
+      setBackupDir?: (dir: string) => Promise<{ ok: boolean; backupDir?: string; error?: string }>
+      chooseBackupDir?: () => Promise<{ ok: boolean; backupDir?: string; canceled?: boolean; error?: string }>
+      listServerBackups?: (sid: string) => Promise<{ name: string; path: string; size: number; createdAt: number }[]>
+      createServerBackup?: (sid: string) => Promise<{ ok: boolean; backup?: { name: string; path: string; size: number; createdAt: number }; error?: string }>
+      revealBackup?: (backupPath?: string) => Promise<{ ok: boolean }>
+
       getConfig: () => Promise<Record<string, string>>
       setConfig: (cfg: Record<string, string>) => Promise<{ ok: boolean }>
 

@@ -45,3 +45,11 @@ All quick modes force `offlineMode: true` and include AuthMe + SkinsRestorer dur
 
 - The local browser interaction runner timed out during an aggressive spam-click pass, so that result was not used as a pass signal.
 - Installers are unsigned. macOS and Windows may show standard unsigned-app warnings.
+
+## v0.2.4 Follow-up
+
+| Severity | Bug / Gap | Reproduction | Impact | Fix | Retest |
+| --- | --- | --- | --- | --- | --- |
+| High | No safe backup flow before plugin installs or updates. | User changes plugins/version and wants rollback. | World data could be lost or hard to restore. | Added per-server ZIP backups and backup destination settings. | `tsc`, macOS build, Windows build passed. |
+| Medium | "Google Drive backup" had no practical path. | User wants off-machine backups. | Manual file copying required. | Added local Google Drive folder detection and "Use Drive" action. | Packaged app version verified as 0.2.4. |
+| Medium | Backups while server is running could capture inconsistent world files. | Start server, click backup. | Corrupted/incomplete backup risk. | Backup action is blocked while running. | Typecheck passed. |
