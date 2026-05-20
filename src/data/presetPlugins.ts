@@ -6,6 +6,7 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'AuthMe Reloaded',
     description: 'Sistema de autenticação. Auto-login para quem tem jogo original.',
+    modrinthSlug: 'authmerereloaded',
     url: 'https://github.com/AuthMe/AuthMeReloaded/releases/latest/download/AuthMe.jar',
     filename: 'AuthMe.jar',
     enabled: true,
@@ -15,6 +16,7 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'SkinsRestorer',
     description: 'Restaura skins de jogadores em servidores offline.',
+    modrinthSlug: 'skinsrestorer',
     url: 'https://github.com/SkinsRestorer/SkinsRestorer/releases/latest/download/SkinsRestorer.jar',
     filename: 'SkinsRestorer.jar',
     enabled: true,
@@ -65,6 +67,7 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'Vault',
     description: 'API de economia e permissões. Base para plugins de shop e jobs.',
+    modrinthSlug: 'vault',
     url: 'https://github.com/milkbowl/Vault/releases/latest/download/Vault.jar',
     filename: 'Vault.jar',
     enabled: true,
@@ -82,6 +85,7 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'ProtocolLib',
     description: 'Biblioteca de protocolo. Requisito de AuthMe, Citizens e outros.',
+    modrinthSlug: 'protocollib',
     url: 'https://github.com/dmulloy2/ProtocolLib/releases/latest/download/ProtocolLib.jar',
     filename: 'ProtocolLib.jar',
     enabled: true,
@@ -146,6 +150,7 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'GriefPrevention',
     description: 'Claim de terrenos com pá dourada. Proteção automática de builds.',
+    modrinthSlug: 'griefprevention',
     url: 'https://github.com/TechFortress/GriefPrevention/releases/latest/download/GriefPrevention.jar',
     filename: 'GriefPrevention.jar',
     enabled: false,
@@ -188,6 +193,7 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'DiscordSRV',
     description: 'Integração completa com Discord: chat bidirecional e alertas.',
+    modrinthSlug: 'discordsrv',
     url: 'https://github.com/DiscordSRV/DiscordSRV/releases/latest/download/DiscordSRV-Build.jar',
     filename: 'DiscordSRV.jar',
     enabled: false,
@@ -204,6 +210,7 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'Multiverse-Core',
     description: 'Múltiplos mundos: criativo, survival, minigames com portais.',
+    modrinthSlug: 'multiverse-core',
     url: 'https://github.com/Multiverse/Multiverse-Core/releases/latest/download/multiverse-core.jar',
     filename: 'Multiverse-Core.jar',
     enabled: false,
@@ -238,6 +245,7 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   {
     name: 'mcMMO',
     description: 'Sistema de RPG com habilidades, levels e partidas por ação.',
+    modrinthSlug: 'mcmmo',
     url: 'https://github.com/mcMMO-Dev/mcMMO/releases/latest/download/mcMMO.jar',
     filename: 'mcMMO.jar',
     enabled: false,

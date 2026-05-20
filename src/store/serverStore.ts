@@ -5,9 +5,11 @@ interface ServerState {
   servers: Server[]
   runningIds: Set<string>
   selectedId: string | null
+  activeTab: 'console' | 'plugins' | 'settings' | 'whitelist'
   setServers: (s: Server[]) => void
   setRunning: (ids: string[]) => void
   setSelected: (id: string | null) => void
+  setActiveTab: (tab: 'console' | 'plugins' | 'settings' | 'whitelist') => void
   markRunning: (id: string) => void
   markStopped: (id: string) => void
   updateServer: (id: string, patch: Partial<Server>) => void
@@ -18,10 +20,12 @@ export const useServerStore = create<ServerState>((set) => ({
   servers: [],
   runningIds: new Set(),
   selectedId: null,
+  activeTab: 'console',
 
   setServers: (servers) => set({ servers }),
   setRunning: (ids) => set({ runningIds: new Set(ids) }),
   setSelected: (id) => set({ selectedId: id }),
+  setActiveTab: (tab) => set({ activeTab: tab }),
 
   markRunning: (id) => set(s => ({ runningIds: new Set([...s.runningIds, id]) })),
   markStopped: (id) => set(s => {

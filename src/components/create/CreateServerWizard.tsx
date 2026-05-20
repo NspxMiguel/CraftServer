@@ -152,7 +152,7 @@ function calcRecommendedRam(
 }
 
 export default function CreateServerWizard({ navigate, quickSetup: _quickSetup = false }: Props) {
-  const { setServers, setSelected } = useServerStore()
+  const { setServers, setSelected, setActiveTab } = useServerStore()
   // 'choose' = show mode selection; 'manual' = step wizard; 'gamemode' = game mode grid
   const [mode, setMode] = useState<WizardMode>('choose')
   const [step, setStep] = useState(0)
@@ -280,6 +280,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       const updated = isElectron ? await window.electron.getServers() : [res.server]
       setServers(updated)
       setSelected(res.server.id)
+      setActiveTab('plugins')
       setTimeout(() => navigate('server'), 900)
     }
   }
@@ -351,6 +352,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       const updated = isElectron ? await window.electron.getServers() : [res.server]
       setServers(updated)
       setSelected(res.server.id)
+      setActiveTab('plugins')
       setTimeout(() => navigate('server'), 900)
     } else {
       setCreating(false)

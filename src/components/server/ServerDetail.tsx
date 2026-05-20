@@ -10,25 +10,27 @@ import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
 import ServerSettings from './ServerSettings'
 import WhitelistManager from './WhitelistManager'
+import PluginBrowser from '../plugins/PluginBrowser'
 import { useT, getLang } from '../../i18n'
 import { translateLog, rawLogType } from '../../utils/logTranslator'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
-type Tab = 'console' | 'settings' | 'whitelist'
+type Tab = 'console' | 'plugins' | 'settings' | 'whitelist'
 
 interface Props { navigate: (p: Page) => void }
 
 export default function ServerDetail({ navigate }: Props) {
   const t = useT()
-  const { servers, runningIds, selectedId, markRunning, markStopped, updateServer } = useServerStore()
+  const { servers, runningIds, selectedId, markRunning, markStopped, updateServer, activeTab, setActiveTab } = useServerStore()
   const server = servers.find(s => s.id === selectedId)
   const running = selectedId ? runningIds.has(selectedId) : false
 
   const [logs, setLogs] = useState<{ text: string; type: 'info' | 'warn' | 'error' | 'cmd' }[]>([])
   const [friendlyMode, setFriendlyMode] = useState(true) // translate logs by default
   const [cmd, setCmd] = useState('')
-  const [tab, setTab] = useState<Tab>('console')
+  const tab = activeTab
+  const setTab = (newTab: Tab) => setActiveTab(newTab)
   const [playitInstalled, setPlayitInstalled] = useState(false)
   const [playitLoading, setPlayitLoading] = useState(false)
   const [updateAvail, setUpdateAvail] = useState<{ latestVersion: string } | null>(null)
@@ -156,6 +158,7 @@ export default function ServerDetail({ navigate }: Props) {
 
   const TABS: { id: Tab; icon: React.ReactNode; label: string }[] = [
     { id: 'console',   icon: <Terminal size={13} />,  label: t.console    },
+    { id: 'plugins',   icon: <Puzzle size={13} />,    label: t.nav_plugins },
     { id: 'settings',  icon: <Settings size={13} />,  label: t.settings   },
     { id: 'whitelist', icon: <Shield size={13} />,    label: t.whitelist  },
   ]
@@ -222,8 +225,14 @@ export default function ServerDetail({ navigate }: Props) {
             className="p-1.5 rounded-lg bg-dark-700 border border-dark-600 text-slate-500 hover:text-white transition-colors" title="Pasta">
             <FolderOpen size={13} />
           </button>
-          <button onClick={() => { useServerStore.getState().setSelected(server.id); navigate('plugins') }}
-            className="p-1.5 rounded-lg bg-dark-700 border border-dark-600 text-slate-500 hover:text-white transition-colors" title="Plugins">
+          <button onClick={() => setTab('plugins')}
+            className={`p-1.5 rounded-lg border transition-colors
+              ${tab === 'plugins'
+                ? 'bg-brand-500/15 border-brand-500/30 text-brand-300'
+                : 'bg-dark-700 border-dark-600 text-slate-500 hover:text-white'
+              }`}
+            title="Plugins"
+          >
             <Puzzle size={13} />
           </button>
 
@@ -389,6 +398,12 @@ export default function ServerDetail({ navigate }: Props) {
                 />
                 {running && cmd && <span className="text-[10px] text-brand-500 font-bold">Enter ↵</span>}
               </form>
+            </motion.div>
+          )}
+
+          {tab === 'plugins' && (
+            <motion.div key="plugins" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full overflow-hidden">
+              <PluginBrowser />
             </motion.div>
           )}
 

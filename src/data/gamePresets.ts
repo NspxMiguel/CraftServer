@@ -73,7 +73,6 @@ const P: Record<string, PresetPluginDef> = {
   levelAddon:     { name: 'Level',              filename: 'Level.jar',                                                      url: 'https://github.com/BentoBoxWorld/Level/releases/latest/download/Level.jar' },
   challenges:     { name: 'Challenges',         filename: 'Challenges.jar',                                                  url: 'https://github.com/BentoBoxWorld/Challenges/releases/latest/download/Challenges.jar' },
   bankAddon:      { name: 'Bank',               filename: 'Bank.jar',                                                       url: 'https://github.com/BentoBoxWorld/Bank/releases/latest/download/Bank.jar' },
-  shopAddon:      { name: 'Shop',               filename: 'Shop.jar',                                                       url: 'https://github.com/BentoBoxWorld/Shop/releases/latest/download/Shop.jar' },
   warps:          { name: 'Warps',              filename: 'Warps.jar',                                                      url: 'https://github.com/BentoBoxWorld/Warps/releases/latest/download/Warps.jar' },
   // Minigame plugins
   bedWars:        { name: 'BedWars1058',        filename: 'BedWars1058.jar',                                                url: 'https://github.com/andrei1058/BedWars1058/releases/latest/download/BedWars1058.jar' },
@@ -180,7 +179,7 @@ export const GAME_PRESETS: GamePreset[] = [
     readyToPlay: true,
     featuresPT: ['Loja de compra/venda pré-configurada', 'Empregos (mineração, corte, pesca)', 'Banco da ilha com depósitos', 'Ranking de riqueza e nível', 'Missões e desafios com recompensas'],
     featuresEN: ['Pre-configured buy/sell shop', 'Jobs (mining, cutting, fishing)', 'Island bank with deposits', 'Wealth and level ranking', 'Missions and challenges with rewards'],
-    plugins: [P.spark, P.luckPerms, P.vault, P.papi, P.viaVersion, P.tab, P.decentHolo, P.bentoBox, P.bSkyBlock, P.levelAddon, P.challenges, P.bankAddon, P.shopAddon, P.warps, P.essentialsX, P.mcMMO, P.jobs],
+    plugins: [P.spark, P.luckPerms, P.vault, P.papi, P.viaVersion, P.tab, P.decentHolo, P.bentoBox, P.bSkyBlock, P.levelAddon, P.challenges, P.bankAddon, P.warps, P.essentialsX, P.mcMMO, P.jobs],
     serverProperties: { difficulty: 'normal', pvp: false, 'max-players': 100 },
   },
 

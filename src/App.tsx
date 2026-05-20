@@ -26,8 +26,15 @@ export default function App() {
     window.electron.getRunningServers().then(setRunning)
   }, [])
 
-  const navigate = (p: Page) => setPage(p)
-  const handleQuickSetup = () => setPage('create')
+  const navigate = (p: Page) => {
+    if (p === 'plugins') {
+      useServerStore.getState().setActiveTab('plugins')
+      setPage('server')
+    } else {
+      setPage(p)
+    }
+  }
+  const handleQuickSetup = () => navigate('create')
 
   // Show language selection on first launch (before anything else)
   if (!langSet) {

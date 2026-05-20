@@ -63,6 +63,117 @@ function fetchJson(url) {
   })
 }
 
+function fetchText(url) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http
+    mod.get(url, { headers: { 'User-Agent': 'CraftServer/0.1.0' } }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location)
+        return fetchText(res.headers.location).then(resolve).catch(reject)
+      let data = ''
+      res.on('data', c => { data += c })
+      res.on('end', () => resolve(data))
+    }).on('error', reject)
+  })
+}
+
+async function resolveJenkinsUrl(originalUrl) {
+  const jenkinsRegex = /^(https?:\/\/[^\/]+\/job\/[^\/]+\/lastSuccessfulBuild)/i
+  const match = originalUrl.match(jenkinsRegex)
+  if (!match) return originalUrl
+
+  const buildUrl = match[1] + '/'
+  try {
+    const html = await fetchText(buildUrl)
+    const jarRegex = /href="([^"]+\.jar)"/g
+    let m
+    const links = []
+    while ((m = jarRegex.exec(html)) !== null) {
+      links.push(m[1])
+    }
+
+    const originalFile = originalUrl.substring(originalUrl.lastIndexOf('/') + 1).toLowerCase()
+    
+    let bestLink = null;
+    let bestScore = -1;
+
+    for (const link of links) {
+      const decodedLink = decodeURIComponent(link)
+      const filename = decodedLink.substring(decodedLink.lastIndexOf('/') + 1).toLowerCase()
+      
+      let score = 0
+      if (originalFile.includes('bukkit') && filename.includes('bukkit')) score += 10
+      if (originalFile.includes('citizens') && filename.includes('citizens')) score += 10
+      if (filename.includes(originalFile)) score += 5
+      
+      if (score > bestScore) {
+        bestScore = score
+        bestLink = link
+      }
+    }
+
+    if (bestLink) {
+      if (bestLink.startsWith('http')) {
+        return bestLink
+      }
+      if (bestLink.startsWith('/')) {
+        const urlObj = new URL(buildUrl)
+        return urlObj.origin + bestLink
+      }
+      return buildUrl + bestLink
+    }
+  } catch (e) {
+    // fallback
+  }
+  return originalUrl
+}
+
+async function resolveGithubLatestUrl(originalUrl) {
+  const ghRegex = /github\.com\/([^\/]+)\/([^\/]+)\/releases\/latest\/download\/([^\/]+)/i
+  const match = originalUrl.match(ghRegex)
+  if (!match) return originalUrl
+
+  const [_, owner, repo, filename] = match
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`
+  
+  try {
+    const releaseData = await fetchJson(apiUrl)
+    if (releaseData && Array.isArray(releaseData.assets)) {
+      const targetLower = filename.toLowerCase()
+      let bestAsset = null;
+      let bestScore = -1;
+
+      for (const asset of releaseData.assets) {
+        const nameLower = asset.name.toLowerCase()
+        let score = 0
+        
+        if (nameLower === targetLower) {
+          score += 100
+        } else if (nameLower.includes(targetLower.replace('.jar', ''))) {
+          score += 50
+        } else if (targetLower.replace('.jar', '').includes(nameLower.replace('.jar', ''))) {
+          score += 40
+        }
+        
+        if (nameLower.endsWith('.jar')) {
+          score += 10
+        }
+
+        if (score > bestScore) {
+          bestScore = score
+          bestAsset = asset
+        }
+      }
+
+      if (bestAsset && bestScore > 0) {
+        return bestAsset.browser_download_url
+      }
+    }
+  } catch (e) {
+    // fallback
+  }
+  return originalUrl
+}
+
 function downloadFile(url, dest, onProgress) {
   return new Promise((resolve, reject) => {
     const doDownload = (u, redirects = 0) => {
@@ -269,7 +380,32 @@ async function resolvePluginUrl(plugin, mcVersion) {
       }
     } catch {}
   }
-  return { url: plugin.url, filename: plugin.filename }
+
+  let resolvedUrl = plugin.url
+  let resolvedFilename = plugin.filename
+
+  if (resolvedUrl) {
+    if (resolvedUrl.includes('/job/')) {
+      const resolved = await resolveJenkinsUrl(resolvedUrl)
+      if (resolved !== resolvedUrl) {
+        resolvedUrl = resolved
+      }
+    } else if (resolvedUrl.includes('github.com') && resolvedUrl.includes('/releases/latest/download/')) {
+      const resolved = await resolveGithubLatestUrl(resolvedUrl)
+      if (resolved !== resolvedUrl) {
+        resolvedUrl = resolved
+      }
+    }
+  }
+
+  if (resolvedUrl && resolvedUrl !== plugin.url) {
+    const urlFilename = resolvedUrl.substring(resolvedUrl.lastIndexOf('/') + 1)
+    if (urlFilename && urlFilename.endsWith('.jar')) {
+      resolvedFilename = urlFilename
+    }
+  }
+
+  return { url: resolvedUrl, filename: resolvedFilename }
 }
 
 ipcMain.handle('get-versions', async (_, type) => {

@@ -20,7 +20,7 @@ interface Props { navigate: (p: Page) => void; onQuickSetup: () => void }
 
 export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Props) {
   const t = useT()
-  const { servers, runningIds, setServers, setSelected, markRunning, markStopped, removeServer } = useServerStore()
+  const { servers, runningIds, setServers, setSelected, markRunning, markStopped, removeServer, setActiveTab } = useServerStore()
 
   useEffect(() => {
     if (!isElectron) return
@@ -52,7 +52,7 @@ export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Pro
   }
 
   const select = (id: string) => { setSelected(id); navigate('server') }
-  const plugins = (e: React.MouseEvent, id: string) => { e.stopPropagation(); setSelected(id); navigate('plugins') }
+  const plugins = (e: React.MouseEvent, id: string) => { e.stopPropagation(); setSelected(id); setActiveTab('plugins'); navigate('server') }
   const folder = (e: React.MouseEvent, id: string) => { e.stopPropagation(); if (isElectron) window.electron.openServerFolder(id) }
 
   return (
