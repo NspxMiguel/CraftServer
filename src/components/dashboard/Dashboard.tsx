@@ -24,7 +24,9 @@ export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Pro
 
   useEffect(() => {
     if (!isElectron) return
-    window.electron.on('server-stopped', ({ id }: { id: string }) => markStopped(id))
+    const handler = ({ id }: { id: string }) => markStopped(id)
+    window.electron.on('server-stopped', handler)
+    return () => window.electron.off('server-stopped', handler)
   }, [])
 
   const start = async (e: React.MouseEvent, id: string) => {
@@ -43,10 +45,7 @@ export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Pro
 
   const del = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
-    const confirmMsg = t === undefined
-      ? 'Deletar este servidor? Todos os arquivos serão removidos permanentemente.'
-      : 'Deletar este servidor? Todos os arquivos serão removidos permanentemente.'
-    if (!confirm(confirmMsg)) return
+    if (!confirm('Deletar este servidor? Todos os arquivos serão removidos permanentemente.')) return
     if (isElectron) await window.electron.deleteServer(id)
     removeServer(id)
   }

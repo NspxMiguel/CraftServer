@@ -317,11 +317,12 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       } catch {}
     }
 
-    // Build plugin list: preset plugins + optional PlayIt.gg
-    const seen = new Set<string>()
+    const authMePlugin = { name: 'AuthMe', filename: 'AuthMe.jar', url: 'https://github.com/AuthMe/AuthMeReloaded/releases/latest/download/AuthMe.jar' }
+    const skinsPlugin = { name: 'SkinsRestorer', filename: 'SkinsRestorer.jar', url: 'https://github.com/SkinsRestorer/SkinsRestorer/releases/latest/download/SkinsRestorer.jar' }
+    const extraPlugins = [authMePlugin, skinsPlugin]
     const basePlugins = includePlayit
-      ? [...preset.plugins, { name: 'PlayIt.gg', filename: 'playit-minecraft.jar', modrinthSlug: 'playit', url: 'https://github.com/playit-cloud/playit-minecraft-plugin/releases/latest/download/playit-minecraft.jar' }]
-      : preset.plugins
+        ? [...preset.plugins, ...extraPlugins, { name: 'PlayIt.gg', filename: 'playit-minecraft.jar', modrinthSlug: 'playit', url: 'https://github.com/playit-cloud/playit-minecraft-plugin/releases/latest/download/playit-minecraft.jar' }]
+        : [...preset.plugins, ...extraPlugins]
     const pluginList = basePlugins.filter(p => {
       if (seen.has(p.filename)) return false
       seen.add(p.filename)
@@ -339,7 +340,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
           ram: ramMb,
           port: 25565,
           plugins: pluginList,
-          offlineMode: false,
+          offlineMode: true,
           extraServerProperties: preset.serverProperties ?? {},
           gamePresetId: preset.id,
         })

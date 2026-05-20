@@ -1,5 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
+// Track wrappers so that off() can remove the correct function reference
+const _wrappers = new Map()
+
 contextBridge.exposeInMainWorld('electron', {
   getServers: () => ipcRenderer.invoke('get-servers'),
   deleteServer: (id) => ipcRenderer.invoke('delete-server', id),
@@ -49,7 +52,21 @@ contextBridge.exposeInMainWorld('electron', {
 
   on: (channel, cb) => {
     const allowed = ['server-log', 'server-stopped', 'create-progress']
-    if (allowed.includes(channel)) ipcRenderer.on(channel, (_e, d) => cb(d))
+    if (!allowed.includes(channel)) return
+    // Wrap to strip the event argument, then store wrapper so off() can remove it
+    const wrapper = (_e, d) => cb(d)
+    if (!_wrappers.has(cb)) _wrappers.set(cb, new Map())
+    _wrappers.get(cb).set(channel, wrapper)
+    ipcRenderer.on(channel, wrapper)
   },
-  off: (channel, cb) => ipcRenderer.removeListener(channel, cb),
+  off: (channel, cb) => {
+    const channelMap = _wrappers.get(cb)
+    if (!channelMap) return
+    const wrapper = channelMap.get(channel)
+    if (wrapper) {
+      ipcRenderer.removeListener(channel, wrapper)
+      channelMap.delete(channel)
+    }
+  },
 })
+

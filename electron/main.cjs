@@ -1,4 +1,19 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const log = require('./logger.cjs')
+
+// Wrap all ipcMain.handle calls with error logging
+const originalHandle = ipcMain.handle.bind(ipcMain)
+ipcMain.handle = (channel, listener) => {
+  originalHandle(channel, async (event, ...args) => {
+    try {
+      return await listener(event, ...args)
+    } catch (e) {
+      log.error(`IPC error: ${channel}`, { message: e.message, stack: e.stack })
+      return { ok: false, error: e.message }
+    }
+  })
+}
+
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -531,11 +546,7 @@ ipcMain.handle('create-server', async (event, opts) => {
     }
 
     if (gamePresetId === 'skyblock-eco') {
-      send('Configurando loja da ilha (preços padrão)...')
-      // BentoBox Shop addon config — goes in BentoBox addons dir
-      const shopDir = path.join(serverDir, 'plugins', 'BentoBox', 'addons', 'Shop')
-      fs.mkdirSync(shopDir, { recursive: true })
-      fs.writeFileSync(path.join(shopDir, 'config.yml'), buildShopConfig())
+      // no extra files needed for skyblock-eco preset
     }
 
     if (gamePresetId === 'bedwars') {
@@ -1216,9 +1227,13 @@ async function findJava() {
 function requiredJavaVersion(mcVersion) {
   if (!mcVersion) return 21
   const major = parseFloat(mcVersion)
-  if (major >= 26) return 25       // MC 26.x requires Java 25
-  if (mcVersion >= '1.20.5') return 21  // MC 1.20.5+ requires Java 21
-  if (mcVersion >= '1.17') return 17    // MC 1.17+ requires Java 17
+  if (major >= 26) return 25
+  // Parse minor/patch for semantic comparison (avoids string-sort bugs like '1.9' > '1.17')
+  const parts = mcVersion.split('.').map(Number)
+  const minor = parts[1] ?? 0
+  const patch  = parts[2] ?? 0
+  if (minor > 20 || (minor === 20 && patch >= 5)) return 21
+  if (minor >= 17) return 17
   return 8
 }
 
@@ -1449,7 +1464,15 @@ ipcMain.handle('get-config', () => readConfig())
 ipcMain.handle('set-config', (_, cfg) => { writeConfig({ ...readConfig(), ...cfg }); return { ok: true } })
 
 ipcMain.handle('get-system-ram', () => {
-  const totalMb = Math.floor(os.totalmem() / 1024 / 1024)
+  // Return total system RAM in MB
+  const totalMb = Math.floor(os.totalmem() / (1024 * 1024))
+  return { totalMb }
+})
+
+ipcMain.handle('get-log-path', () => log.getLogPath())
+ipcMain.handle('get-recent-logs', (_, n) => log.getRecentLogs(n))
+ipcMain.handle('log-error', (_, { msg, data }) => { log.error('[UI] ' + msg, data); return { ok: true } })
+
   const freeMb  = Math.floor(os.freemem()  / 1024 / 1024)
   return { totalMb, freeMb }
 })
