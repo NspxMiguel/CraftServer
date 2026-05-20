@@ -19,6 +19,10 @@ function loaderFor(type: ServerType): 'paper' | 'fabric' {
   return type === 'fabric' ? 'fabric' : 'paper'
 }
 
+function normalizePluginName(value: string) {
+  return value.toLowerCase().replace(/\.jar$/i, '').replace(/[^a-z0-9]/g, '')
+}
+
 export default function PluginBrowser() {
   const { servers, selectedId } = useServerStore()
   const server = servers.find(s => s.id === selectedId)
@@ -29,6 +33,7 @@ export default function PluginBrowser() {
   const [installed, setInstalled] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [installing, setInstalling] = useState<string | null>(null)
+  const [error, setError] = useState('')
   const [tab, setTab] = useState<'browse' | 'installed'>('browse')
   const [justInstalled, setJustInstalled] = useState<Set<string>>(new Set())
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -36,8 +41,8 @@ export default function PluginBrowser() {
   const noPluginSupport = type === 'vanilla' || type === 'bedrock'
 
   const loadInstalled = () => {
-    if (!isElectron || !selectedId) return
-    window.electron.getInstalledPlugins(selectedId).then(setInstalled)
+    if (!isElectron || !selectedId) return Promise.resolve()
+    return window.electron.getInstalledPlugins(selectedId).then(setInstalled)
   }
 
   useEffect(() => {
@@ -58,6 +63,7 @@ export default function PluginBrowser() {
   const handleSearch = async (q: string) => {
     const trimmed = q.trim()
     if (!isElectron || !trimmed || noPluginSupport) return
+    setError('')
     setLoading(true)
     setResults([])
 
@@ -86,10 +92,16 @@ export default function PluginBrowser() {
 
   const handleInstall = async (plugin: Plugin) => {
     if (!isElectron || !selectedId) return
+    setError('')
     setInstalling(plugin.project_id)
-    await window.electron.installPlugin(selectedId, plugin.project_id, plugin.title)
-    loadInstalled()
-    setJustInstalled(s => new Set([...s, plugin.project_id]))
+    const res = await window.electron.installPlugin(selectedId, plugin.project_id, plugin.title)
+    if (!res?.ok) {
+      setError(`Falha ao instalar ${plugin.title}: ${res?.error ?? 'erro desconhecido'}`)
+      setInstalling(null)
+      return
+    }
+    await loadInstalled()
+    setJustInstalled(s => new Set([...s, plugin.project_id, plugin.slug, plugin.title]))
     setInstalling(null)
   }
 
@@ -210,6 +222,12 @@ export default function PluginBrowser() {
                   </div>
                 )}
 
+                {error && (
+                  <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2 text-xs text-red-300">
+                    {error}
+                  </div>
+                )}
+
                 {!loading && results.length === 0 && query.trim() && (
                   <div className="flex flex-col items-center gap-3 py-16 text-center">
                     <Puzzle size={28} className="text-slate-700" />
@@ -220,7 +238,14 @@ export default function PluginBrowser() {
 
                 {results.map((plugin, i) => {
                   const isInstalling = installing === plugin.project_id
-                  const alreadyInstalled = justInstalled.has(plugin.project_id)
+                  const aliases = [plugin.project_id, plugin.slug, plugin.title].map(normalizePluginName)
+                  const alreadyInstalled = justInstalled.has(plugin.project_id) ||
+                    justInstalled.has(plugin.slug) ||
+                    justInstalled.has(plugin.title) ||
+                    installed.some(file => {
+                      const clean = normalizePluginName(file)
+                      return aliases.some(alias => alias && (clean.includes(alias) || alias.includes(clean)))
+                    })
                   const isHangar = plugin.source === 'hangar'
                   return (
                     <motion.div

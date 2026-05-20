@@ -1,44 +1,123 @@
 import { useState, useEffect } from 'react'
-import { Save, RefreshCw, Globe, Shield, Gamepad2, Mountain, Zap, Image, Info, Check, Loader2 } from 'lucide-react'
+import { Save, Globe, Shield, Gamepad2, Mountain, Zap, Image, Info, Check, Loader2, Cpu, AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
-interface Props { serverId: string; serverType: string }
+interface Props {
+  serverId: string
+  serverType: string
+  serverRam: number
+  onRamChange: (ram: number) => void
+}
 
 const GAMEMODES = ['survival', 'creative', 'adventure', 'spectator']
 const DIFFICULTIES = ['peaceful', 'easy', 'normal', 'hard']
+const RAM_PRESETS = [
+  { id: 'low', label: 'Low', value: 2048 },
+  { id: 'recommended', label: 'Recomendado', value: 4096 },
+  { id: 'high', label: 'High', value: 8192 },
+  { id: 'extreme', label: 'Extreme', value: 16384 },
+]
 
-export default function ServerSettings({ serverId, serverType }: Props) {
+const clampRam = (value: number, maxRam: number) => {
+  const clean = Number.isFinite(value) ? value : 2048
+  return Math.max(512, Math.min(maxRam, Math.round(clean / 512) * 512))
+}
+
+const fmtRam = (mb: number) => mb >= 1024 ? `${Number((mb / 1024).toFixed(1))} GB` : `${mb} MB`
+
+export default function ServerSettings({ serverId, serverType, serverRam, onRamChange }: Props) {
   const [props, setProps] = useState<Record<string, any>>({})
+  const [initialProps, setInitialProps] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [systemRam, setSystemRam] = useState({ totalMb: 8192, freeMb: 4096 })
+  const [ram, setRam] = useState(serverRam || 2048)
+  const [ramInput, setRamInput] = useState(String(serverRam || 2048))
 
   const isBedrock = serverType === 'bedrock'
+  const maxRam = Math.max(512, Math.min(16384, Math.floor((systemRam.totalMb * 0.8) / 512) * 512))
+  const recommendedRam = Math.max(2048, Math.min(maxRam, Math.floor(Math.min(systemRam.totalMb * 0.35, 6144) / 512) * 512))
+  const ramRatio = ram / Math.max(systemRam.totalMb, 1)
+  const dangerousRam = ramRatio > 0.75
+  const dirty = JSON.stringify(props) !== JSON.stringify(initialProps) || ram !== serverRam
 
   useEffect(() => {
-    if (!isElectron || isBedrock) { setLoading(false); return }
-    window.electron.getServerProperties(serverId).then(p => {
+    let alive = true
+    setLoading(true)
+    setSaveError('')
+    setRam(serverRam || 2048)
+    setRamInput(String(serverRam || 2048))
+
+    const load = async () => {
+      if (!isElectron) {
+        setLoading(false)
+        return
+      }
+      try {
+        const detected = await window.electron.getSystemRam?.()
+        if (alive && detected) setSystemRam(detected)
+      } catch {}
+
+      if (isBedrock) {
+        setLoading(false)
+        return
+      }
+
+      const p = await window.electron.getServerProperties(serverId)
+      if (!alive) return
       setProps(p || {})
+      setInitialProps(p || {})
       setLoading(false)
+    }
+
+    load().catch(e => {
+      setLoading(false)
+      setSaveError(String(e?.message || e))
     })
-  }, [serverId])
+    return () => { alive = false }
+  }, [serverId, serverRam, isBedrock])
+
+  const setSafeRam = (value: number) => {
+    const next = clampRam(value, maxRam)
+    setRam(next)
+    setRamInput(String(next))
+  }
 
   const set = (key: string, value: any) => setProps(p => ({ ...p, [key]: value }))
 
   const handleSave = async () => {
     if (!isElectron) return
     setSaving(true)
-    await window.electron.setServerProperties(serverId, props)
+    setSaveError('')
+    const safeRam = clampRam(ram, maxRam)
+    const [propsRes, ramRes] = await Promise.all([
+      isBedrock ? Promise.resolve({ ok: true }) : window.electron.setServerProperties(serverId, props),
+      window.electron.setServerRam?.(serverId, safeRam) ?? Promise.resolve({ ok: true }),
+    ])
     setSaving(false)
+    if (!propsRes?.ok || !ramRes?.ok) {
+      setSaveError((propsRes as any)?.error || (ramRes as any)?.error || 'Falha ao salvar configurações')
+      return
+    }
+    onRamChange(safeRam)
+    setRam(safeRam)
+    setRamInput(String(safeRam))
+    setInitialProps(props)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center py-16 text-slate-500">
-      <Loader2 size={20} className="animate-spin mr-2" /> Carregando configurações...
+    <div className="p-6 space-y-4">
+      {[0, 1, 2, 3].map(i => (
+        <div key={i} className="h-24 rounded-2xl bg-dark-800 border border-dark-600 overflow-hidden">
+          <div className="h-full w-1/2 bg-white/[0.03] animate-pulse" />
+        </div>
+      ))}
     </div>
   )
 
@@ -53,6 +132,76 @@ export default function ServerSettings({ serverId, serverType }: Props) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-auto px-6 py-5 space-y-6">
+        <Section icon={<Cpu size={14} />} title="Memória RAM">
+          <div className="rounded-2xl border border-brand-400/20 bg-brand-400/[0.04] p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs text-slate-500 font-semibold">RAM do servidor</p>
+                <p className="text-3xl font-black font-mono text-white mt-1">{fmtRam(ram)}</p>
+                <p className="text-[11px] text-slate-600 mt-1">
+                  PC: {fmtRam(systemRam.totalMb)} total · limite seguro: {fmtRam(maxRam)} · recomendado: {fmtRam(recommendedRam)}
+                </p>
+              </div>
+              <div className="w-32">
+                <input
+                  value={ramInput}
+                  inputMode="numeric"
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^\d]/g, '').slice(0, 6)
+                    setRamInput(raw)
+                    if (raw) setRam(clampRam(Number(raw), maxRam))
+                  }}
+                  onBlur={() => setSafeRam(Number(ramInput))}
+                  className={input + ' font-mono text-right'}
+                  aria-label="RAM em MB"
+                />
+                <p className="text-[10px] text-slate-700 mt-1 text-right">MB</p>
+              </div>
+            </div>
+
+            <input
+              type="range"
+              min={512}
+              max={maxRam}
+              step={512}
+              value={ram}
+              onChange={e => setSafeRam(Number(e.target.value))}
+              className="w-full accent-brand-400 mt-4"
+              aria-label="RAM do servidor"
+            />
+
+            <div className="grid grid-cols-4 gap-2 mt-3">
+              {RAM_PRESETS.map(preset => {
+                const value = preset.id === 'recommended' ? recommendedRam : clampRam(preset.value, maxRam)
+                const active = ram === value
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => setSafeRam(value)}
+                    className={`px-2 py-2 rounded-xl border text-xs font-bold transition-colors ${
+                      active
+                        ? 'bg-brand-500/20 border-brand-400/40 text-brand-300'
+                        : 'bg-dark-700 border-dark-500 text-slate-500 hover:text-slate-300 hover:border-dark-400'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {dangerousRam && (
+              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                className="mt-3 flex items-start gap-2 rounded-xl border border-red-400/20 bg-red-500/10 p-3">
+                <AlertTriangle size={14} className="text-red-400 mt-0.5 shrink-0" />
+                <p className="text-xs text-red-200/80 leading-relaxed">
+                  Essa alocação usa mais de 75% da RAM do PC. Pode travar navegador, Discord ou o próprio sistema se vários servidores rodarem juntos.
+                </p>
+              </motion.div>
+            )}
+          </div>
+        </Section>
 
         {/* Geral */}
         <Section icon={<Globe size={14} />} title="Geral">
@@ -225,10 +374,14 @@ export default function ServerSettings({ serverId, serverType }: Props) {
 
       {/* Save bar */}
       <div className="border-t border-dark-600 px-6 py-3 flex items-center justify-between bg-dark-900">
-        <p className="text-xs text-slate-600">Reinicie o servidor para aplicar as alterações</p>
+        <div>
+          <p className="text-xs text-slate-600">Reinicie o servidor para aplicar RAM e alterações do server.properties</p>
+          {saveError && <p className="text-xs text-red-400 mt-1">{saveError}</p>}
+          {!saveError && dirty && <p className="text-xs text-amber-400/80 mt-1">Alterações não salvas</p>}
+        </div>
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || !dirty}
           className="flex items-center gap-2 px-5 py-2.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-brand-500/20"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <Check size={14} /> : <Save size={14} />}

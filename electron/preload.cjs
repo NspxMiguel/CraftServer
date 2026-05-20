@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('electron', {
   // server.properties
   getServerProperties: (id) => ipcRenderer.invoke('get-server-properties', id),
   setServerProperties: (id, props) => ipcRenderer.invoke('set-server-properties', { serverId: id, props }),
+  getServerRam: (id) => ipcRenderer.invoke('get-server-ram', id),
+  setServerRam: (id, ram) => ipcRenderer.invoke('set-server-ram', { serverId: id, ram }),
 
   // Whitelist
   getWhitelist: (id) => ipcRenderer.invoke('get-whitelist', id),
@@ -49,6 +51,10 @@ contextBridge.exposeInMainWorld('electron', {
   getPlatform: () => ipcRenderer.invoke('get-platform'),
   windowControl: (action) => ipcRenderer.invoke('window-control', action),
   windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+  // Log APIs
+  getLogPath: () => ipcRenderer.invoke('get-log-path'),
+  getRecentLogs: (n) => ipcRenderer.invoke('get-recent-logs', n),
+  logError: (msg, data) => ipcRenderer.invoke('log-error', { msg, data }),
 
   on: (channel, cb) => {
     const allowed = ['server-log', 'server-stopped', 'create-progress']
@@ -69,4 +75,3 @@ contextBridge.exposeInMainWorld('electron', {
     }
   },
 })
-

@@ -4,19 +4,20 @@ import {
   Play, Square, FolderOpen, Wifi, WifiOff, Puzzle,
   RefreshCw, ChevronLeft, Copy, Check, AlertTriangle,
   Server, Terminal, Settings, Shield, Circle, Loader2,
-  Sparkles, Code2
+  Sparkles, Code2, FileText
 } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
 import ServerSettings from './ServerSettings'
 import WhitelistManager from './WhitelistManager'
 import PluginBrowser from '../plugins/PluginBrowser'
+import ErrorLogViewer from '../settings/ErrorLogViewer'
 import { useT, getLang } from '../../i18n'
 import { translateLog, rawLogType } from '../../utils/logTranslator'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
-type Tab = 'console' | 'plugins' | 'settings' | 'whitelist'
+type Tab = 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs'
 
 interface Props { navigate: (p: Page) => void }
 
@@ -161,6 +162,7 @@ export default function ServerDetail({ navigate }: Props) {
     { id: 'plugins',   icon: <Puzzle size={13} />,    label: t.nav_plugins },
     { id: 'settings',  icon: <Settings size={13} />,  label: t.settings   },
     { id: 'whitelist', icon: <Shield size={13} />,    label: t.whitelist  },
+    { id: 'logs',      icon: <FileText size={13} />,  label: 'Logs'       },
   ]
 
   return (
@@ -409,13 +411,19 @@ export default function ServerDetail({ navigate }: Props) {
 
           {tab === 'settings' && (
             <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full overflow-hidden">
-              <ServerSettings serverId={server.id} serverType={server.type} />
+              <ServerSettings serverId={server.id} serverType={server.type} serverRam={server.ram} onRamChange={(ram) => updateServer(server.id, { ram })} />
             </motion.div>
           )}
 
           {tab === 'whitelist' && (
             <motion.div key="whitelist" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full overflow-hidden">
               <WhitelistManager serverId={server.id} serverType={server.type} />
+            </motion.div>
+          )}
+
+          {tab === 'logs' && (
+            <motion.div key="logs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full overflow-hidden">
+              <ErrorLogViewer />
             </motion.div>
           )}
         </AnimatePresence>

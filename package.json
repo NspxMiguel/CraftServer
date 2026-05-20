@@ -1,6 +1,6 @@
 {
   "name": "craftserver",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Minecraft Server Manager — create, manage and share servers with ease",
   "type": "module",
   "main": "electron/main.cjs",
@@ -25,6 +25,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@electron/notarize": "^2.5.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -38,8 +39,7 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
-    "wait-on": "^8.0.1",
-    "@electron/notarize": "^2.5.0"
+    "wait-on": "^8.0.1"
   },
   "build": {
     "appId": "com.craftserver.app",
@@ -60,7 +60,12 @@
       "hardenedRuntime": false,
       "identity": null,
       "target": [
-        { "target": "pkg", "arch": ["arm64"] }
+        {
+          "target": "pkg",
+          "arch": [
+            "arm64"
+          ]
+        }
       ]
     },
     "pkg": {
@@ -71,7 +76,12 @@
     },
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
@@ -82,7 +92,7 @@
     "publish": {
       "provider": "github",
       "owner": "spxmiguel",
-      "repo": "craftnest"
+      "repo": "CraftServer"
     }
   }
 }

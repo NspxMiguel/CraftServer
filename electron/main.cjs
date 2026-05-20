@@ -268,6 +268,26 @@ ipcMain.handle('set-server-properties', (_, { serverId, props }) => {
   return { ok: true }
 })
 
+// ── RAM Management ─────────────────────────────────────────────────────────────────
+ipcMain.handle('get-server-ram', (_, serverId) => {
+  const servers = readServers()
+  const server = servers.find(s => s.id === serverId)
+  return server ? server.ram : null
+})
+
+ipcMain.handle('set-server-ram', async (_, { serverId, ram }) => {
+  const servers = readServers()
+  const idx = servers.findIndex(s => s.id === serverId)
+  if (idx === -1) return { ok: false, error: 'Servidor não encontrado' }
+  const nextRam = Number(ram)
+  if (!Number.isFinite(nextRam)) return { ok: false, error: 'RAM inválida' }
+  const totalMb = Math.floor(os.totalmem() / (1024 * 1024))
+  const maxMb = Math.max(512, Math.min(16384, Math.floor(totalMb * 0.8 / 512) * 512))
+  servers[idx].ram = Math.max(512, Math.min(maxMb, Math.round(nextRam / 512) * 512))
+  writeServers(servers)
+  return { ok: true }
+})
+
 // ── Whitelist ─────────────────────────────────────────────────────────────────
 ipcMain.handle('get-whitelist', (_, serverId) => {
   const servers = readServers()
@@ -1464,18 +1484,15 @@ ipcMain.handle('get-config', () => readConfig())
 ipcMain.handle('set-config', (_, cfg) => { writeConfig({ ...readConfig(), ...cfg }); return { ok: true } })
 
 ipcMain.handle('get-system-ram', () => {
-  // Return total system RAM in MB
+  // Return total system RAM and free RAM in MB
   const totalMb = Math.floor(os.totalmem() / (1024 * 1024))
-  return { totalMb }
+  const freeMb = Math.floor(os.freemem() / (1024 * 1024))
+  return { totalMb, freeMb }
 })
 
 ipcMain.handle('get-log-path', () => log.getLogPath())
 ipcMain.handle('get-recent-logs', (_, n) => log.getRecentLogs(n))
 ipcMain.handle('log-error', (_, { msg, data }) => { log.error('[UI] ' + msg, data); return { ok: true } })
-
-  const freeMb  = Math.floor(os.freemem()  / 1024 / 1024)
-  return { totalMb, freeMb }
-})
 ipcMain.handle('open-server-folder', (_, serverId) => {
   const s = readServers().find(s => s.id === serverId)
   if (s) shell.openPath(s.dir)

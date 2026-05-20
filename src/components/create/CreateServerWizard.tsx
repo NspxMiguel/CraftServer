@@ -168,6 +168,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
   const [creating, setCreating] = useState(false)
   const [progress, setProgress] = useState<string[]>([])
   const [done, setDone] = useState(false)
+  const [lastCreatedId, setLastCreatedId] = useState<string | null>(null)
   const [showOptional, setShowOptional] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
@@ -231,10 +232,12 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
 
   useEffect(() => {
     if (!isElectron) return
-    window.electron.on('create-progress', ({ msg }: { msg: string }) => {
+    const onProgress = ({ msg }: { msg: string }) => {
       setProgress(p => [...p, msg])
       if (msg.includes('sucesso')) setDone(true)
-    })
+    }
+    window.electron.on('create-progress', onProgress)
+    return () => window.electron.off?.('create-progress', onProgress)
   }, [])
 
   const togglePlugin = (name: string) => {
@@ -280,8 +283,12 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       const updated = isElectron ? await window.electron.getServers() : [res.server]
       setServers(updated)
       setSelected(res.server.id)
-      setActiveTab('plugins')
-      setTimeout(() => navigate('server'), 900)
+      setActiveTab('console')
+      setLastCreatedId(res.server.id)
+    } else {
+      setCreating(false)
+      setProgress([])
+      alert(`Erro: ${(res as any).error ?? 'erro desconhecido'}`)
     }
   }
 
@@ -323,6 +330,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
     const basePlugins = includePlayit
         ? [...preset.plugins, ...extraPlugins, { name: 'PlayIt.gg', filename: 'playit-minecraft.jar', modrinthSlug: 'playit', url: 'https://github.com/playit-cloud/playit-minecraft-plugin/releases/latest/download/playit-minecraft.jar' }]
         : [...preset.plugins, ...extraPlugins]
+    const seen = new Set<string>()
     const pluginList = basePlugins.filter(p => {
       if (seen.has(p.filename)) return false
       seen.add(p.filename)
@@ -353,8 +361,8 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       const updated = isElectron ? await window.electron.getServers() : [res.server]
       setServers(updated)
       setSelected(res.server.id)
-      setActiveTab('plugins')
-      setTimeout(() => navigate('server'), 900)
+      setActiveTab('console')
+      setLastCreatedId(res.server.id)
     } else {
       setCreating(false)
       setProgress([])
@@ -985,6 +993,34 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                       <div key={i} className={i === progress.length - 1 ? 'text-slate-300' : ''}>{line}</div>
                     ))}
                   </div>
+                  {done && (
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          if (lastCreatedId) setSelected(lastCreatedId)
+                          setActiveTab('console')
+                          navigate('server')
+                        }}
+                        className="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-white text-sm font-bold transition-colors"
+                      >
+                        Abrir console
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCreating(false)
+                          setDone(false)
+                          setProgress([])
+                          setLastCreatedId(null)
+                          setName('')
+                          setStep(0)
+                          setMode('choose')
+                        }}
+                        className="px-5 py-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 border border-dark-500 text-slate-300 text-sm font-bold transition-colors"
+                      >
+                        Criar outro
+                      </button>
+                    </div>
+                  )}
                 </div>
               </StepWrap>
             )}

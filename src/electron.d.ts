@@ -15,6 +15,8 @@ declare global {
 
       getServerProperties: (id: string) => Promise<Record<string, string | number | boolean> | null>
       setServerProperties: (id: string, props: Record<string, string | number | boolean>) => Promise<{ ok: boolean }>
+      getServerRam?: (id: string) => Promise<number | null>
+      setServerRam?: (id: string, ram: number) => Promise<{ ok: boolean; error?: string }>
 
       getWhitelist: (id: string) => Promise<import('./types').WhitelistEntry[]>
       addWhitelist: (id: string, username: string) => Promise<{ ok: boolean; entry?: import('./types').WhitelistEntry; error?: string }>
@@ -40,6 +42,9 @@ declare global {
       getPlatform?: () => Promise<string>
       windowControl?: (action: 'minimize' | 'maximize' | 'close') => Promise<void>
       windowIsMaximized?: () => Promise<boolean>
+      getLogPath?: () => Promise<string>
+      getRecentLogs?: (n?: number) => Promise<string[]>
+      logError?: (msg: string, data?: unknown) => Promise<{ ok: boolean; error?: string }>
 
       on: (channel: string, cb: (data: any) => void) => void
       off: (channel: string, cb: (data: any) => void) => void

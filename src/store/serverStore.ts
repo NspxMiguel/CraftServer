@@ -5,13 +5,13 @@ interface ServerState {
   servers: Server[]
   runningIds: Set<string>
   selectedId: string | null
-  activeTab: 'console' | 'plugins' | 'settings' | 'whitelist'
+  activeTab: 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs'
   customRam?: number
   maxRam?: number
   setServers: (s: Server[]) => void
   setRunning: (ids: string[]) => void
   setSelected: (id: string | null) => void
-  setActiveTab: (tab: 'console' | 'plugins' | 'settings' | 'whitelist') => void
+  setActiveTab: (tab: 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs') => void
   setCustomRam: (ram: number) => void
   setMaxRam: (ram: number) => void
   markRunning: (id: string) => void
@@ -30,6 +30,8 @@ export const useServerStore = create<ServerState>((set) => ({
   setRunning: (ids) => set({ runningIds: new Set(ids) }),
   setSelected: (id) => set({ selectedId: id, activeTab: 'console' }),
   setActiveTab: (tab) => set({ activeTab: tab }),
+  setCustomRam: (ram) => set({ customRam: ram }),
+  setMaxRam: (ram) => set({ maxRam: ram }),
 
   markRunning: (id) => set(s => ({ runningIds: new Set([...s.runningIds, id]) })),
   markStopped: (id) => set(s => {
