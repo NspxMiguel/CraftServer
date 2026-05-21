@@ -1215,6 +1215,32 @@ ipcMain.handle('start-server', async (event, id) => {
   })
   if (portInUse) return { ok: false, error: `Porta ${port} já está em uso. Mude a porta do servidor ou feche o programa que está usando-a.` }
 
+  // ── PlayIt secret sync ───────────────────────────────────────────────────────
+  // If the user has ever logged into PlayIt on any server, share that secret
+  // automatically so they don't need to re-authenticate on each new server.
+  const playitPluginDir = path.join(server.dir, 'plugins', 'playit-gg')
+  const playitCfgFile  = path.join(playitPluginDir, 'config.yml')
+  const hasPlayitPlugin = fs.existsSync(path.join(server.dir, 'plugins')) &&
+    fs.readdirSync(path.join(server.dir, 'plugins')).some(f => f.startsWith('playit'))
+
+  if (hasPlayitPlugin) {
+    const globalSecret = readConfig().playitSecret
+    if (globalSecret) {
+      fs.mkdirSync(playitPluginDir, { recursive: true })
+      // Only write if current config has no secret (don't overwrite a different valid secret)
+      let existingSecret = ''
+      if (fs.existsSync(playitCfgFile)) {
+        const existing = fs.readFileSync(playitCfgFile, 'utf8')
+        const m = existing.match(/agent-secret:\s*"?([^"\n\r]+)"?/)
+        existingSecret = m ? m[1].trim() : ''
+      }
+      if (!existingSecret || existingSecret === globalSecret) {
+        fs.writeFileSync(playitCfgFile, `mc-timeout-sec: 30\nagent-secret: "${globalSecret}"\n`)
+        log.info('PlayIt: injected shared agent-secret', { serverId: id })
+      }
+    }
+  }
+
   const ramArg = `${server.ram}M`
   const proc = spawn(javaCmd, [
     `-Xmx${ramArg}`, `-Xms${ramArg}`,
@@ -1234,6 +1260,21 @@ ipcMain.handle('start-server', async (event, id) => {
   proc.stderr.on('data', d => safeSend(event.sender, 'server-log', { id, text: toUtf8(d) }))
   proc.on('close', code => {
     delete serverProcesses[id]
+    // Capture PlayIt agent-secret after server stops — save globally for other servers
+    if (hasPlayitPlugin && fs.existsSync(playitCfgFile)) {
+      try {
+        const cfgText = fs.readFileSync(playitCfgFile, 'utf8')
+        const m = cfgText.match(/agent-secret:\s*"?([a-zA-Z0-9_\-]{20,})"?/)
+        if (m) {
+          const captured = m[1].trim()
+          const current = readConfig().playitSecret
+          if (captured && captured !== current) {
+            writeConfig({ ...readConfig(), playitSecret: captured })
+            log.info('PlayIt: saved agent-secret globally', { serverId: id })
+          }
+        }
+      } catch {}
+    }
     safeSend(event.sender, 'server-stopped', { id, code })
   })
   return { ok: true }
@@ -1729,6 +1770,36 @@ ipcMain.handle('update-server', async (event, arg) => {
 // ── Config & misc ─────────────────────────────────────────────────────────────
 ipcMain.handle('get-config', () => readConfig())
 ipcMain.handle('set-config', (_, cfg) => { writeConfig({ ...readConfig(), ...cfg }); return { ok: true } })
+
+// ── PlayIt shared secret management ──────────────────────────────────────────
+ipcMain.handle('get-playit-secret', () => {
+  return { secret: readConfig().playitSecret || null }
+})
+
+ipcMain.handle('set-playit-secret', (_, secret) => {
+  const clean = typeof secret === 'string' ? secret.trim() : ''
+  writeConfig({ ...readConfig(), playitSecret: clean || undefined })
+  return { ok: true }
+})
+
+ipcMain.handle('sync-playit-secret', (_, serverId) => {
+  // Manually pull the secret from a specific server's playit-gg/config.yml
+  const servers = readServers()
+  const server = servers.find(s => s.id === serverId)
+  if (!server) return { ok: false, error: 'Servidor não encontrado' }
+  const cfgFile = path.join(server.dir, 'plugins', 'playit-gg', 'config.yml')
+  if (!fs.existsSync(cfgFile)) return { ok: false, error: 'Plugin PlayIt não configurado neste servidor ainda.' }
+  try {
+    const text = fs.readFileSync(cfgFile, 'utf8')
+    const m = text.match(/agent-secret:\s*"?([a-zA-Z0-9_\-]{20,})"?/)
+    if (!m) return { ok: false, error: 'Nenhum agent-secret encontrado no config do PlayIt.' }
+    const secret = m[1].trim()
+    writeConfig({ ...readConfig(), playitSecret: secret })
+    return { ok: true, secret }
+  } catch (e) {
+    return { ok: false, error: e.message }
+  }
+})
 
 ipcMain.handle('get-system-ram', () => {
   // Return total system RAM and free RAM in MB

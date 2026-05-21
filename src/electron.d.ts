@@ -30,6 +30,9 @@ declare global {
 
       installPlayitPlugin?: (sid: string) => Promise<{ ok: boolean; alreadyInstalled?: boolean; error?: string }>
       checkPlayitPlugin?: (sid: string) => Promise<{ installed: boolean }>
+      getPlayitSecret?: () => Promise<{ secret: string | null }>
+      setPlayitSecret?: (secret: string) => Promise<{ ok: boolean }>
+      syncPlayitSecret?: (sid: string) => Promise<{ ok: boolean; secret?: string; error?: string }>
       checkUpdate: (sid: string) => Promise<{ hasUpdate: boolean; currentVersion?: string; latestVersion?: string }>
       updateServer: (sid: string) => Promise<{ ok: boolean; newVersion?: string; error?: string }>
 

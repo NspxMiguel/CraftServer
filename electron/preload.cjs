@@ -35,6 +35,9 @@ contextBridge.exposeInMainWorld('electron', {
   // playit.gg plugin
   installPlayitPlugin: (sid) => ipcRenderer.invoke('install-playit-plugin', { serverId: sid }),
   checkPlayitPlugin: (sid) => ipcRenderer.invoke('check-playit-plugin', { serverId: sid }),
+  getPlayitSecret: () => ipcRenderer.invoke('get-playit-secret'),
+  setPlayitSecret: (secret) => ipcRenderer.invoke('set-playit-secret', secret),
+  syncPlayitSecret: (sid) => ipcRenderer.invoke('sync-playit-secret', sid),
 
   // Updates
   checkUpdate: (sid) => ipcRenderer.invoke('check-update', sid),
