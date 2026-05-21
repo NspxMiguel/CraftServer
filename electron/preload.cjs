@@ -74,7 +74,7 @@ contextBridge.exposeInMainWorld('electron', {
   logInfo: (msg, data) => ipcRenderer.invoke('log-info', { msg, data }),
 
   on: (channel, cb) => {
-    const allowed = ['server-log', 'server-stopped', 'create-progress']
+    const allowed = ['server-log', 'server-stopped', 'create-progress', 'player-count']
     if (!allowed.includes(channel)) return
     // Wrap to strip the event argument, then store wrapper so off() can remove it
     const wrapper = (_e, d) => cb(d)

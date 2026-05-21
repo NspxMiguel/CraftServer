@@ -8,6 +8,7 @@ interface ServerState {
   activeTab: 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs' | 'backups'
   customRam?: number
   maxRam?: number
+  playerCounts: Record<string, number>
   setServers: (s: Server[]) => void
   setRunning: (ids: string[]) => void
   setSelected: (id: string | null) => void
@@ -18,6 +19,7 @@ interface ServerState {
   markStopped: (id: string) => void
   updateServer: (id: string, patch: Partial<Server>) => void
   removeServer: (id: string) => void
+  setPlayerCount: (id: string, count: number) => void
 }
 
 export const useServerStore = create<ServerState>((set) => ({
@@ -25,6 +27,7 @@ export const useServerStore = create<ServerState>((set) => ({
   runningIds: new Set(),
   selectedId: null,
   activeTab: 'console',
+  playerCounts: {},
 
   setServers: (servers) => set({ servers }),
   setRunning: (ids) => set({ runningIds: new Set(ids) }),
@@ -37,8 +40,14 @@ export const useServerStore = create<ServerState>((set) => ({
   markStopped: (id) => set(s => {
     const next = new Set(s.runningIds)
     next.delete(id)
-    return { runningIds: next }
+    const counts = { ...s.playerCounts }
+    delete counts[id]
+    return { runningIds: next, playerCounts: counts }
   }),
+
+  setPlayerCount: (id, count) => set(s => ({
+    playerCounts: { ...s.playerCounts, [id]: count },
+  })),
 
   updateServer: (id, patch) => set(s => ({
     servers: s.servers.map(sv => sv.id === id ? { ...sv, ...patch } : sv),

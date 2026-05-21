@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Server, Play, Square, FolderOpen, Trash2, Wifi, Puzzle, AlertTriangle, X, ChevronRight } from 'lucide-react'
+import { Plus, Server, Play, Square, FolderOpen, Trash2, Wifi, Puzzle, AlertTriangle, X, ChevronRight, Users } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
 import { useT } from '../../i18n'
@@ -63,14 +63,19 @@ interface Props { navigate: (p: Page) => void; onQuickSetup: () => void }
 
 export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Props) {
   const t = useT()
-  const { servers, runningIds, setServers, setSelected, markRunning, markStopped, removeServer, setActiveTab } = useServerStore()
+  const { servers, runningIds, playerCounts, setServers, setSelected, markRunning, markStopped, removeServer, setActiveTab, setPlayerCount } = useServerStore()
   const [startError, setStartError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isElectron) return
-    const handler = ({ id }: { id: string }) => markStopped(id)
-    window.electron.on('server-stopped', handler)
-    return () => window.electron.off('server-stopped', handler)
+    const onStopped = ({ id }: { id: string }) => markStopped(id)
+    const onPlayers = ({ id, count }: { id: string; count: number }) => setPlayerCount(id, count)
+    window.electron.on('server-stopped', onStopped)
+    window.electron.on('player-count', onPlayers)
+    return () => {
+      window.electron.off('server-stopped', onStopped)
+      window.electron.off('player-count', onPlayers)
+    }
   }, [])
 
   const start = async (e: React.MouseEvent, id: string) => {
@@ -192,6 +197,7 @@ export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Pro
               {servers.map((server, i) => {
                 const running = runningIds.has(server.id)
                 const meta = TYPE_META[server.type] ?? TYPE_META.paper
+                const players = playerCounts[server.id] ?? 0
 
                 return (
                   <motion.div
@@ -239,8 +245,14 @@ export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Pro
                         </div>
                       </div>
 
-                      {/* Status */}
-                      <div className="flex items-center gap-1.5 shrink-0 mr-1">
+                      {/* Status + players */}
+                      <div className="flex items-center gap-3 shrink-0 mr-1">
+                        {running && players > 0 && (
+                          <div className="flex items-center gap-1 text-slate-400">
+                            <Users size={11} strokeWidth={1.8} />
+                            <span className="text-[11px] font-mono font-bold">{players}</span>
+                          </div>
+                        )}
                         {running ? (
                           <div className="flex items-center gap-1.5">
                             <span className="relative flex h-1.5 w-1.5">

@@ -1313,8 +1313,19 @@ ipcMain.handle('start-server', async (event, id) => {
   log.info('Server process spawned', { serverId: id, pid: proc.pid, java: javaCmd, ram: server.ram })
 
   const toUtf8 = d => d.toString('utf8')
-  proc.stdout.on('data', d => safeSend(event.sender, 'server-log', { id, text: toUtf8(d) }))
-  proc.stderr.on('data', d => safeSend(event.sender, 'server-log', { id, text: toUtf8(d) }))
+  // Track players online via log parsing
+  const playerSet = new Set()
+  const onLog = (d) => {
+    const text = toUtf8(d)
+    safeSend(event.sender, 'server-log', { id, text })
+    // Detect join / leave
+    const joined = text.match(/:\s+(\S+) joined the game/)
+    const left   = text.match(/:\s+(\S+) left the game/)
+    if (joined) { playerSet.add(joined[1]); safeSend(event.sender, 'player-count', { id, count: playerSet.size }) }
+    if (left)   { playerSet.delete(left[1]); safeSend(event.sender, 'player-count', { id, count: playerSet.size }) }
+  }
+  proc.stdout.on('data', onLog)
+  proc.stderr.on('data', onLog)
   proc.on('close', code => {
     delete serverProcesses[id]
     log.info('Server process exited', { serverId: id, exitCode: code })
