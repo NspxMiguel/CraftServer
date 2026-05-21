@@ -1,6 +1,6 @@
 {
   "name": "craftserver",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Minecraft Server Manager — create, manage and share servers with ease",
   "type": "module",
   "main": "electron/main.cjs",
@@ -15,15 +15,8 @@
   },
   "dependencies": {
     "archiver": "^8.0.0",
-    "axios": "^1.7.9",
     "electron-updater": "^6.3.9",
-    "extract-zip": "^2.0.1",
-    "framer-motion": "^11.15.0",
-    "lucide-react": "^0.468.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^7.1.0",
-    "zustand": "^5.0.13"
+    "extract-zip": "^2.0.1"
   },
   "devDependencies": {
     "@electron/notarize": "^2.5.0",
@@ -32,15 +25,22 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "axios": "^1.7.9",
     "concurrently": "^9.1.2",
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",
     "eslint": "^9.17.0",
+    "framer-motion": "^11.15.0",
+    "lucide-react": "^0.468.0",
     "postcss": "^8.4.49",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
-    "wait-on": "^8.0.1"
+    "wait-on": "^8.0.1",
+    "zustand": "^5.0.13"
   },
   "build": {
     "appId": "com.craftserver.app",
@@ -50,8 +50,7 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*",
-      "!node_modules/**/*"
+      "electron/**/*"
     ],
     "asar": true,
     "afterSign": "build/notarize.cjs",

@@ -1192,15 +1192,33 @@ ipcMain.handle('start-server', async (event, id) => {
     return { ok: false, error: `Minecraft ${server.version} requer Java ${minJava}+. Versão atual: Java ${javaMajor}. Baixe em adoptium.net` }
   }
 
+  const port = parseInt(server.port) || 25565
+  const portInUse = await new Promise(res => {
+    const net = require('net')
+    const tester = net.createServer()
+    tester.once('error', () => res(true))
+    tester.once('listening', () => { tester.close(); res(false) })
+    tester.listen(port)
+  })
+  if (portInUse) return { ok: false, error: `Porta ${port} já está em uso. Mude a porta do servidor ou feche o programa que está usando-a.` }
+
   const ramArg = `${server.ram}M`
-  const proc = spawn(javaCmd, [`-Xmx${ramArg}`, `-Xms${ramArg}`, '-jar', 'server.jar', 'nogui'], {
+  const proc = spawn(javaCmd, [
+    `-Xmx${ramArg}`, `-Xms${ramArg}`,
+    '-Dfile.encoding=UTF-8',
+    '-Dstdout.encoding=UTF-8',
+    '-jar', 'server.jar', 'nogui',
+  ], {
     cwd: server.dir,
     stdio: ['pipe', 'pipe', 'pipe'],
+    env: { ...process.env, JAVA_TOOL_OPTIONS: '-Dfile.encoding=UTF-8' },
   })
+  proc.stdin.setDefaultEncoding('utf8')
   serverProcesses[id] = proc
 
-  proc.stdout.on('data', d => safeSend(event.sender, 'server-log', { id, text: d.toString() }))
-  proc.stderr.on('data', d => safeSend(event.sender, 'server-log', { id, text: d.toString() }))
+  const toUtf8 = d => d.toString('utf8')
+  proc.stdout.on('data', d => safeSend(event.sender, 'server-log', { id, text: toUtf8(d) }))
+  proc.stderr.on('data', d => safeSend(event.sender, 'server-log', { id, text: toUtf8(d) }))
   proc.on('close', code => {
     delete serverProcesses[id]
     safeSend(event.sender, 'server-stopped', { id, code })
@@ -1211,14 +1229,19 @@ ipcMain.handle('start-server', async (event, id) => {
 ipcMain.handle('stop-server', async (_, id) => {
   const proc = serverProcesses[id]
   if (!proc) return { ok: false }
-  proc.stdin.write('stop\n')
-  setTimeout(() => { if (serverProcesses[id]) proc.kill() }, 10000)
+  if (proc.stdin.writable) {
+    proc.stdin.write('save-all\n')
+    await new Promise(r => setTimeout(r, 2000))
+  }
+  if (proc.stdin.writable) proc.stdin.write('stop\n')
+  const killTimer = setTimeout(() => { if (serverProcesses[id]) proc.kill('SIGKILL') }, 12000)
+  proc.once('close', () => clearTimeout(killTimer))
   return { ok: true }
 })
 
 ipcMain.handle('send-command', (_, { id, command }) => {
   const proc = serverProcesses[id]
-  if (!proc) return { ok: false }
+  if (!proc || !proc.stdin.writable) return { ok: false }
   proc.stdin.write(command + '\n')
   return { ok: true }
 })
@@ -1677,10 +1700,25 @@ app.whenReady().then(() => {
 })
 app.on('before-quit', () => { app.isQuitting = true })
 
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
   app.isQuitting = true
-  Object.values(serverProcesses).forEach(p => { try { p.kill() } catch {} })
+  const stopPromises = Object.entries(serverProcesses).map(([, proc]) =>
+    new Promise(resolve => {
+      try {
+        if (proc.stdin.writable) proc.stdin.write('save-all\n')
+        setTimeout(() => {
+          try { if (proc.stdin.writable) proc.stdin.write('stop\n') } catch {}
+          setTimeout(() => { try { proc.kill('SIGKILL') } catch {} resolve() }, 8000)
+        }, 1500)
+        proc.once('close', resolve)
+      } catch { resolve() }
+    })
+  )
   Object.values(playitProcesses).forEach(p => { try { p.kill() } catch {} })
+  await Promise.race([
+    Promise.all(stopPromises),
+    new Promise(r => setTimeout(r, 12000)),
+  ])
   if (process.platform !== 'darwin') app.quit()
 })
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
