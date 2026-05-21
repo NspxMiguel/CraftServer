@@ -51,7 +51,8 @@ export default function TopBar({ page, navigate }: Props) {
       </div>
 
       {/* Nav — underline-style tabs, full height */}
-      <nav className="no-drag flex items-stretch gap-0 flex-1">
+      {/* Sem no-drag aqui: o espaço vazio após os botões fica arrastável */}
+      <nav className="flex items-stretch gap-0 flex-1">
         {NAV.map(({ id, label, icon: Icon }) => {
           const active = page === id
           const disabled = id === 'plugins' && !selectedId
@@ -99,8 +100,8 @@ export default function TopBar({ page, navigate }: Props) {
         </div>
       )}
 
-      {/* Right side */}
-      <div className="no-drag flex items-center gap-2 px-4 shrink-0">
+      {/* Right side — sem no-drag no container, só nos elementos interativos */}
+      <div className="flex items-center gap-2 px-4 shrink-0">
         {running > 0 && (
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-brand-500/10 border border-brand-500/20 rounded-full">
             <span className="relative flex h-1.5 w-1.5">
@@ -112,7 +113,7 @@ export default function TopBar({ page, navigate }: Props) {
         )}
         <button
           onClick={() => navigate('settings')}
-          className={`p-1.5 rounded-lg transition-all
+          className={`no-drag p-1.5 rounded-lg transition-all
             ${page === 'settings'
               ? 'bg-brand-500/15 border border-brand-500/25 text-brand-300'
               : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.05]'
