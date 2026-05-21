@@ -2,8 +2,13 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Flame, Download, Play, Zap, Shield, Puzzle,
-  Wifi, Globe, Server, ChevronRight, Github
+  Wifi, Globe, Server, ChevronRight, Github, Monitor
 } from 'lucide-react'
+
+function isMobile() {
+  return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent) ||
+    window.matchMedia('(pointer: coarse) and (max-width: 900px)').matches
+}
 
 interface Props { onEnterDemo: () => void }
 
@@ -66,8 +71,10 @@ const FEATURES = [
 
 export default function Landing({ onEnterDemo }: Props) {
   const [visibleLines, setVisibleLines] = useState<number>(0)
+  const [mobile, setMobile] = useState(false)
 
   useEffect(() => {
+    setMobile(isMobile())
     const timers = CONSOLE_LINES.map((line, i) =>
       setTimeout(() => setVisibleLines(v => Math.max(v, i + 1)), line.delay)
     )
@@ -128,12 +135,18 @@ export default function Landing({ onEnterDemo }: Props) {
             >
               <Download size={15} /> Baixar grátis
             </a>
-            <button
-              onClick={onEnterDemo}
-              className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/8 border border-white/10 hover:border-white/20 text-slate-200 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] active:scale-[0.98]"
-            >
-              <Play size={13} strokeWidth={2.5} /> Testar demo <ChevronRight size={13} className="text-slate-500" />
-            </button>
+            {mobile ? (
+              <div className="flex items-center gap-2 px-6 py-3 bg-dark-700/80 border border-dark-600 text-slate-500 rounded-xl text-sm cursor-not-allowed select-none">
+                <Monitor size={13} /> Demo só disponível no desktop
+              </div>
+            ) : (
+              <button
+                onClick={onEnterDemo}
+                className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/8 border border-white/10 hover:border-white/20 text-slate-200 rounded-xl font-semibold text-sm transition-all hover:scale-[1.03] active:scale-[0.98]"
+              >
+                <Play size={13} strokeWidth={2.5} /> Testar demo <ChevronRight size={13} className="text-slate-500" />
+              </button>
+            )}
           </div>
 
           <p className="text-xs text-slate-600 mt-4">macOS · Windows · Grátis para sempre</p>
@@ -229,12 +242,14 @@ export default function Landing({ onEnterDemo }: Props) {
             >
               <Download size={15} /> Baixar CraftServer
             </a>
-            <button
-              onClick={onEnterDemo}
-              className="flex items-center gap-2 px-6 py-3.5 text-slate-400 hover:text-slate-200 text-sm font-semibold transition-colors"
-            >
-              <Play size={13} strokeWidth={2.5} /> Ver demo primeiro
-            </button>
+            {!mobile && (
+              <button
+                onClick={onEnterDemo}
+                className="flex items-center gap-2 px-6 py-3.5 text-slate-400 hover:text-slate-200 text-sm font-semibold transition-colors"
+              >
+                <Play size={13} strokeWidth={2.5} /> Ver demo primeiro
+              </button>
+            )}
           </div>
         </motion.div>
       </section>

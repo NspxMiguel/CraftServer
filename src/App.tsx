@@ -31,13 +31,18 @@ export default function App() {
 
   // Show landing page in web mode until user clicks "Testar Demo"
   if (!isElectron && !inDemo) {
-    return <Landing onEnterDemo={() => {
+    const onEnterDemo = () => {
+      // Block demo on mobile — UI isn't built for touch
+      const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent) ||
+        window.matchMedia('(pointer: coarse) and (max-width: 900px)').matches
+      if (isMobile) return
       if (!localStorage.getItem('craftserver_lang')) setLang('pt')
       setServers(DEMO_SERVERS)
       setRunning(['demo-1'])
       setSelected('demo-1')
       setInDemo(true)
-    }} />
+    }
+    return <Landing onEnterDemo={onEnterDemo} />
   }
 
   const navigate = (p: Page) => {
