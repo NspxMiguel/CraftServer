@@ -31,8 +31,20 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Space Grotesk', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+      },
+      // Reduzir arredondamentos — menos "AI mobile app", mais "desktop tool"
+      borderRadius: {
+        'none': '0',
+        'sm':   '2px',
+        DEFAULT: '3px',
+        'md':   '4px',
+        'lg':   '6px',
+        'xl':   '8px',
+        '2xl':  '10px',
+        '3xl':  '14px',
+        'full': '9999px',
       },
       backgroundImage: {
         'grid-dark': 'linear-gradient(rgba(251,146,60,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(251,146,60,0.035) 1px, transparent 1px)',

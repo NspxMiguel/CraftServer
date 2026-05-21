@@ -1,18 +1,62 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Server, Play, Square, FolderOpen, Trash2, Wifi, Puzzle, Globe, Cpu, Pickaxe, Zap, AlertTriangle, X, ChevronRight } from 'lucide-react'
+import { Plus, Server, Play, Square, FolderOpen, Trash2, Wifi, Puzzle, AlertTriangle, X, ChevronRight } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
 import { useT } from '../../i18n'
 import { isElectron } from '../../utils/env'
 
+// Ícones customizados por tipo — sem Lucide genérico
+const IconPaper = () => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+    <rect x="1" y="1" width="13" height="10" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+    <rect x="1" y="8" width="13" height="6" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+    <circle cx="12.5" cy="4" r="1" fill="currentColor"/>
+    <circle cx="12.5" cy="11" r="1" fill="currentColor" opacity="0.5"/>
+    <rect x="3" y="3" width="6" height="1" rx="0.5" fill="currentColor" opacity="0.6"/>
+    <rect x="3" y="5" width="4" height="1" rx="0.5" fill="currentColor" opacity="0.4"/>
+  </svg>
+)
+const IconVanilla = () => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+    <rect x="1.5" y="1.5" width="12" height="12" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+    <rect x="4" y="4" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.7"/>
+    <rect x="8" y="4" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.4"/>
+    <rect x="4" y="8" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.4"/>
+    <rect x="8" y="8" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.7"/>
+  </svg>
+)
+const IconFabric = () => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+    <path d="M7.5 1.5L13 4.5V10.5L7.5 13.5L2 10.5V4.5L7.5 1.5Z" stroke="currentColor" strokeWidth="1.3"/>
+    <path d="M7.5 4.5L7.5 10.5" stroke="currentColor" strokeWidth="1" opacity="0.6"/>
+    <path d="M4.5 6L10.5 9" stroke="currentColor" strokeWidth="1" opacity="0.4"/>
+    <path d="M10.5 6L4.5 9" stroke="currentColor" strokeWidth="1" opacity="0.4"/>
+  </svg>
+)
+const IconPickaxe = () => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+    <path d="M9 3L12 6L7 11L4 8L9 3Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+    <path d="M4 8L2 13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <path d="M9 3L11 1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <path d="M12 6L14 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+  </svg>
+)
+const IconHybrid = () => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+    <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+    <rect x="8" y="8" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+    <path d="M7 4H11V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+  </svg>
+)
+
 const TYPE_META: Record<string, { label: string; color: string; border: string; bg: string; icon: React.ReactNode; accent: string }> = {
-  paper:   { label: 'Paper',        color: 'text-amber-300',   border: 'border-amber-500/25',   bg: 'bg-amber-500/10',   icon: <Cpu size={15} />,     accent: 'bg-amber-500'   },
-  purpur:  { label: 'Purpur',       color: 'text-violet-300',  border: 'border-violet-500/25',  bg: 'bg-violet-500/10',  icon: <Cpu size={15} />,     accent: 'bg-violet-500'  },
-  vanilla: { label: 'Vanilla',      color: 'text-slate-300',   border: 'border-slate-500/25',   bg: 'bg-slate-500/10',   icon: <Globe size={15} />,   accent: 'bg-slate-500'   },
-  fabric:  { label: 'Fabric',       color: 'text-sky-300',     border: 'border-sky-500/25',     bg: 'bg-sky-500/10',     icon: <Cpu size={15} />,     accent: 'bg-sky-500'     },
-  bedrock: { label: 'Bedrock',      color: 'text-orange-300',  border: 'border-orange-500/25',  bg: 'bg-orange-500/10',  icon: <Pickaxe size={15} />, accent: 'bg-orange-500'  },
-  hybrid:  { label: 'Java+Bedrock', color: 'text-brand-300',   border: 'border-brand-500/25',   bg: 'bg-brand-500/10',   icon: <Zap size={15} />,     accent: 'bg-brand-500'   },
+  paper:   { label: 'Paper',        color: 'text-amber-300',   border: 'border-amber-500/30',   bg: 'bg-amber-500/8',   icon: <IconPaper />,   accent: 'bg-amber-500'   },
+  purpur:  { label: 'Purpur',       color: 'text-violet-300',  border: 'border-violet-500/30',  bg: 'bg-violet-500/8',  icon: <IconPaper />,   accent: 'bg-violet-500'  },
+  vanilla: { label: 'Vanilla',      color: 'text-slate-300',   border: 'border-slate-500/30',   bg: 'bg-slate-500/8',   icon: <IconVanilla />, accent: 'bg-slate-500'   },
+  fabric:  { label: 'Fabric',       color: 'text-sky-300',     border: 'border-sky-500/30',     bg: 'bg-sky-500/8',     icon: <IconFabric />,  accent: 'bg-sky-500'     },
+  bedrock: { label: 'Bedrock',      color: 'text-orange-300',  border: 'border-orange-500/30',  bg: 'bg-orange-500/8',  icon: <IconPickaxe />, accent: 'bg-orange-500'  },
+  hybrid:  { label: 'Java+Bedrock', color: 'text-brand-300',   border: 'border-brand-500/30',   bg: 'bg-brand-500/8',   icon: <IconHybrid />,  accent: 'bg-brand-500'   },
 }
 
 interface Props { navigate: (p: Page) => void; onQuickSetup: () => void }

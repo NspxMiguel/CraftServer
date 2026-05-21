@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { LayoutGrid, Plus, Puzzle, Settings, Flame } from 'lucide-react'
+import { LayoutGrid, Plus, Puzzle, Settings } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Page } from '../../App'
 import { useServerStore } from '../../store/serverStore'
@@ -46,11 +46,17 @@ export default function TopBar({ page, navigate }: Props) {
 
       {/* Logo — full-height bordered panel */}
       <div className="no-drag flex items-center gap-2.5 px-5 shrink-0 border-r border-dark-600/80 bg-dark-800/40 self-stretch">
-        <div className="relative w-[26px] h-[26px] rounded-lg flex items-center justify-center overflow-hidden shadow-md shadow-brand-900/40">
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-400 via-brand-500 to-brand-700" />
-          <Flame size={13} className="text-white relative z-10" strokeWidth={2.5} />
-        </div>
-        <span className="font-bold text-[13px] text-white/90 tracking-tight">CraftServer</span>
+        {/* Custom server rack icon */}
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="2" width="18" height="5" rx="1" fill="#f97316" fillOpacity="0.15" stroke="#f97316" strokeWidth="1.2"/>
+          <rect x="1" y="9" width="18" height="5" rx="1" fill="#f97316" fillOpacity="0.08" stroke="#f97316" strokeOpacity="0.5" strokeWidth="1.2"/>
+          <rect x="15" y="3.5" width="2" height="2" rx="0.5" fill="#f97316"/>
+          <rect x="15" y="10.5" width="2" height="2" rx="0.5" fill="#f97316" fillOpacity="0.4"/>
+          <circle cx="4" cy="4.5" r="0.8" fill="#fb923c"/>
+          <circle cx="4" cy="11.5" r="0.8" fill="#f97316" fillOpacity="0.4"/>
+          <rect x="3" y="17" width="14" height="1.5" rx="0.5" fill="#f97316" fillOpacity="0.25"/>
+        </svg>
+        <span className="font-bold text-[13px] text-white tracking-tight">CraftServer</span>
       </div>
 
       {/* Nav — underline-style tabs, full height */}
