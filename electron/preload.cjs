@@ -67,8 +67,11 @@ contextBridge.exposeInMainWorld('electron', {
   windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
   // Log APIs
   getLogPath: () => ipcRenderer.invoke('get-log-path'),
+  getLogDir: () => ipcRenderer.invoke('get-log-dir'),
   getRecentLogs: (n) => ipcRenderer.invoke('get-recent-logs', n),
+  listLogFiles: () => ipcRenderer.invoke('list-log-files'),
   logError: (msg, data) => ipcRenderer.invoke('log-error', { msg, data }),
+  logInfo: (msg, data) => ipcRenderer.invoke('log-info', { msg, data }),
 
   on: (channel, cb) => {
     const allowed = ['server-log', 'server-stopped', 'create-progress']

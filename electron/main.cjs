@@ -336,20 +336,22 @@ function stringifyServerProperties(props) {
 ipcMain.handle('get-server-properties', (_, serverId) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
-  if (!server) return null
+  if (!server) { log.warn('get-server-properties: server not found', { serverId }); return null }
   const file = path.join(server.dir, 'server.properties')
-  if (!fs.existsSync(file)) return null
+  if (!fs.existsSync(file)) { log.debug('get-server-properties: file missing', { serverId }); return null }
+  log.debug('get-server-properties', { serverId })
   return parseServerProperties(fs.readFileSync(file, 'utf8'))
 })
 
 ipcMain.handle('set-server-properties', (_, { serverId, props }) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
-  if (!server) return { ok: false }
+  if (!server) { log.warn('set-server-properties: server not found', { serverId }); return { ok: false } }
   const file = path.join(server.dir, 'server.properties')
   const existing = fs.existsSync(file) ? parseServerProperties(fs.readFileSync(file, 'utf8')) : {}
   const merged = { ...existing, ...props }
   fs.writeFileSync(file, stringifyServerProperties(merged))
+  log.info('Server properties updated', { serverId, keys: Object.keys(props) })
   return { ok: true }
 })
 
@@ -363,13 +365,15 @@ ipcMain.handle('get-server-ram', (_, serverId) => {
 ipcMain.handle('set-server-ram', async (_, { serverId, ram }) => {
   const servers = readServers()
   const idx = servers.findIndex(s => s.id === serverId)
-  if (idx === -1) return { ok: false, error: 'Servidor não encontrado' }
+  if (idx === -1) { log.warn('set-server-ram: server not found', { serverId }); return { ok: false, error: 'Servidor não encontrado' } }
   const nextRam = Number(ram)
-  if (!Number.isFinite(nextRam)) return { ok: false, error: 'RAM inválida' }
+  if (!Number.isFinite(nextRam)) { log.warn('set-server-ram: invalid RAM value', { serverId, ram }); return { ok: false, error: 'RAM inválida' } }
   const totalMb = Math.floor(os.totalmem() / (1024 * 1024))
   const maxMb = Math.max(512, Math.min(16384, Math.floor(totalMb * 0.8 / 512) * 512))
+  const oldRam = servers[idx].ram
   servers[idx].ram = Math.max(512, Math.min(maxMb, Math.round(nextRam / 512) * 512))
   writeServers(servers)
+  log.info('Server RAM changed', { serverId, oldRam, newRam: servers[idx].ram })
   return { ok: true }
 })
 
@@ -385,9 +389,11 @@ ipcMain.handle('get-whitelist', (_, serverId) => {
 ipcMain.handle('add-whitelist', async (_, { serverId, username }) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
-  if (!server) return { ok: false, error: 'Servidor não encontrado' }
-  if (!username || !/^[a-zA-Z0-9_]{1,16}$/.test(String(username)))
+  if (!server) { log.warn('add-whitelist: server not found', { serverId }); return { ok: false, error: 'Servidor não encontrado' } }
+  if (!username || !/^[a-zA-Z0-9_]{1,16}$/.test(String(username))) {
+    log.warn('add-whitelist: invalid username', { serverId, username })
     return { ok: false, error: 'Nome de usuário inválido (somente letras, números e _ até 16 caracteres)' }
+  }
 
   // Fetch UUID from Mojang API
   let uuid = '00000000-0000-0000-0000-000000000000'
@@ -410,19 +416,21 @@ ipcMain.handle('add-whitelist', async (_, { serverId, username }) => {
 
   list.push({ uuid, name: username })
   fs.writeFileSync(file, JSON.stringify(list, null, 2))
+  log.info('Whitelist: player added', { serverId, username, uuid })
   return { ok: true, entry: { uuid, name: username } }
 })
 
 ipcMain.handle('remove-whitelist', (_, { serverId, name }) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
-  if (!server) return { ok: false }
+  if (!server) { log.warn('remove-whitelist: server not found', { serverId }); return { ok: false } }
   const file = path.join(server.dir, 'whitelist.json')
   try {
     const list = JSON.parse(fs.readFileSync(file, 'utf8')).filter(e => e.name !== name)
     fs.writeFileSync(file, JSON.stringify(list, null, 2))
+    log.info('Whitelist: player removed', { serverId, name })
     return { ok: true }
-  } catch { return { ok: false } }
+  } catch (e) { log.error('remove-whitelist failed', { serverId, name, message: e.message }); return { ok: false } }
 })
 
 // ── Versions ──────────────────────────────────────────────────────────────────
@@ -575,6 +583,8 @@ ipcMain.handle('create-server', async (event, opts) => {
   fs.mkdirSync(serverDir, { recursive: true })
   fs.mkdirSync(path.join(serverDir, 'plugins'), { recursive: true })
 
+  log.info('Creating server', { id, name: safeName, type, version, ram: safeRam, port: safePort, plugins: (selectedPlugins || []).map(p => p.name), preset: gamePresetId || null, offline: offlineMode })
+
   const send = msg => safeSend(event.sender, 'create-progress', { id, msg })
 
   try {
@@ -705,9 +715,11 @@ ipcMain.handle('create-server', async (event, opts) => {
     servers.push(server)
     writeServers(servers)
 
+    log.info('Server created successfully', { id, name: safeName, type, version, ram: safeRam, port: safePort, preset: gamePresetId || null })
     send('Servidor criado com sucesso!')
     return { ok: true, server }
   } catch (e) {
+    log.error('Server creation failed', { name: safeName, type, version, message: e.message })
     return { ok: false, error: e.message }
   }
 })
@@ -1213,16 +1225,21 @@ generator:
 
 // ── Start / Stop ──────────────────────────────────────────────────────────────
 ipcMain.handle('start-server', async (event, id) => {
-  if (serverProcesses[id]) return { ok: false, error: 'Servidor já está rodando' }
+  if (serverProcesses[id]) {
+    log.warn('start-server: already running or starting', { serverId: id, state: serverProcesses[id] === 'starting' ? 'starting' : 'running' })
+    return { ok: false, error: 'Servidor já está rodando' }
+  }
   // Set sentinel immediately so concurrent calls are blocked during the async setup phase
   serverProcesses[id] = 'starting'
   const servers = readServers()
   const server = servers.find(s => s.id === id)
-  if (!server) { delete serverProcesses[id]; return { ok: false, error: 'Servidor não encontrado' } }
-  if (!fs.existsSync(server.dir)) { delete serverProcesses[id]; return { ok: false, error: 'Pasta do servidor não encontrada' } }
+  if (!server) { delete serverProcesses[id]; log.warn('start-server: server not found', { serverId: id }); return { ok: false, error: 'Servidor não encontrado' } }
+  if (!fs.existsSync(server.dir)) { delete serverProcesses[id]; log.error('start-server: server dir missing', { serverId: id, dir: server.dir }); return { ok: false, error: 'Pasta do servidor não encontrada' } }
+
+  log.info('Starting server', { serverId: id, name: server.name, type: server.type, version: server.version, ram: server.ram, port: server.port })
 
   const javaCmd = await findJava()
-  if (!javaCmd) { delete serverProcesses[id]; return { ok: false, error: 'Java não encontrado. Instale Java 21+ em adoptium.net' } }
+  if (!javaCmd) { delete serverProcesses[id]; log.error('start-server: Java not found'); return { ok: false, error: 'Java não encontrado. Instale Java 21+ em adoptium.net' } }
 
   const minJava = requiredJavaVersion(server.version)
   const javaVersionStr = await new Promise(res => {
@@ -1233,8 +1250,10 @@ ipcMain.handle('start-server', async (event, id) => {
     })
   })
   const javaMajor = parseInt(javaVersionStr.split('.')[0]) || 0
+  log.info('Java detected', { cmd: javaCmd, version: javaVersionStr, major: javaMajor, required: minJava })
   if (javaMajor < minJava) {
     delete serverProcesses[id]
+    log.warn('start-server: Java version too old', { detected: javaMajor, required: minJava })
     return { ok: false, error: `Minecraft ${server.version} requer Java ${minJava}+. Versão atual: Java ${javaMajor}. Baixe em adoptium.net` }
   }
 
@@ -1246,7 +1265,11 @@ ipcMain.handle('start-server', async (event, id) => {
     tester.once('listening', () => { tester.close(); res(false) })
     tester.listen(port)
   })
-  if (portInUse) { delete serverProcesses[id]; return { ok: false, error: `Porta ${port} já está em uso. Mude a porta do servidor ou feche o programa que está usando-a.` } }
+  if (portInUse) {
+    delete serverProcesses[id]
+    log.warn('start-server: port in use', { serverId: id, port })
+    return { ok: false, error: `Porta ${port} já está em uso. Mude a porta do servidor ou feche o programa que está usando-a.` }
+  }
 
   // ── PlayIt secret sync ───────────────────────────────────────────────────────
   // If the user has ever logged into PlayIt on any server, share that secret
@@ -1287,12 +1310,14 @@ ipcMain.handle('start-server', async (event, id) => {
   })
   proc.stdin.setDefaultEncoding('utf8')
   serverProcesses[id] = proc
+  log.info('Server process spawned', { serverId: id, pid: proc.pid, java: javaCmd, ram: server.ram })
 
   const toUtf8 = d => d.toString('utf8')
   proc.stdout.on('data', d => safeSend(event.sender, 'server-log', { id, text: toUtf8(d) }))
   proc.stderr.on('data', d => safeSend(event.sender, 'server-log', { id, text: toUtf8(d) }))
   proc.on('close', code => {
     delete serverProcesses[id]
+    log.info('Server process exited', { serverId: id, exitCode: code })
     // Capture PlayIt agent-secret after server stops — save globally for other servers
     if (hasPlayitPlugin && fs.existsSync(playitCfgFile)) {
       try {
@@ -1315,7 +1340,8 @@ ipcMain.handle('start-server', async (event, id) => {
 
 ipcMain.handle('stop-server', async (_, id) => {
   const proc = serverProcesses[id]
-  if (!proc || proc === 'starting') return { ok: false }
+  if (!proc || proc === 'starting') { log.warn('stop-server: not running', { serverId: id }); return { ok: false } }
+  log.info('Stopping server', { serverId: id, pid: proc.pid })
   if (proc.stdin.writable) {
     proc.stdin.write('save-all\n')
     await new Promise(r => setTimeout(r, 2000))
@@ -1430,8 +1456,9 @@ ipcMain.handle('reveal-backup', (_, backupPath) => {
 ipcMain.handle('import-world', async (_, serverId) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
-  if (!server) return { ok: false, error: 'Servidor não encontrado' }
-  if (serverProcesses[serverId]) return { ok: false, error: 'Pare o servidor antes de importar um mapa.' }
+  if (!server) { log.warn('import-world: server not found', { serverId }); return { ok: false, error: 'Servidor não encontrado' } }
+  if (serverProcesses[serverId]) { log.warn('import-world: server is running', { serverId }); return { ok: false, error: 'Pare o servidor antes de importar um mapa.' } }
+  log.info('World import started', { serverId })
 
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Selecionar mapa (.zip)',
@@ -1482,9 +1509,11 @@ ipcMain.handle('import-world', async (_, serverId) => {
       fs.renameSync(path.join(sourceDir, entry), path.join(worldDir, entry))
     }
     fs.rmSync(tmpDir, { recursive: true, force: true })
+    log.info('World import completed', { serverId, worldName, zipPath })
     return { ok: true, worldName }
   } catch (e) {
     fs.rmSync(tmpDir, { recursive: true, force: true })
+    log.error('World import failed', { serverId, zipPath, message: e.message })
     return { ok: false, error: `Erro ao extrair: ${e.message}` }
   }
 })
@@ -1505,6 +1534,7 @@ ipcMain.handle('check-dependencies', async () => {
   const majorVersion = javaVersion ? parseInt(javaVersion.split('.')[0]) : 0
   const javaOk = javaCmd !== null && majorVersion >= 17
   const java25Ok = javaCmd !== null && majorVersion >= 25
+  log.info('Dependency check', { java: { ok: javaOk, java25: java25Ok, version: javaVersion, cmd: javaCmd } })
   return {
     java: { ok: javaOk, java25: java25Ok, version: javaVersion, cmd: javaCmd },
   }
@@ -1585,21 +1615,23 @@ function requiredJavaVersion(mcVersion) {
 ipcMain.handle('get-servers', () => readServers())
 
 ipcMain.handle('delete-server', (_, id) => {
-  if (serverProcesses[id] && serverProcesses[id] !== 'starting') return { ok: false, error: 'Pare o servidor antes de deletar.' }
-  if (serverProcesses[id] === 'starting') return { ok: false, error: 'Aguarde o servidor terminar de iniciar antes de deletar.' }
+  if (serverProcesses[id] && serverProcesses[id] !== 'starting') { log.warn('delete-server: server is running', { serverId: id }); return { ok: false, error: 'Pare o servidor antes de deletar.' } }
+  if (serverProcesses[id] === 'starting') { log.warn('delete-server: server is starting', { serverId: id }); return { ok: false, error: 'Aguarde o servidor terminar de iniciar antes de deletar.' } }
   const servers = readServers()
   const server = servers.find(s => s.id === id)
   writeServers(servers.filter(s => s.id !== id))
-  // Always use the registered dir — never fall back to path.join(SERVERS_DIR, id)
-  // to prevent path traversal if id were a crafted string like '../../etc'
   const dir = server?.dir
   if (dir && fs.existsSync(dir)) {
-    // Verify the directory is inside SERVERS_DIR before deleting
     const resolved = path.resolve(dir)
     const serversResolved = path.resolve(SERVERS_DIR)
     if (resolved.startsWith(serversResolved + path.sep) || resolved === serversResolved) {
       fs.rmSync(dir, { recursive: true, force: true })
+      log.info('Server deleted', { serverId: id, name: server?.name, dir })
+    } else {
+      log.error('delete-server: dir outside SERVERS_DIR, skipped rmSync', { dir, resolved })
     }
+  } else {
+    log.info('Server deleted (no dir on disk)', { serverId: id, name: server?.name })
   }
   return { ok: true }
 })
@@ -1645,7 +1677,8 @@ ipcMain.handle('search-hangar', async (_, { query }) => {
 ipcMain.handle('install-plugin', async (event, { serverId, projectId, projectTitle }) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
-  if (!server) return { ok: false, error: 'Servidor não encontrado' }
+  if (!server) { log.warn('install-plugin: server not found', { serverId }); return { ok: false, error: 'Servidor não encontrado' } }
+  log.info('Installing plugin', { serverId, projectId, projectTitle })
 
   // ── Hangar install ────────────────────────────────────────────────────────
   if (projectId.startsWith('hangar:')) {
@@ -1698,11 +1731,12 @@ ipcMain.handle('install-plugin', async (event, { serverId, projectId, projectTit
     } catch {}
   }
 
-  if (!compatible?.files?.[0]) return { ok: false, error: 'Versão compatível não encontrada' }
+  if (!compatible?.files?.[0]) { log.warn('install-plugin: no compatible version found', { serverId, projectId, serverVersion: server.version }); return { ok: false, error: 'Versão compatível não encontrada' } }
   const file = compatible.files.find(f => f.primary) || compatible.files[0]
   safeSend(event.sender, 'create-progress', { id: serverId, msg: `Instalando ${projectTitle}...` })
   const safeFilename = path.basename(String(file.filename || `${projectTitle}.jar`)).replace(/[^a-zA-Z0-9._-]/g, '_')
   await downloadFile(file.url, path.join(server.dir, 'plugins', safeFilename))
+  log.info('Plugin installed', { serverId, projectId, projectTitle, filename: safeFilename })
   return { ok: true, filename: safeFilename }
 })
 
@@ -1718,15 +1752,14 @@ ipcMain.handle('get-installed-plugins', (_, serverId) => {
 ipcMain.handle('remove-plugin', (_, { serverId, filename }) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
-  if (!server) return { ok: false }
-  // Sanitize filename to prevent path traversal (e.g. '../../evil.js')
+  if (!server) { log.warn('remove-plugin: server not found', { serverId }); return { ok: false } }
   const safeFilename = path.basename(String(filename || ''))
-  if (!safeFilename || !safeFilename.endsWith('.jar')) return { ok: false, error: 'Invalid filename' }
+  if (!safeFilename || !safeFilename.endsWith('.jar')) { log.warn('remove-plugin: invalid filename', { serverId, filename }); return { ok: false, error: 'Invalid filename' } }
   const pluginsDir = path.join(server.dir, 'plugins')
   const f = path.join(pluginsDir, safeFilename)
-  // Double-check resolved path stays inside plugins dir
-  if (!f.startsWith(pluginsDir + path.sep) && f !== pluginsDir) return { ok: false, error: 'Invalid path' }
+  if (!f.startsWith(pluginsDir + path.sep) && f !== pluginsDir) { log.error('remove-plugin: path traversal attempt', { serverId, filename }); return { ok: false, error: 'Invalid path' } }
   if (fs.existsSync(f)) fs.unlinkSync(f)
+  log.info('Plugin removed', { serverId, filename: safeFilename })
   return { ok: true }
 })
 
@@ -1806,11 +1839,12 @@ ipcMain.handle('update-server', async (event, arg) => {
   const serverId = typeof arg === 'string' ? arg : arg?.serverId
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
-  if (!server) return { ok: false }
+  if (!server) { log.warn('update-server: server not found', { serverId }); return { ok: false } }
   const send = msg => safeSend(event.sender, 'create-progress', { id: serverId, msg })
+  log.info('Server update started', { serverId, name: server.name, currentVersion: server.version, type: server.type })
   try {
     const latest = await fetchLatestVersion(server.type)
-    if (!latest) return { ok: false, error: 'Versão mais recente não encontrada' }
+    if (!latest) { log.warn('update-server: latest version not found', { serverId, type: server.type }); return { ok: false, error: 'Versão mais recente não encontrada' } }
     send(`Baixando ${server.type} ${latest}...`)
     const jarPath = path.join(server.dir, 'server.jar')
     if (fs.existsSync(jarPath)) fs.renameSync(jarPath, jarPath + '.bak')
@@ -1819,9 +1853,10 @@ ipcMain.handle('update-server', async (event, arg) => {
     const idx = servers.findIndex(s => s.id === serverId)
     servers[idx].version = latest
     writeServers(servers)
+    log.info('Server updated', { serverId, oldVersion: server.version, newVersion: latest })
     send(`Atualizado para ${latest}!`)
     return { ok: true, newVersion: latest }
-  } catch (e) { return { ok: false, error: e.message } }
+  } catch (e) { log.error('Server update failed', { serverId, message: e.message }); return { ok: false, error: e.message } }
 })
 
 // ── Config & misc ─────────────────────────────────────────────────────────────
@@ -1866,8 +1901,11 @@ ipcMain.handle('get-system-ram', () => {
 })
 
 ipcMain.handle('get-log-path', () => log.getLogPath())
+ipcMain.handle('get-log-dir', () => log.getLogDir())
 ipcMain.handle('get-recent-logs', (_, n) => log.getRecentLogs(n))
+ipcMain.handle('list-log-files', () => log.listLogFiles())
 ipcMain.handle('log-error', (_, { msg, data }) => { log.error('[UI] ' + msg, data); return { ok: true } })
+ipcMain.handle('log-info',  (_, { msg, data }) => { log.info('[UI] ' + msg, data); return { ok: true } })
 ipcMain.handle('open-server-folder', (_, serverId) => {
   const s = readServers().find(s => s.id === serverId)
   if (s) shell.openPath(s.dir)
@@ -1906,12 +1944,18 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  const servers = readServers()
+  log.info('App ready', { version: app.getVersion(), servers: servers.length, isDev })
   createWindow()
   if (!isDev && autoUpdater) {
-    autoUpdater.checkForUpdatesAndNotify().catch(() => {})
+    autoUpdater.checkForUpdatesAndNotify().catch(e => log.warn('Auto-updater check failed', { message: e.message }))
   }
 })
-app.on('before-quit', () => { app.isQuitting = true })
+app.on('before-quit', () => {
+  app.isQuitting = true
+  const running = Object.keys(serverProcesses).filter(k => serverProcesses[k] !== 'starting')
+  log.info('App quitting', { runningServers: running })
+})
 
 app.on('window-all-closed', async () => {
   app.isQuitting = true

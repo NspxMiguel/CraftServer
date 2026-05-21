@@ -7,6 +7,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento%20%7C%20in%20development-orange?style=flat-square)
 ![Language](https://img.shields.io/badge/idioma-PT%20%7C%20EN-blueviolet?style=flat-square)
+![AI](https://img.shields.io/badge/built%20with-Claude%20Sonnet-8B5CF6?style=flat-square&logo=anthropic)
 
 **[🇧🇷 Português](#-português) · [🇺🇸🇬🇧 English](#-english)**
 
@@ -39,6 +40,7 @@
 | 🔄 **Auto-atualização** | Detecta nova versão do servidor e atualiza com um clique |
 | 🌍 **Multilingual** | Interface em Português 🇧🇷 e Inglês 🇺🇸 |
 | 🍎 **Cross-platform** | macOS (Apple Silicon + Intel) e Windows 10/11 |
+| 📋 **Logs de diagnóstico** | Histórico completo de tudo que acontece no app, rotacionado automaticamente |
 
 ### 🎮 Modos de Jogo pré-configurados
 
@@ -64,12 +66,23 @@
 
 **Pré-requisitos:** Java 21+ (Adoptium Temurin) — [Baixar aqui](https://adoptium.net/temurin/releases/)
 
+### 📋 Onde ficam os logs?
+
+Os logs do app ficam em:
+
+| Sistema | Caminho |
+|---|---|
+| macOS | `~/Library/Application Support/craftserver/logs/` |
+| Windows | `%APPDATA%\craftserver\logs\` |
+
+Arquivos de log são rotacionados automaticamente (1 por dia, últimos 7 dias mantidos). Em caso de bug, inclua o log mais recente ao reportar um issue.
+
 ### 🐛 Reportar um Bug
 
 1. Clique em **[Issues → New Issue](../../issues/new/choose)**
 2. Escolha o template **"Bug Report"**
 3. Descreva o que aconteceu, o que você esperava e passos para reproduzir
-4. Se tiver screenshot ou log, anexe — ajuda muito!
+4. **Inclua o arquivo de log** — ajuda muito a identificar o problema!
 
 ### 🛠️ Desenvolvimento Local
 
@@ -120,6 +133,7 @@ npm run electron:build:win   # Windows (.exe)
 | 🔄 **Auto-update** | Detects new server version and updates with one click |
 | 🌍 **Multilingual** | Interface in Portuguese 🇧🇷 and English 🇺🇸 |
 | 🍎 **Cross-platform** | macOS (Apple Silicon + Intel) and Windows 10/11 |
+| 📋 **Diagnostic logs** | Full history of everything that happens in the app, rotated automatically |
 
 ### 🎮 Pre-configured Game Modes
 
@@ -145,12 +159,23 @@ npm run electron:build:win   # Windows (.exe)
 
 **Prerequisites:** Java 21+ (Adoptium Temurin) — [Download here](https://adoptium.net/temurin/releases/)
 
+### 📋 Where are the logs?
+
+App diagnostic logs are stored at:
+
+| System | Path |
+|---|---|
+| macOS | `~/Library/Application Support/craftserver/logs/` |
+| Windows | `%APPDATA%\craftserver\logs\` |
+
+Log files are rotated automatically (one per day, last 7 days kept). When reporting a bug, please include the most recent log file.
+
 ### 🐛 Report a Bug
 
 1. Go to **[Issues → New Issue](../../issues/new/choose)**
 2. Choose the **"Bug Report"** template
 3. Describe what happened, what you expected, and steps to reproduce
-4. Attach a screenshot or log if you have one — it helps a lot!
+4. **Attach the log file** — it really helps track down the issue!
 
 ### 🛠️ Local Development
 
@@ -186,6 +211,12 @@ npm run electron:build:win   # Windows (.exe)
 | Icons | Lucide React |
 | Build | electron-builder (PKG + NSIS) |
 | CI/CD | GitHub Actions |
+
+---
+
+## 🤖 Built with Claude
+
+This project was developed in collaboration with [Claude](https://claude.ai) (Anthropic's AI). Claude helped design the architecture, write and review the code, fix bugs, and harden security throughout development.
 
 ---
 
