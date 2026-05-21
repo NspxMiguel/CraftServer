@@ -18,6 +18,11 @@ export type Page = 'dashboard' | 'create' | 'server' | 'plugins' | 'settings'
 
 export default function App() {
   const [page, setPage] = useState<Page>('dashboard')
+  // Incremented every time we navigate TO 'create' so AnimatePresence always
+  // gets a brand-new key → the wizard fully unmounts and resets its state.
+  // Without this, AnimatePresence can reuse the exiting component instance
+  // if the user navigates back before the 150 ms exit animation completes.
+  const [createEpoch, setCreateEpoch] = useState(0)
   const { setServers, setRunning, selectedId, setSelected } = useServerStore()
   const langSet = useIsLangSet()
   const [inDemo, setInDemo] = useState(false)
@@ -52,6 +57,7 @@ export default function App() {
       useServerStore.getState().setActiveTab('plugins')
       setPage('server')
     } else {
+      if (p === 'create') setCreateEpoch(e => e + 1) // force fresh wizard mount every time
       setPage(p)
     }
   }
@@ -90,7 +96,7 @@ export default function App() {
             </PageWrap>
           )}
           {page === 'create' && (
-            <PageWrap key="create">
+            <PageWrap key={`create-${createEpoch}`}>
               <CreateServerWizard navigate={navigate} />
             </PageWrap>
           )}
