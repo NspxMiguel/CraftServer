@@ -100,7 +100,21 @@ export default function ServerDetail({ navigate }: Props) {
   if (!server) return null
 
   const handleStart = async () => {
-    if (!isElectron) return
+    if (!isElectron) {
+      // Demo: simulate server startup sequence
+      addLog('Iniciando servidor...')
+      markRunning(server.id)
+      const startLines = [
+        { d: 300, t: '[Server thread/INFO]: Loading properties' },
+        { d: 700, t: '[Server thread/INFO]: Preparing start region for dimension minecraft:overworld' },
+        { d: 1100, t: '[Server thread/INFO]: Preparing spawn area: 48%' },
+        { d: 1500, t: '[Server thread/INFO]: Enabling EssentialsX v2.21.0' },
+        { d: 1900, t: '[Server thread/INFO]: Enabling LuckPerms v5.4.141' },
+        { d: 2400, t: '[Server thread/INFO]: Done (2.4s)! For help, type "help"' },
+      ]
+      startLines.forEach(({ d, t }) => setTimeout(() => addLog(t), d))
+      return
+    }
     addLog(t.serverStarting)
     const res = await window.electron.startServer(server.id)
     if (res.ok) markRunning(server.id)
@@ -108,23 +122,44 @@ export default function ServerDetail({ navigate }: Props) {
   }
 
   const handleStop = async () => {
-    if (!isElectron) return
+    if (!isElectron) {
+      // Demo: simulate graceful shutdown
+      addLog('Salvando o jogo...', 'warn')
+      setTimeout(() => addLog('Jogo salvo.'), 400)
+      setTimeout(() => { markStopped(server.id); addLog('Servidor encerrado.', 'warn') }, 1200)
+      return
+    }
     addLog(t.sendingStop, 'warn')
     await window.electron.stopServer(server.id)
   }
 
   const handleCmd = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!cmd.trim() || !isElectron) return
-    window.electron.sendCommand(server.id, cmd.trim())
+    if (!cmd.trim()) return
+    if (isElectron) window.electron.sendCommand(server.id, cmd.trim())
     addLog(`> ${cmd.trim()}`, 'cmd')
+    // Demo: echo a fake response for common commands
+    if (!isElectron) {
+      const c = cmd.trim().toLowerCase()
+      if (c === 'list') setTimeout(() => addLog('There are 2 of a max of 20 players online: Steve, Alex'), 200)
+      else if (c.startsWith('/help') || c === 'help') setTimeout(() => addLog('Comandos: /list /stop /tp /gamemode /give /time /weather'), 200)
+      else setTimeout(() => addLog(`Comando enviado: ${cmd.trim()}`), 150)
+    }
     setCmd('')
   }
 
   // playit.gg: install the Minecraft plugin (JAR) into plugins/ folder
-  // After install, user needs to restart the server — the plugin handles the tunnel inside the JVM.
   const handlePlayit = async () => {
-    if (!isElectron || playitLoading) return
+    if (playitLoading) return
+    if (!isElectron) {
+      setPlayitLoading(true)
+      addLog('── Baixando plugin playit.gg... ──')
+      await new Promise(r => setTimeout(r, 1000))
+      setPlayitLoading(false)
+      setPlayitInstalled(true)
+      addLog('── Plugin playit.gg instalado! Reinicie o servidor e use /playit in-game ──')
+      return
+    }
     setPlayitLoading(true)
     addLog('── Baixando plugin playit.gg... ──')
     const res = await window.electron.installPlayitPlugin?.(server.id)
@@ -144,11 +179,18 @@ export default function ServerDetail({ navigate }: Props) {
   const handleUpdate = async () => {
     if (!isElectron || !selectedId || running) return
     setUpdating(true)
-    window.electron.on('create-progress', ({ msg }: any) => addLog(`[UPDATE] ${msg}`))
+    // Store handler ref so we can remove it after update finishes
+    const onProgress = ({ msg }: any) => addLog(`[UPDATE] ${msg}`)
+    window.electron.on('create-progress', onProgress)
+    let alive = true
     const res = await window.electron.updateServer(selectedId)
+    window.electron.off('create-progress', onProgress)
+    if (!alive) return
     if (res.ok) { updateServer(selectedId, { version: res.newVersion }); setUpdateAvail(null) }
     else addLog(`Erro: ${res.error}`, 'error')
     setUpdating(false)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return () => { alive = false }
   }
 
   const lang = getLang()

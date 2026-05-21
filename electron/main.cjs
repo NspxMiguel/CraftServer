@@ -1550,8 +1550,17 @@ ipcMain.handle('delete-server', (_, id) => {
   const servers = readServers()
   const server = servers.find(s => s.id === id)
   writeServers(servers.filter(s => s.id !== id))
-  const dir = server?.dir || path.join(SERVERS_DIR, id)
-  if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true })
+  // Always use the registered dir — never fall back to path.join(SERVERS_DIR, id)
+  // to prevent path traversal if id were a crafted string like '../../etc'
+  const dir = server?.dir
+  if (dir && fs.existsSync(dir)) {
+    // Verify the directory is inside SERVERS_DIR before deleting
+    const resolved = path.resolve(dir)
+    const serversResolved = path.resolve(SERVERS_DIR)
+    if (resolved.startsWith(serversResolved + path.sep) || resolved === serversResolved) {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  }
   return { ok: true }
 })
 
@@ -1651,8 +1660,9 @@ ipcMain.handle('install-plugin', async (event, { serverId, projectId, projectTit
   if (!compatible?.files?.[0]) return { ok: false, error: 'Versão compatível não encontrada' }
   const file = compatible.files.find(f => f.primary) || compatible.files[0]
   safeSend(event.sender, 'create-progress', { id: serverId, msg: `Instalando ${projectTitle}...` })
-  await downloadFile(file.url, path.join(server.dir, 'plugins', file.filename))
-  return { ok: true, filename: file.filename }
+  const safeFilename = path.basename(String(file.filename || `${projectTitle}.jar`)).replace(/[^a-zA-Z0-9._-]/g, '_')
+  await downloadFile(file.url, path.join(server.dir, 'plugins', safeFilename))
+  return { ok: true, filename: safeFilename }
 })
 
 ipcMain.handle('get-installed-plugins', (_, serverId) => {
@@ -1668,7 +1678,13 @@ ipcMain.handle('remove-plugin', (_, { serverId, filename }) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
   if (!server) return { ok: false }
-  const f = path.join(server.dir, 'plugins', filename)
+  // Sanitize filename to prevent path traversal (e.g. '../../evil.js')
+  const safeFilename = path.basename(String(filename || ''))
+  if (!safeFilename || !safeFilename.endsWith('.jar')) return { ok: false, error: 'Invalid filename' }
+  const pluginsDir = path.join(server.dir, 'plugins')
+  const f = path.join(pluginsDir, safeFilename)
+  // Double-check resolved path stays inside plugins dir
+  if (!f.startsWith(pluginsDir + path.sep) && f !== pluginsDir) return { ok: false, error: 'Invalid path' }
   if (fs.existsSync(f)) fs.unlinkSync(f)
   return { ok: true }
 })

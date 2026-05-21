@@ -17,14 +17,19 @@ export default function WhitelistManager({ serverId, serverType }: Props) {
 
   const isBedrock = serverType === 'bedrock'
 
-  const load = async () => {
+  const load = async (alive = { value: true }) => {
     if (!isElectron || isBedrock) { setLoading(false); return }
     const list = await window.electron.getWhitelist(serverId)
+    if (!alive.value) return
     setEntries(list)
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [serverId])
+  useEffect(() => {
+    const alive = { value: true }
+    load(alive)
+    return () => { alive.value = false }
+  }, [serverId])
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()

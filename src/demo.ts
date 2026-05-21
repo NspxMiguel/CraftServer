@@ -1,4 +1,4 @@
-import type { Server } from './types'
+import type { Server, Plugin } from './types'
 
 export const DEMO_SERVERS: Server[] = [
   {
@@ -24,6 +24,23 @@ export const DEMO_SERVERS: Server[] = [
     playit: false,
   },
 ]
+
+export const DEMO_PLUGINS: Plugin[] = [
+  { project_id: 'essentialsx', slug: 'essentialsx', title: 'EssentialsX', description: 'O plugin essencial para qualquer servidor — comandos /home, /tp, /spawn, /kit e muito mais.', icon_url: null, downloads: 12_400_000, categories: ['utility'], source: 'modrinth' },
+  { project_id: 'luckperms', slug: 'luckperms', title: 'LuckPerms', description: 'Sistema de permissões moderno e poderoso. Crie grupos, defina permissões e gerencie players.', icon_url: null, downloads: 9_800_000, categories: ['admin-tools'], source: 'modrinth' },
+  { project_id: 'worldedit', slug: 'worldedit', title: 'WorldEdit', description: 'Edite mundos gigantes em segundos com seleções, pincel e comandos de construção.', icon_url: null, downloads: 8_200_000, categories: ['world-management'], source: 'modrinth' },
+  { project_id: 'worldguard', slug: 'worldguard', title: 'WorldGuard', description: 'Proteja regiões, bloqueie danos e controle permissões por área.', icon_url: null, downloads: 6_900_000, categories: ['world-management'], source: 'modrinth' },
+  { project_id: 'vault', slug: 'vault', title: 'Vault', description: 'API de economia e permissões usada por centenas de outros plugins.', icon_url: null, downloads: 5_600_000, categories: ['library'], source: 'modrinth' },
+  { project_id: 'placeholderapi', slug: 'placeholderapi', title: 'PlaceholderAPI', description: 'Crie placeholders dinâmicos para usar em outros plugins — nome do player, rank, etc.', icon_url: null, downloads: 4_200_000, categories: ['library'], source: 'modrinth' },
+  { project_id: 'coreprotect', slug: 'coreprotect', title: 'CoreProtect', description: 'Registra todas as ações no servidor. Reverta griefs e veja quem quebrou o que.', icon_url: null, downloads: 3_800_000, categories: ['admin-tools'], source: 'modrinth' },
+  { project_id: 'viaversion', slug: 'viaversion', title: 'ViaVersion', description: 'Deixa jogadores de versões mais novas entrarem no seu servidor.', icon_url: null, downloads: 7_100_000, categories: ['library'], source: 'modrinth' },
+  { project_id: 'spark', slug: 'spark', title: 'spark', description: 'Profiler de performance para identificar lag e gargalos em tempo real.', icon_url: null, downloads: 2_300_000, categories: ['admin-tools'], source: 'modrinth' },
+  { project_id: 'chunky', slug: 'chunky', title: 'Chunky', description: 'Pré-gera chunks do mapa em background. Zero lag de terreno para novos jogadores.', icon_url: null, downloads: 1_900_000, categories: ['optimization'], source: 'modrinth' },
+  { project_id: 'decentholograms', slug: 'decentholograms', title: 'DecentHolograms', description: 'Crie hologramas flutuantes com texto, itens e animações.', icon_url: null, downloads: 1_500_000, categories: ['decoration'], source: 'hangar' },
+  { project_id: 'authme', slug: 'authme', title: 'AuthMe', description: 'Sistema de login/registro para servidores offline. Seguro e configurável.', icon_url: null, downloads: 1_200_000, categories: ['authentication'], source: 'modrinth' },
+]
+
+export const DEMO_INSTALLED = ['EssentialsX-2.21.0.jar', 'LuckPerms-5.4.141.jar', 'spark-1.10.jar']
 
 // Real Minecraft log strings — they go through translateLog for translation
 export const DEMO_LOGS: { delay: number; text: string }[] = [

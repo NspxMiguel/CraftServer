@@ -40,8 +40,8 @@ export default function BackupManager({ serverId, running }: Props) {
     [backupDir, googleDirs],
   )
 
-  const load = async () => {
-    if (!isElectron) return
+  const load = async (alive = { value: true }) => {
+    if (!isElectron) { setLoading(false); return }
     setError('')
     setLoading(true)
     try {
@@ -49,19 +49,24 @@ export default function BackupManager({ serverId, running }: Props) {
         window.electron.getBackupConfig?.(),
         window.electron.listServerBackups?.(serverId),
       ])
+      if (!alive.value) return
       if (config) {
         setBackupDirState(config.backupDir)
         setGoogleDirs(config.googleDriveDirs || [])
       }
       setBackups(list || [])
     } catch (e: any) {
-      setError(String(e?.message || e))
+      if (alive.value) setError(String(e?.message || e))
     } finally {
-      setLoading(false)
+      if (alive.value) setLoading(false)
     }
   }
 
-  useEffect(() => { load() }, [serverId])
+  useEffect(() => {
+    const alive = { value: true }
+    load(alive)
+    return () => { alive.value = false }
+  }, [serverId])
 
   const createBackup = async () => {
     if (!isElectron || creating) return
@@ -124,7 +129,7 @@ export default function BackupManager({ serverId, running }: Props) {
               <FolderOpen size={12} />Pasta
             </button>
             <button
-              onClick={load}
+              onClick={() => load()}
               disabled={loading}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-dark-700 border border-dark-600 text-xs font-bold text-slate-500 hover:text-slate-300 disabled:opacity-50"
             >

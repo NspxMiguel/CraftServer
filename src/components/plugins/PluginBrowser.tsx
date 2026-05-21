@@ -3,8 +3,8 @@ import { Search, Download, Loader2, Trash2, Puzzle, Package, Check, Database, Pi
 import { motion, AnimatePresence } from 'framer-motion'
 import { useServerStore } from '../../store/serverStore'
 import type { Plugin, ServerType } from '../../types'
-
-const isElectron = typeof window !== 'undefined' && !!window.electron
+import { DEMO_PLUGINS, DEMO_INSTALLED } from '../../demo'
+import { isElectron } from '../../utils/env'
 
 const QUICK_SEARCHES: Record<string, string[]> = {
   paper:  ['essentials', 'luckperms', 'worldedit', 'economy', 'anti-grief', 'chat', 'shop', 'coreprotect'],
@@ -41,7 +41,8 @@ export default function PluginBrowser() {
   const noPluginSupport = type === 'vanilla' || type === 'bedrock'
 
   const loadInstalled = () => {
-    if (!isElectron || !selectedId) return Promise.resolve()
+    if (!selectedId) return Promise.resolve()
+    if (!isElectron) { setInstalled(DEMO_INSTALLED); return Promise.resolve() }
     return window.electron.getInstalledPlugins(selectedId).then(setInstalled)
   }
 
@@ -62,22 +63,34 @@ export default function PluginBrowser() {
 
   const handleSearch = async (q: string) => {
     const trimmed = q.trim()
-    if (!isElectron || !trimmed || noPluginSupport) return
+    if (!trimmed || noPluginSupport) return
     setError('')
     setLoading(true)
     setResults([])
+
+    if (!isElectron) {
+      // Demo: filter from DEMO_PLUGINS with simulated delay
+      await new Promise(r => setTimeout(r, 400))
+      const lower = trimmed.toLowerCase()
+      const filtered = DEMO_PLUGINS.filter(p =>
+        p.title.toLowerCase().includes(lower) ||
+        p.description.toLowerCase().includes(lower) ||
+        p.categories.some(c => c.includes(lower))
+      )
+      setResults(filtered.length > 0 ? filtered : DEMO_PLUGINS.slice(0, 6))
+      setLoading(false)
+      return
+    }
 
     const isFabric = loaderFor(type) === 'fabric'
 
     const [modrinthRes, hangarRes] = await Promise.all([
       window.electron.searchPlugins(trimmed, loaderFor(type), server?.version).catch(() => [] as Plugin[]),
-      // Hangar only for bukkit-compatible servers
       (!isFabric && window.electron.searchHangar)
         ? window.electron.searchHangar(trimmed).catch(() => [] as Plugin[])
         : Promise.resolve([] as Plugin[]),
     ])
 
-    // Merge & deduplicate by title (Modrinth first, then Hangar)
     const seen = new Set<string>()
     const merged = [...modrinthRes, ...hangarRes].filter(p => {
       const key = p.title.toLowerCase()
@@ -91,9 +104,20 @@ export default function PluginBrowser() {
   }
 
   const handleInstall = async (plugin: Plugin) => {
-    if (!isElectron || !selectedId) return
+    if (!selectedId) return
     setError('')
     setInstalling(plugin.project_id)
+
+    if (!isElectron) {
+      // Demo: simulate install with delay
+      await new Promise(r => setTimeout(r, 800))
+      const fakeFilename = `${plugin.slug}-demo.jar`
+      setInstalled(prev => prev.includes(fakeFilename) ? prev : [...prev, fakeFilename])
+      setJustInstalled(s => new Set([...s, plugin.project_id, plugin.slug, plugin.title]))
+      setInstalling(null)
+      return
+    }
+
     const res = await window.electron.installPlugin(selectedId, plugin.project_id, plugin.title)
     if (!res?.ok) {
       setError(`Falha ao instalar ${plugin.title}: ${res?.error ?? 'erro desconhecido'}`)
@@ -106,7 +130,8 @@ export default function PluginBrowser() {
   }
 
   const handleRemove = async (filename: string) => {
-    if (!isElectron || !selectedId) return
+    if (!selectedId) return
+    if (!isElectron) { setInstalled(prev => prev.filter(f => f !== filename)); return }
     await window.electron.removePlugin(selectedId, filename)
     loadInstalled()
   }
@@ -201,7 +226,7 @@ export default function PluginBrowser() {
 
                 {results.length === 0 && !loading && (
                   <div className="flex flex-wrap gap-1.5 mt-3">
-                    {quickSearches.map(q => (
+                    {(isElectron ? quickSearches : ['essentials', 'luckperms', 'worldedit', 'economy', 'coreprotect', 'spark']).map(q => (
                       <button
                         key={q}
                         onClick={() => setQuery(q)}

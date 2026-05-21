@@ -1000,6 +1000,8 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                         onClick={() => {
                           if (lastCreatedId) setSelected(lastCreatedId)
                           setActiveTab('console')
+                          setCreating(false)
+                          setDone(false)
                           navigate('server')
                         }}
                         className="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-white text-sm font-bold transition-colors"

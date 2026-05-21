@@ -46,8 +46,14 @@ export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Pro
   const del = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     if (!confirm('Deletar este servidor? Todos os arquivos serão removidos permanentemente.')) return
+    const wasSelected = useServerStore.getState().selectedId === id
+    if (runningIds.has(id)) {
+      if (isElectron) await window.electron.stopServer(id)
+      markStopped(id)
+    }
     if (isElectron) await window.electron.deleteServer(id)
     removeServer(id)
+    if (wasSelected) navigate('dashboard')
   }
 
   const select = (id: string) => { setSelected(id); navigate('server') }
