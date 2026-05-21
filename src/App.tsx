@@ -10,20 +10,27 @@ import DependencyGate from './components/DependencyGate'
 import FirstLaunchLang from './components/FirstLaunchLang'
 import { useServerStore } from './store/serverStore'
 import { useIsLangSet } from './i18n'
+import { DEMO_SERVERS } from './demo'
 
 export type Page = 'dashboard' | 'create' | 'server' | 'plugins' | 'settings'
 
-const isElectron = typeof window !== 'undefined' && !!window.electron
+export const isElectron = typeof window !== 'undefined' && !!window.electron
 
 export default function App() {
   const [page, setPage] = useState<Page>('dashboard')
-  const { setServers, setRunning, selectedId } = useServerStore()
+  const { setServers, setRunning, selectedId, setSelected } = useServerStore()
   const langSet = useIsLangSet()
 
   useEffect(() => {
-    if (!isElectron) return
-    window.electron.getServers().then(setServers)
-    window.electron.getRunningServers().then(setRunning)
+    if (isElectron) {
+      window.electron.getServers().then(setServers)
+      window.electron.getRunningServers().then(setRunning)
+    } else {
+      // Demo mode — show realistic fake data when running as web preview
+      setServers(DEMO_SERVERS)
+      setRunning(['demo-1'])
+      setSelected('demo-1')
+    }
   }, [])
 
   const navigate = (p: Page) => {

@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
+import { isElectron as IS_ELECTRON } from '../../App'
+import { DEMO_LOGS } from '../../demo'
 import ServerSettings from './ServerSettings'
 import WhitelistManager from './WhitelistManager'
 import PluginBrowser from '../plugins/PluginBrowser'
@@ -16,7 +18,7 @@ import BackupManager from './BackupManager'
 import { useT, getLang } from '../../i18n'
 import { translateLog, rawLogType } from '../../utils/logTranslator'
 
-const isElectron = typeof window !== 'undefined' && !!window.electron
+const isElectron = IS_ELECTRON
 
 type Tab = 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs' | 'backups'
 
@@ -28,7 +30,7 @@ export default function ServerDetail({ navigate }: Props) {
   const server = servers.find(s => s.id === selectedId)
   const running = selectedId ? runningIds.has(selectedId) : false
 
-  const [logs, setLogs] = useState<{ text: string; type: 'info' | 'warn' | 'error' | 'cmd' }[]>([])
+  const [logs, setLogs] = useState<{ text: string; type: 'info' | 'warn' | 'error' | 'cmd'; ts: number }[]>([])
   const [friendlyMode, setFriendlyMode] = useState(true) // translate logs by default
   const [cmd, setCmd] = useState('')
   const tab = activeTab
@@ -49,13 +51,25 @@ export default function ServerDetail({ navigate }: Props) {
     setJavaError(false)
     setUpdateAvail(null)
 
+    if (!isElectron) {
+      // Demo mode: replay simulated log sequence
+      const timers: ReturnType<typeof setTimeout>[] = []
+      DEMO_LOGS.forEach(({ delay, text }) => {
+        timers.push(setTimeout(() => {
+          const type = rawLogType(text)
+          setLogs(l => [...l.slice(-800), { text, type, ts: Date.now() }])
+        }, delay))
+      })
+      return () => timers.forEach(clearTimeout)
+    }
+
     const onLog = ({ id, text, line }: any) => {
       if (id !== selectedId) return
       const trimmed = ((text ?? line) ?? '').trimEnd()
       if (!trimmed) return
       if (trimmed.includes('Java não encontrado')) setJavaError(true)
       const type = rawLogType(trimmed)
-      setLogs(l => [...l.slice(-800), { text: trimmed, type }])
+      setLogs(l => [...l.slice(-800), { text: trimmed, type, ts: Date.now() }])
     }
     const onStopped = ({ id }: any) => {
       if (id === selectedId) { markStopped(id); addLog(t.serverStopped, 'warn') }
@@ -70,7 +84,6 @@ export default function ServerDetail({ navigate }: Props) {
       if (r?.installed) setPlayitInstalled(true)
     })
 
-    // Cleanup listeners when component unmounts or selectedId changes
     return () => {
       window.electron.off?.('server-log', onLog)
       window.electron.off?.('server-stopped', onStopped)
@@ -80,7 +93,7 @@ export default function ServerDetail({ navigate }: Props) {
   useEffect(() => { logsEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, [logs])
 
   const addLog = (text: string, type: 'info' | 'warn' | 'error' | 'cmd' = 'info') =>
-    setLogs(l => [...l, { text, type }])
+    setLogs(l => [...l, { text, type, ts: Date.now() }])
 
   if (!server) return null
 
@@ -138,6 +151,11 @@ export default function ServerDetail({ navigate }: Props) {
 
   const lang = getLang()
 
+  const fmtTs = (ts: number) => {
+    const d = new Date(ts)
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`
+  }
+
   const logColor = (type: string) => {
     if (type === 'error') return 'text-red-400'
     if (type === 'warn') return 'text-amber-400/90'
@@ -147,14 +165,14 @@ export default function ServerDetail({ navigate }: Props) {
     return 'text-slate-400'
   }
 
-  // In friendly mode: translate and filter logs
-  const friendlyLogs = logs.reduce<{ text: string; emoji: string; type: string }[]>((acc, log) => {
+  // In friendly mode: translate and filter logs (keep ts for timestamp display)
+  const friendlyLogs = logs.reduce<{ text: string; emoji: string; type: string; ts: number }[]>((acc, log) => {
     if (log.type === 'cmd') {
-      acc.push({ text: log.text, emoji: '⌨️', type: 'cmd' })
+      acc.push({ text: log.text, emoji: '⌨️', type: 'cmd', ts: log.ts })
       return acc
     }
     const friendly = translateLog(log.text, lang)
-    if (friendly) acc.push(friendly)
+    if (friendly) acc.push({ ...friendly, ts: log.ts })
     return acc
   }, [])
 
@@ -373,6 +391,7 @@ export default function ServerDetail({ navigate }: Props) {
                     friendlyLogs.map((log, i) => (
                       <div key={i} className={`flex items-start gap-2 py-0.5 ${logColor(log.type)}`}>
                         <span className="shrink-0 text-sm leading-5">{log.emoji}</span>
+                        <span className="shrink-0 text-[10px] font-mono text-slate-700 leading-5 mt-px select-none">{fmtTs(log.ts)}</span>
                         <span className="font-sans leading-5">{log.text}</span>
                       </div>
                     ))
@@ -385,7 +404,10 @@ export default function ServerDetail({ navigate }: Props) {
                     </div>
                   ) : (
                     logs.map((log, i) => (
-                      <div key={i} className={`${logColor(log.type)} whitespace-pre-wrap break-all`}>{log.text}</div>
+                      <div key={i} className={`flex gap-2 ${logColor(log.type)} whitespace-pre-wrap break-all`}>
+                        <span className="shrink-0 text-slate-700 select-none">{fmtTs(log.ts)}</span>
+                        <span>{log.text}</span>
+                      </div>
                     ))
                   )
                 )}
