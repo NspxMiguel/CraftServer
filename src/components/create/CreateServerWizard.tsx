@@ -280,7 +280,8 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       : { ok: true, server: { id: Date.now().toString(), name: effectiveName.trim(), type, version, ram, port, dir: '', createdAt: Date.now(), playit: false } }
 
     if (res.ok) {
-      const updated = isElectron ? await window.electron.getServers() : [res.server]
+      setDone(true)
+      const updated = isElectron ? await window.electron.getServers() : [...useServerStore.getState().servers, res.server]
       setServers(updated)
       setSelected(res.server.id)
       setActiveTab('console')
@@ -358,7 +359,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
 
     if (res.ok) {
       setDone(true)
-      const updated = isElectron ? await window.electron.getServers() : [res.server]
+      const updated = isElectron ? await window.electron.getServers() : [...useServerStore.getState().servers, res.server]
       setServers(updated)
       setSelected(res.server.id)
       setActiveTab('console')

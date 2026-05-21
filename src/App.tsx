@@ -8,6 +8,7 @@ import PluginBrowser from './components/plugins/PluginBrowser'
 import Settings from './components/settings/Settings'
 import DependencyGate from './components/DependencyGate'
 import FirstLaunchLang from './components/FirstLaunchLang'
+import Landing from './components/Landing'
 import { useServerStore } from './store/serverStore'
 import { useIsLangSet, setLang } from './i18n'
 import { DEMO_SERVERS } from './demo'
@@ -19,21 +20,29 @@ export default function App() {
   const [page, setPage] = useState<Page>('dashboard')
   const { setServers, setRunning, selectedId, setSelected } = useServerStore()
   const langSet = useIsLangSet()
+  const [inDemo, setInDemo] = useState(false)
 
   useEffect(() => {
     if (isElectron) {
       window.electron.getServers().then(setServers)
       window.electron.getRunningServers().then(setRunning)
-    } else {
-      // Demo mode — auto-set language so FirstLaunchLang doesn't block
+    }
+  }, [])
+
+  // Show landing page in web mode until user clicks "Testar Demo"
+  if (!isElectron && !inDemo) {
+    return <Landing onEnterDemo={() => {
       if (!localStorage.getItem('craftserver_lang')) setLang('pt')
       setServers(DEMO_SERVERS)
       setRunning(['demo-1'])
       setSelected('demo-1')
-    }
-  }, [])
+      setInDemo(true)
+    }} />
+  }
 
   const navigate = (p: Page) => {
+    // In demo mode, block create page — demo servers are read-only
+    if (!isElectron && p === 'create') return
     if (p === 'plugins') {
       useServerStore.getState().setActiveTab('plugins')
       setPage('server')
@@ -51,6 +60,21 @@ export default function App() {
   return (
     <DependencyGate>
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-dark-900">
+      {/* Demo mode banner */}
+      {!isElectron && (
+        <div className="flex items-center justify-center gap-3 px-4 py-1.5 bg-brand-500/10 border-b border-brand-500/20 text-[11px] text-brand-300 shrink-0">
+          <span className="font-semibold">Modo demo</span>
+          <span className="text-brand-500/60">·</span>
+          <span className="text-brand-400/70">Explore a interface do CraftServer</span>
+          <a
+            href="https://github.com/spxmiguel/CraftServer/releases/latest"
+            target="_blank" rel="noreferrer"
+            className="ml-2 px-2.5 py-0.5 bg-brand-500 hover:bg-brand-400 text-white rounded-lg font-bold transition-colors text-[10px]"
+          >
+            Baixar app
+          </a>
+        </div>
+      )}
       <TopBar page={page} navigate={navigate} />
 
       <main className="flex-1 overflow-hidden relative">

@@ -34,6 +34,9 @@ temp/
 # Electron
 electron-builder.yml.bak
 
+# Claude Code config (IDE-specific, not part of the project)
+.claude/
+
 # Minecraft/server runtime
 servers/*/logs/
 servers/*/cache/

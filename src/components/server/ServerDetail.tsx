@@ -41,6 +41,20 @@ export default function ServerDetail({ navigate }: Props) {
   const [javaError, setJavaError] = useState(false)
   const logsEnd = useRef<HTMLDivElement>(null)
 
+  // Demo mode: replay simulated log sequence when server changes
+  useEffect(() => {
+    if (isElectron || !selectedId) return
+    setLogs([])
+    const timers: ReturnType<typeof setTimeout>[] = []
+    DEMO_LOGS.forEach(({ delay, text }) => {
+      timers.push(setTimeout(() => {
+        const type = rawLogType(text)
+        setLogs(l => [...l.slice(-800), { text, type, ts: Date.now() }])
+      }, delay))
+    })
+    return () => timers.forEach(clearTimeout)
+  }, [selectedId])
+
   useEffect(() => {
     if (!isElectron || !selectedId) return
     setLogs([])
@@ -48,18 +62,6 @@ export default function ServerDetail({ navigate }: Props) {
     setPlayitLoading(false)
     setJavaError(false)
     setUpdateAvail(null)
-
-    if (!isElectron) {
-      // Demo mode: replay simulated log sequence
-      const timers: ReturnType<typeof setTimeout>[] = []
-      DEMO_LOGS.forEach(({ delay, text }) => {
-        timers.push(setTimeout(() => {
-          const type = rawLogType(text)
-          setLogs(l => [...l.slice(-800), { text, type, ts: Date.now() }])
-        }, delay))
-      })
-      return () => timers.forEach(clearTimeout)
-    }
 
     const onLog = ({ id, text, line }: any) => {
       if (id !== selectedId) return
