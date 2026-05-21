@@ -60,6 +60,7 @@
       "gatekeeperAssess": false,
       "hardenedRuntime": false,
       "identity": null,
+      "artifactName": "CraftServer-Mac-${version}.${ext}",
       "target": [
         {
           "target": "pkg",
@@ -76,6 +77,7 @@
       "isRelocatable": false
     },
     "win": {
+      "artifactName": "CraftServer-Windows-${version}.${ext}",
       "target": [
         {
           "target": "nsis",
