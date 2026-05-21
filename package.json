@@ -1,6 +1,6 @@
 {
   "name": "craftserver",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Minecraft Server Manager — create, manage and share servers with ease",
   "type": "module",
   "main": "electron/main.cjs",
