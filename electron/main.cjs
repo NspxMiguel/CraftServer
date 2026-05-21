@@ -357,6 +357,8 @@ ipcMain.handle('add-whitelist', async (_, { serverId, username }) => {
   const servers = readServers()
   const server = servers.find(s => s.id === serverId)
   if (!server) return { ok: false, error: 'Servidor não encontrado' }
+  if (!username || !/^[a-zA-Z0-9_]{1,16}$/.test(String(username)))
+    return { ok: false, error: 'Nome de usuário inválido (somente letras, números e _ até 16 caracteres)' }
 
   // Fetch UUID from Mojang API
   let uuid = '00000000-0000-0000-0000-000000000000'
@@ -533,7 +535,13 @@ ipcMain.handle('get-versions', async (_, type) => {
 // ── Create server ─────────────────────────────────────────────────────────────
 ipcMain.handle('create-server', async (event, opts) => {
   const { name, type, version, ram, port, plugins: selectedPlugins, offlineMode = false, extraServerProperties = {}, gamePresetId } = opts
-  const id = Date.now().toString()
+
+  // Input validation
+  const safeName = String(name || 'Servidor').slice(0, 64)
+  const safePort = Math.max(1024, Math.min(65535, Math.abs(parseInt(port) || 25565)))
+  const safeRam  = Math.max(512, Math.min(16384, Math.round((parseInt(ram) || 2048) / 512) * 512))
+
+  const id = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`
   const serverDir = path.join(SERVERS_DIR, id)
   fs.mkdirSync(serverDir, { recursive: true })
   fs.mkdirSync(path.join(serverDir, 'plugins'), { recursive: true })
@@ -552,7 +560,7 @@ ipcMain.handle('create-server', async (event, opts) => {
     const isJava = type !== 'bedrock'
     if (isJava) {
       // Build base properties then merge any preset overrides
-      const baseProps = parseServerProperties(buildServerProperties(port, name, offlineMode))
+      const baseProps = parseServerProperties(buildServerProperties(safePort, safeName, offlineMode))
       const merged = { ...baseProps, ...extraServerProperties }
       fs.writeFileSync(path.join(serverDir, 'server.properties'), stringifyServerProperties(merged))
       fs.writeFileSync(path.join(serverDir, 'whitelist.json'), '[]')
@@ -580,7 +588,9 @@ ipcMain.handle('create-server', async (event, opts) => {
         send(`Instalando ${pl.name}...`)
         try {
           const { url: plUrl, filename: plFilename } = await resolvePluginUrl(pl, version)
-          const pluginDest = path.join(serverDir, 'plugins', plFilename || pl.filename)
+          const rawFilename = plFilename || pl.filename || `${pl.name}.jar`
+          const safeFilename = path.basename(rawFilename).replace(/[^a-zA-Z0-9._-]/g, '_')
+          const pluginDest = path.join(serverDir, 'plugins', safeFilename)
           await downloadFile(plUrl, pluginDest, pct => send(`Plugin ${pl.name}: ${pct}%`))
         } catch (e) { send(`Aviso: falha ao instalar ${pl.name} — ${e.message}`) }
       }
@@ -661,7 +671,7 @@ ipcMain.handle('create-server', async (event, opts) => {
       send('Arena BedWars pronta — 2 times, loja, upgrades e geradores configurados ✅')
     }
 
-    const server = { id, name, type, version, ram, port, dir: serverDir, createdAt: Date.now(), playit: false }
+    const server = { id, name: safeName, type, version, ram: safeRam, port: safePort, dir: serverDir, createdAt: Date.now(), playit: false }
     const servers = readServers()
     servers.push(server)
     writeServers(servers)
@@ -685,8 +695,11 @@ async function getJarUrl(type, version) {
   if (type === 'vanilla') {
     const manifest = await fetchJson('https://launchermeta.mojang.com/mc/game/version_manifest.json')
     const entry = manifest.versions.find(v => v.id === version)
+    if (!entry) throw new Error(`Versão Vanilla ${version} não encontrada`)
     const vdata = await fetchJson(entry.url)
-    return vdata.downloads.server.url
+    const serverUrl = vdata?.downloads?.server?.url
+    if (!serverUrl) throw new Error(`JAR do servidor Vanilla ${version} não disponível`)
+    return serverUrl
   }
   if (type === 'fabric') {
     const loaders = await fetchJson(`https://meta.fabricmc.net/v2/versions/loader/${version}`)
@@ -1242,7 +1255,9 @@ ipcMain.handle('stop-server', async (_, id) => {
 ipcMain.handle('send-command', (_, { id, command }) => {
   const proc = serverProcesses[id]
   if (!proc || !proc.stdin.writable) return { ok: false }
-  proc.stdin.write(command + '\n')
+  const safe = String(command ?? '').replace(/[\r\n]+/g, ' ').slice(0, 1024)
+  if (!safe.trim()) return { ok: false }
+  proc.stdin.write(safe + '\n')
   return { ok: true }
 })
 
@@ -1331,6 +1346,69 @@ ipcMain.handle('reveal-backup', (_, backupPath) => {
   return { ok: true }
 })
 
+// ── World / Map import ────────────────────────────────────────────────────────
+ipcMain.handle('import-world', async (_, serverId) => {
+  const servers = readServers()
+  const server = servers.find(s => s.id === serverId)
+  if (!server) return { ok: false, error: 'Servidor não encontrado' }
+  if (serverProcesses[serverId]) return { ok: false, error: 'Pare o servidor antes de importar um mapa.' }
+
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Selecionar mapa (.zip)',
+    filters: [{ name: 'Arquivo ZIP', extensions: ['zip'] }],
+    properties: ['openFile'],
+  })
+  if (result.canceled || !result.filePaths?.[0]) return { ok: false, canceled: true }
+
+  const zipPath = result.filePaths[0]
+  const extract = require('extract-zip')
+
+  const propsFile = path.join(server.dir, 'server.properties')
+  let worldName = 'world'
+  if (fs.existsSync(propsFile)) {
+    const p = parseServerProperties(fs.readFileSync(propsFile, 'utf8'))
+    if (p['level-name']) worldName = String(p['level-name'])
+  }
+
+  const worldDir = path.join(server.dir, worldName)
+  const tmpDir = path.join(os.tmpdir(), `craftserver-import-${Date.now()}`)
+  fs.mkdirSync(tmpDir, { recursive: true })
+
+  try {
+    await extract(zipPath, { dir: tmpDir })
+
+    // Detect if the zip contains a single top-level folder (common for downloaded maps)
+    const entries = fs.readdirSync(tmpDir)
+    let sourceDir = tmpDir
+    if (entries.length === 1) {
+      const single = path.join(tmpDir, entries[0])
+      if (fs.statSync(single).isDirectory()) sourceDir = single
+    }
+
+    // Check this looks like a Minecraft world (has level.dat or region/)
+    const hasLevelDat = fs.existsSync(path.join(sourceDir, 'level.dat'))
+    const hasRegion   = fs.existsSync(path.join(sourceDir, 'region'))
+    if (!hasLevelDat && !hasRegion) {
+      fs.rmSync(tmpDir, { recursive: true, force: true })
+      return { ok: false, error: 'O arquivo ZIP não parece ser um mundo Minecraft válido (sem level.dat ou pasta region/).' }
+    }
+
+    // Remove existing world
+    if (fs.existsSync(worldDir)) fs.rmSync(worldDir, { recursive: true, force: true })
+
+    // Move extracted world to server dir
+    fs.mkdirSync(worldDir, { recursive: true })
+    for (const entry of fs.readdirSync(sourceDir)) {
+      fs.renameSync(path.join(sourceDir, entry), path.join(worldDir, entry))
+    }
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+    return { ok: true, worldName }
+  } catch (e) {
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+    return { ok: false, error: `Erro ao extrair: ${e.message}` }
+  }
+})
+
 // ── Dependency check ─────────────────────────────────────────────────────────
 ipcMain.handle('check-dependencies', async () => {
   const javaCmd = await findJava()
@@ -1352,7 +1430,11 @@ ipcMain.handle('check-dependencies', async () => {
   }
 })
 
-ipcMain.handle('open-external', (_, url) => shell.openExternal(url))
+ipcMain.handle('open-external', (_, url) => {
+  if (typeof url !== 'string') return
+  if (!url.startsWith('https://') && !url.startsWith('http://')) return
+  return shell.openExternal(url)
+})
 
 async function findJava() {
   const candidates = []
@@ -1423,8 +1505,11 @@ function requiredJavaVersion(mcVersion) {
 ipcMain.handle('get-servers', () => readServers())
 
 ipcMain.handle('delete-server', (_, id) => {
-  writeServers(readServers().filter(s => s.id !== id))
-  const dir = path.join(SERVERS_DIR, id)
+  if (serverProcesses[id]) return { ok: false, error: 'Pare o servidor antes de deletar.' }
+  const servers = readServers()
+  const server = servers.find(s => s.id === id)
+  writeServers(servers.filter(s => s.id !== id))
+  const dir = server?.dir || path.join(SERVERS_DIR, id)
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true })
   return { ok: true }
 })

@@ -40,6 +40,9 @@ contextBridge.exposeInMainWorld('electron', {
   checkUpdate: (sid) => ipcRenderer.invoke('check-update', sid),
   updateServer: (sid) => ipcRenderer.invoke('update-server', sid),
 
+  // World / Map import
+  importWorld: (sid) => ipcRenderer.invoke('import-world', sid),
+
   // Backups
   getBackupConfig: () => ipcRenderer.invoke('get-backup-config'),
   setBackupDir: (dir) => ipcRenderer.invoke('set-backup-dir', dir),

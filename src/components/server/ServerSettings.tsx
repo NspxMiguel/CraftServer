@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Save, Globe, Shield, Gamepad2, Mountain, Zap, Image, Info, Check, Loader2, Cpu, AlertTriangle } from 'lucide-react'
+import { Save, Globe, Shield, Gamepad2, Mountain, Zap, Image, Info, Check, Loader2, Cpu, AlertTriangle, Upload } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
@@ -34,6 +34,8 @@ export default function ServerSettings({ serverId, serverType, serverRam, onRamC
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [importingWorld, setImportingWorld] = useState(false)
+  const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [systemRam, setSystemRam] = useState({ totalMb: 8192, freeMb: 4096 })
   const [ram, setRam] = useState(serverRam || 2048)
   const [ramInput, setRamInput] = useState(String(serverRam || 2048))
@@ -88,6 +90,18 @@ export default function ServerSettings({ serverId, serverType, serverRam, onRamC
   }
 
   const set = (key: string, value: any) => setProps(p => ({ ...p, [key]: value }))
+
+  const handleImportWorld = async () => {
+    if (!isElectron || importingWorld) return
+    setImportingWorld(true)
+    setImportMsg(null)
+    const res = await window.electron.importWorld?.(serverId)
+    setImportingWorld(false)
+    if (!res || res.canceled) return
+    if (res.ok) setImportMsg({ ok: true, text: `Mapa importado para "${res.worldName}"! Reinicie o servidor.` })
+    else setImportMsg({ ok: false, text: res.error ?? 'Erro ao importar mapa' })
+    setTimeout(() => setImportMsg(null), 6000)
+  }
 
   const handleSave = async () => {
     if (!isElectron) return
@@ -323,6 +337,39 @@ export default function ServerSettings({ serverId, serverType, serverRam, onRamC
                 className="w-full accent-brand-400 mt-1" />
               <p className="text-xs text-brand-400 font-mono font-bold mt-1">{props['simulation-distance'] ?? 10} chunks</p>
             </Row>
+          </div>
+        </Section>
+
+        {/* Map import */}
+        <Section icon={<Upload size={14} />} title="Importar Mapa">
+          <div className="rounded-2xl border border-dark-600 bg-dark-800/50 p-4 space-y-3">
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Substitui o mundo atual pelo mapa importado. Aceita arquivos <span className="font-mono text-slate-400">.zip</span> com um mundo Minecraft válido (contendo <span className="font-mono text-slate-400">level.dat</span> ou pasta <span className="font-mono text-slate-400">region/</span>).
+            </p>
+            <button
+              onClick={handleImportWorld}
+              disabled={importingWorld}
+              className="flex items-center gap-2 px-4 py-2.5 bg-dark-700 hover:bg-dark-600 border border-dark-500 hover:border-brand-500/40 text-slate-300 hover:text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+            >
+              {importingWorld
+                ? <Loader2 size={14} className="animate-spin text-brand-400" />
+                : <Upload size={14} className="text-brand-400" />}
+              {importingWorld ? 'Importando...' : 'Selecionar mapa (.zip)'}
+            </button>
+            {importMsg && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs
+                  ${importMsg.ok
+                    ? 'bg-green-500/10 border-green-500/20 text-green-300'
+                    : 'bg-red-500/10 border-red-500/20 text-red-300'
+                  }`}
+              >
+                {importMsg.ok ? <Check size={12} /> : <AlertTriangle size={12} />}
+                {importMsg.text}
+              </motion.div>
+            )}
           </div>
         </Section>
 

@@ -9,12 +9,11 @@ import Settings from './components/settings/Settings'
 import DependencyGate from './components/DependencyGate'
 import FirstLaunchLang from './components/FirstLaunchLang'
 import { useServerStore } from './store/serverStore'
-import { useIsLangSet } from './i18n'
+import { useIsLangSet, setLang } from './i18n'
 import { DEMO_SERVERS } from './demo'
+import { isElectron } from './utils/env'
 
 export type Page = 'dashboard' | 'create' | 'server' | 'plugins' | 'settings'
-
-export const isElectron = typeof window !== 'undefined' && !!window.electron
 
 export default function App() {
   const [page, setPage] = useState<Page>('dashboard')
@@ -26,7 +25,8 @@ export default function App() {
       window.electron.getServers().then(setServers)
       window.electron.getRunningServers().then(setRunning)
     } else {
-      // Demo mode — show realistic fake data when running as web preview
+      // Demo mode — auto-set language so FirstLaunchLang doesn't block
+      if (!localStorage.getItem('craftserver_lang')) setLang('pt')
       setServers(DEMO_SERVERS)
       setRunning(['demo-1'])
       setSelected('demo-1')

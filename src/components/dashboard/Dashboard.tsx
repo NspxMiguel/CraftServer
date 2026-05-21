@@ -1,11 +1,10 @@
-import { useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, Server, Play, Square, FolderOpen, Trash2, Wifi, Puzzle, Globe, Layers, Cpu, Pickaxe, Zap } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Server, Play, Square, FolderOpen, Trash2, Wifi, Puzzle, Globe, Layers, Cpu, Pickaxe, Zap, AlertTriangle, X } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
 import { useT } from '../../i18n'
-
-const isElectron = typeof window !== 'undefined' && !!window.electron
+import { isElectron } from '../../utils/env'
 
 const TYPE_META: Record<string, { label: string; color: string; border: string; bg: string; icon: React.ReactNode; glow: string }> = {
   paper:   { label: 'Paper',        color: 'text-amber-300',   border: 'border-amber-500/25',   bg: 'bg-amber-500/10',   icon: <Cpu size={16} />,     glow: 'from-amber-500/20' },
@@ -21,6 +20,7 @@ interface Props { navigate: (p: Page) => void; onQuickSetup: () => void }
 export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Props) {
   const t = useT()
   const { servers, runningIds, setServers, setSelected, markRunning, markStopped, removeServer, setActiveTab } = useServerStore()
+  const [startError, setStartError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isElectron) return
@@ -34,7 +34,7 @@ export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Pro
     if (!isElectron) return
     const res = await window.electron.startServer(id)
     if (res.ok) markRunning(id)
-    else alert(res.error)
+    else { setStartError(res.error ?? 'Erro ao iniciar servidor'); setTimeout(() => setStartError(null), 6000) }
   }
 
   const stop = async (e: React.MouseEvent, id: string) => {
@@ -62,6 +62,20 @@ export default function Dashboard({ navigate, onQuickSetup: _onQuickSetup }: Pro
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-48 bg-brand-500/8 rounded-full blur-3xl pointer-events-none -translate-y-2/3" />
 
       <div className="relative flex flex-col h-full">
+        {/* Error toast */}
+        <AnimatePresence>
+          {startError && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2.5 bg-red-500/10 border border-red-500/30 rounded-xl text-sm text-red-300 shadow-xl max-w-md"
+            >
+              <AlertTriangle size={14} className="shrink-0 text-red-400" />
+              <span className="flex-1">{startError}</span>
+              <button onClick={() => setStartError(null)} className="text-red-500 hover:text-red-300"><X size={13} /></button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Header */}
         <div className="flex items-center justify-between px-8 pt-8 pb-5">
           <div>

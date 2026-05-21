@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
-import { isElectron as IS_ELECTRON } from '../../App'
+import { isElectron } from '../../utils/env'
 import { DEMO_LOGS } from '../../demo'
 import ServerSettings from './ServerSettings'
 import WhitelistManager from './WhitelistManager'
@@ -17,8 +17,6 @@ import ErrorLogViewer from '../settings/ErrorLogViewer'
 import BackupManager from './BackupManager'
 import { useT, getLang } from '../../i18n'
 import { translateLog, rawLogType } from '../../utils/logTranslator'
-
-const isElectron = IS_ELECTRON
 
 type Tab = 'console' | 'plugins' | 'settings' | 'whitelist' | 'logs' | 'backups'
 
@@ -77,14 +75,16 @@ export default function ServerDetail({ navigate }: Props) {
     window.electron.on('server-log', onLog)
     window.electron.on('server-stopped', onStopped)
 
+    let alive = true
     window.electron.checkUpdate(selectedId).then((r: any) => {
-      if (r.hasUpdate) setUpdateAvail({ latestVersion: r.latestVersion })
+      if (alive && r.hasUpdate) setUpdateAvail({ latestVersion: r.latestVersion })
     })
     window.electron.checkPlayitPlugin?.(selectedId).then((r: any) => {
-      if (r?.installed) setPlayitInstalled(true)
+      if (alive && r?.installed) setPlayitInstalled(true)
     })
 
     return () => {
+      alive = false
       window.electron.off?.('server-log', onLog)
       window.electron.off?.('server-stopped', onStopped)
     }
@@ -93,7 +93,7 @@ export default function ServerDetail({ navigate }: Props) {
   useEffect(() => { logsEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, [logs])
 
   const addLog = (text: string, type: 'info' | 'warn' | 'error' | 'cmd' = 'info') =>
-    setLogs(l => [...l, { text, type, ts: Date.now() }])
+    setLogs(l => [...l.slice(-799), { text, type, ts: Date.now() }])
 
   if (!server) return null
 
