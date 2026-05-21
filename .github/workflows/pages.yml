@@ -31,8 +31,8 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Build
-        run: npm run build
+      - name: Build (web only — skip electron-builder)
+        run: npm run build:web
 
       - uses: actions/upload-pages-artifact@v3
         with:
