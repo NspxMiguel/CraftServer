@@ -1,7 +1,49 @@
+# Dependencies
 node_modules/
+node_modules 2/
+
+# Build outputs
 dist/
 dist-electron/
-*.log
-.DS_Store
-*.local
 release/
+out/
+
+# Logs
+*.log
+logs/
+
+# Local/dev files
+*.local
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Temporary/cache
+.tmp/
+temp/
+.cache/
+
+# Electron
+electron-builder.yml.bak
+
+# Minecraft/server runtime
+servers/*/logs/
+servers/*/cache/
+servers/*/crash-reports/
+servers/*/world/session.lock
+
+# PlayIt/Auth temp
+playit/
+tmp/
+
+# Generated files
+coverage/
+*.tsbuildinfo
