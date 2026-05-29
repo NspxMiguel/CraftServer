@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { LayoutGrid, Plus, Puzzle, Settings, Flame } from 'lucide-react'
+import { LayoutGrid, Plus, Puzzle, Settings } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Page } from '../../App'
 import { useServerStore } from '../../store/serverStore'
@@ -46,7 +46,26 @@ export default function TopBar({ page, navigate }: Props) {
 
       {/* Logo — full-height bordered panel */}
       <div className="no-drag flex items-center gap-2.5 px-5 shrink-0 border-r border-dark-600/80 bg-dark-800/40 self-stretch">
-        <Flame size={16} className="text-brand-400" strokeWidth={2} />
+        {/* Isometric grass block logo */}
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* top face */}
+          <polygon points="9,1 17,5 9,9 1,5" fill="#6aa838"/>
+          {/* left face */}
+          <polygon points="1,5 9,9 9,17 1,13" fill="#86603a"/>
+          {/* right face */}
+          <polygon points="9,9 17,5 17,13 9,17" fill="#6b4c2c"/>
+          {/* grass strip left */}
+          <polygon points="1,5 9,9 9,10.1 1,6.1" fill="#5a9630"/>
+          {/* grass strip right */}
+          <polygon points="9,9 17,5 17,6.1 9,10.1" fill="#4d8228"/>
+          {/* edges */}
+          <line x1="9" y1="1" x2="1" y2="5" stroke="#7dc040" strokeWidth="0.6"/>
+          <line x1="9" y1="1" x2="17" y2="5" stroke="#5a9030" strokeWidth="0.5"/>
+          <line x1="1" y1="5" x2="1" y2="13" stroke="#5a3e22" strokeWidth="0.5"/>
+          <line x1="17" y1="5" x2="17" y2="13" stroke="#4a3018" strokeWidth="0.5"/>
+          <line x1="1" y1="13" x2="9" y2="17" stroke="#4a3018" strokeWidth="0.5"/>
+          <line x1="17" y1="13" x2="9" y2="17" stroke="#3a2410" strokeWidth="0.5"/>
+        </svg>
         <span className="font-bold text-[13px] text-white tracking-tight">CraftServer</span>
       </div>
 

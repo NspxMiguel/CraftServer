@@ -39,11 +39,11 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
   // ── Core (shown in wizard, enabled by default) ────────────────────────────
   {
     name: 'EssentialsX',
-    description: 'Comandos essenciais: /home, /warp, /kit, /tp, /spawn, economia.',
+    description: 'Comandos essenciais: /home, /warp, /kit, /tp, /spawn, economia. Atenção: sobrescreve comandos vanilla.',
     modrinthSlug: 'essentialsx',
     url: 'https://github.com/EssentialsX/Essentials/releases/latest/download/EssentialsX.jar',
     filename: 'EssentialsX.jar',
-    enabled: true,
+    enabled: false,
     category: 'core',
   },
   {
@@ -52,7 +52,7 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
     modrinthSlug: 'essentialsx-chat',
     url: 'https://github.com/EssentialsX/Essentials/releases/latest/download/EssentialsXChat.jar',
     filename: 'EssentialsXChat.jar',
-    enabled: true,
+    enabled: false,
     category: 'core',
   },
   {

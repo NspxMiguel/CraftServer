@@ -1053,40 +1053,9 @@ function buildLuckPermsDefaultGroup() {
 # All players inherit these permissions by default.
 name: default
 permissions:
-  - essentials.tpa=true
-  - essentials.tpaccept=true
-  - essentials.tpdeny=true
-  - essentials.tpahere=true
-  - essentials.msg=true
-  - essentials.msg.color=true
-  - essentials.reply=true
-  - essentials.home=true
-  - essentials.home.others=true
-  - essentials.sethome=true
-  - essentials.delhome=true
-  - essentials.spawn=true
-  - essentials.kit=true
-  - essentials.kit.list=true
-  - essentials.warp=true
-  - essentials.warp.list=true
-  - essentials.list=true
-  - essentials.info=true
-  - essentials.motd=true
-  - essentials.rules=true
-  - essentials.balance=true
-  - essentials.pay=true
-  - essentials.seen=true
-  - essentials.near=true
-  - essentials.afk=true
-  - essentials.ignore=true
-  - essentials.helpop=true
-  - essentials.back=true
-  - essentials.back.ondeath=true
-  - essentials.signs.use.info=true
   - bukkit.command.help=true
   - bukkit.command.list=true
   - bukkit.command.me=true
-  - bukkit.command.say=false
 weight: 0
 display-name: Member
 prefix: ''
