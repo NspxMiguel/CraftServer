@@ -88,8 +88,8 @@ export default function Settings() {
     const res = await window.electron.syncPlayitSecret?.(syncServerId)
     setSyncLoading(false)
     if (res?.ok) {
-      setPlayitSecret(res.secret)
-      setPlayitSecretInput(res.secret)
+      setPlayitSecret(res.secret ?? null)
+      setPlayitSecretInput(res.secret ?? '')
       setPlayitEditing(false)
       showPlayitMsg(true, 'Token atualizado do servidor com sucesso!')
     } else {
