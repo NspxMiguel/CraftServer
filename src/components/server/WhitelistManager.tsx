@@ -26,10 +26,15 @@ export default function WhitelistManager({ serverId, serverType }: Props) {
       setLoading(false)
       return
     }
-    const list = await window.electron.getWhitelist(serverId)
-    if (!alive.value) return
-    setEntries(list)
-    setLoading(false)
+    try {
+      const list = await window.electron.getWhitelist(serverId)
+      if (!alive.value) return
+      setEntries(list)
+    } catch {
+      if (alive.value) setEntries([])
+    } finally {
+      if (alive.value) setLoading(false)
+    }
   }
 
   useEffect(() => {
