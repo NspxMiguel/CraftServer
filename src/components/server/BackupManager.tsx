@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Archive, Cloud, FolderOpen, HardDrive, Loader2, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { DEMO_BACKUPS } from '../../demo'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
@@ -41,9 +42,15 @@ export default function BackupManager({ serverId, running }: Props) {
   )
 
   const load = async (alive = { value: true }) => {
-    if (!isElectron) { setLoading(false); return }
     setError('')
     setLoading(true)
+    if (!isElectron) {
+      if (!alive.value) return
+      setBackupDirState('/demo/backups')
+      setBackups(DEMO_BACKUPS)
+      setLoading(false)
+      return
+    }
     try {
       const [config, list] = await Promise.all([
         window.electron.getBackupConfig?.(),
@@ -69,10 +76,19 @@ export default function BackupManager({ serverId, running }: Props) {
   }, [serverId])
 
   const createBackup = async () => {
-    if (!isElectron || creating) return
+    if (creating) return
     setCreating(true)
     setError('')
     setMessage('')
+    if (!isElectron) {
+      await new Promise(r => setTimeout(r, 1200))
+      const now = Date.now()
+      const name = `backup-${new Date(now).toISOString().replace(/[T:]/g, '-').slice(0, 19).replace(/-/g, (_, i) => i < 10 ? '-' : '')}.zip`
+      setBackups(prev => [...prev, { name, path: `/demo/backups/${name}`, size: 19_800_000, createdAt: now }])
+      setMessage('Backup criado com sucesso.')
+      setCreating(false)
+      return
+    }
     const res = await window.electron.createServerBackup?.(serverId)
     setCreating(false)
     if (!res?.ok) {
