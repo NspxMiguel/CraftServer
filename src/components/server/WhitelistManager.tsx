@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { UserPlus, Trash2, Loader2, Shield, ShieldOff, Search, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { WhitelistEntry } from '../../types'
+import { DEMO_WHITELIST } from '../../demo'
 
 const isElectron = typeof window !== 'undefined' && !!window.electron
 
@@ -18,7 +19,13 @@ export default function WhitelistManager({ serverId, serverType }: Props) {
   const isBedrock = serverType === 'bedrock'
 
   const load = async (alive = { value: true }) => {
-    if (!isElectron || isBedrock) { setLoading(false); return }
+    if (isBedrock) { setLoading(false); return }
+    if (!isElectron) {
+      if (!alive.value) return
+      setEntries(DEMO_WHITELIST)
+      setLoading(false)
+      return
+    }
     const list = await window.electron.getWhitelist(serverId)
     if (!alive.value) return
     setEntries(list)
@@ -33,9 +40,21 @@ export default function WhitelistManager({ serverId, serverType }: Props) {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!username.trim() || !isElectron) return
+    if (!username.trim()) return
     setAdding(true)
     setError('')
+    if (!isElectron) {
+      const name = username.trim()
+      const exists = entries.some(x => x.name.toLowerCase() === name.toLowerCase())
+      if (exists) {
+        setError('Jogador já está na whitelist')
+      } else {
+        setEntries(prev => [...prev, { name, uuid: `demo-${Date.now()}` }])
+        setUsername('')
+      }
+      setAdding(false)
+      return
+    }
     const res = await window.electron.addWhitelist(serverId, username.trim())
     if (res.ok && res.entry) {
       setEntries(e => [...e, res.entry!])
@@ -47,7 +66,10 @@ export default function WhitelistManager({ serverId, serverType }: Props) {
   }
 
   const handleRemove = async (name: string) => {
-    if (!isElectron) return
+    if (!isElectron) {
+      setEntries(e => e.filter(x => x.name !== name))
+      return
+    }
     await window.electron.removeWhitelist(serverId, name)
     setEntries(e => e.filter(x => x.name !== name))
   }

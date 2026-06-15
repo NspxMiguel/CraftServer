@@ -1,4 +1,4 @@
-import type { Server, Plugin } from './types'
+import type { Server, Plugin, WhitelistEntry } from './types'
 
 export const DEMO_SERVERS: Server[] = [
   {
@@ -41,6 +41,16 @@ export const DEMO_PLUGINS: Plugin[] = [
 ]
 
 export const DEMO_INSTALLED = ['EssentialsX-2.21.0.jar', 'LuckPerms-5.4.141.jar', 'spark-1.10.jar']
+
+export const DEMO_WHITELIST: WhitelistEntry[] = [
+  { name: 'Steve', uuid: 'a1b2c3d4-a1b2-c3d4-e5f6-a1b2c3d4e5f6' },
+  { name: 'Alex', uuid: 'b2c3d4e5-b2c3-d4e5-f6a7-b2c3d4e5f6a7' },
+]
+
+export const DEMO_BACKUPS = [
+  { name: 'backup-2026-06-12-140000.zip', path: '/demo/backups/backup-2026-06-12-140000.zip', size: 18_400_000, createdAt: Date.now() - 86400000 * 3 },
+  { name: 'backup-2026-06-13-201532.zip', path: '/demo/backups/backup-2026-06-13-201532.zip', size: 21_600_000, createdAt: Date.now() - 86400000 },
+]
 
 // Real Minecraft log strings — they go through translateLog for translation
 export const DEMO_LOGS: { delay: number; text: string }[] = [

@@ -361,7 +361,7 @@ export default function ServerDetail({ navigate }: Props) {
 
       {/* Tab content */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {tab === 'console' && (
             <motion.div key="console" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col">
               {/* Console toolbar */}
