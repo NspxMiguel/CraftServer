@@ -1,6 +1,6 @@
 {
   "name": "craftserver",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Minecraft Server Manager — create, manage and share servers with ease",
   "type": "module",
   "main": "electron/main.cjs",
@@ -80,15 +80,16 @@
       "artifactName": "CraftServer-Windows-${version}.${ext}",
       "target": [
         {
-          "target": "nsis",
+          "target": "msi",
           "arch": [
             "x64"
           ]
         }
       ]
     },
-    "nsis": {
-      "oneClick": true,
+    "msi": {
+      "oneClick": false,
+      "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
