@@ -21,6 +21,7 @@ const { spawn, execFile } = require('child_process')
 const https = require('https')
 const http = require('http')
 const archiver = require('archiver')
+const crypto = require('crypto')
 
 // Suppress uncaught errors during shutdown (e.g. IPC to destroyed windows on Windows)
 process.on('uncaughtException', (err) => {
@@ -404,8 +405,12 @@ ipcMain.handle('add-whitelist', async (_, { serverId, username }) => {
       uuid = `${raw.slice(0,8)}-${raw.slice(8,12)}-${raw.slice(12,16)}-${raw.slice(16,20)}-${raw.slice(20)}`
     }
   } catch {
-    // Offline mode: generate a deterministic offline UUID
-    uuid = `OfflinePlayer:${username}`
+    // Java offline UUID: UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes("UTF-8"))
+    const md5 = crypto.createHash('md5').update(`OfflinePlayer:${username}`, 'utf8').digest()
+    md5[6] = (md5[6] & 0x0f) | 0x30
+    md5[8] = (md5[8] & 0x3f) | 0x80
+    uuid = [md5.slice(0,4), md5.slice(4,6), md5.slice(6,8), md5.slice(8,10), md5.slice(10,16)]
+      .map(b => b.toString('hex')).join('-')
   }
 
   const file = path.join(server.dir, 'whitelist.json')
@@ -1830,9 +1835,9 @@ ipcMain.handle('update-server', async (event, arg) => {
     if (fs.existsSync(jarPath)) fs.renameSync(jarPath, jarPath + '.bak')
     const url = await getJarUrl(server.type, latest)
     await downloadFile(url, jarPath, pct => send(`Download: ${pct}%`))
-    const idx = servers.findIndex(s => s.id === serverId)
-    servers[idx].version = latest
-    writeServers(servers)
+    const freshServers = readServers()
+    const idx = freshServers.findIndex(s => s.id === serverId)
+    if (idx >= 0) { freshServers[idx].version = latest; writeServers(freshServers) }
     log.info('Server updated', { serverId, oldVersion: server.version, newVersion: latest })
     send(`Atualizado para ${latest}!`)
     return { ok: true, newVersion: latest }
@@ -1939,7 +1944,9 @@ app.on('before-quit', () => {
 
 app.on('window-all-closed', async () => {
   app.isQuitting = true
-  const stopPromises = Object.entries(serverProcesses).map(([, proc]) =>
+  const stopPromises = Object.entries(serverProcesses)
+    .filter(([, proc]) => proc !== 'starting')
+    .map(([, proc]) =>
     new Promise(resolve => {
       try {
         if (proc.stdin.writable) proc.stdin.write('save-all\n')
