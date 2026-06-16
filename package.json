@@ -1,6 +1,6 @@
 {
   "name": "craftserver",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Minecraft Server Manager — create, manage and share servers with ease",
   "author": "Miguel Ramthun Moretti <spxmiguel@users.noreply.github.com>",
   "type": "module",
@@ -101,6 +101,7 @@
     "linux": {
       "category": "Game",
       "artifactName": "CraftServer-Linux-${version}.${ext}",
+      "maintainer": "Miguel Ramthun Moretti <miguel.r.moretti.00@gmail.com>",
       "target": [
         "AppImage",
         "deb",
