@@ -80,6 +80,7 @@ export default function ServerSettings({ serverId, serverType, serverRam, onRamC
       setLoading(false)
       setSaveError(String(e?.message || e))
     })
+
     return () => { alive = false }
   }, [serverId, serverRam, isBedrock])
 

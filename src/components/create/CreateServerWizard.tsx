@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap, Shield, Globe, 
 import type { Page } from '../../App'
 import type { ServerType } from '../../types'
 import { PRESET_PLUGINS } from '../../data/presetPlugins'
-import { GAME_PRESETS, type GamePreset } from '../../data/gamePresets'
+import type { GamePreset } from '../../data/gamePresets'
 import GameModeSelector from './GameModeSelector'
 import { useServerStore } from '../../store/serverStore'
 
@@ -12,7 +12,7 @@ const isElectron = typeof window !== 'undefined' && !!window.electron
 
 const FALLBACK_VERSIONS: Record<string, string[]> = {
   paper: [
-    '26.1.2','26.1.1','26.1.0','26.0.3','26.0.2','26.0.1','26.0.0',
+    '1.21.11','1.21.10','1.21.9','1.21.8','1.21.7','1.21.6',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19.1','1.19',
@@ -23,14 +23,15 @@ const FALLBACK_VERSIONS: Record<string, string[]> = {
     '1.11.2','1.11','1.10.2','1.9.4','1.8.8',
   ],
   purpur: [
-    '26.1.2','26.1.1','26.1.0','26.0.3','26.0.2','26.0.1',
+    '26.1.2','1.21.11','1.21.10','1.21.9','1.21.8','1.21.7','1.21.6',
     '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19','1.18.2','1.18.1','1.18',
     '1.17.1','1.17','1.16.5','1.16.4',
   ],
   fabric: [
-    '26.1.2','26.1.1','26.1.0',
+    '26.2','26.1.2','26.1.1','26.1',
+    '1.21.11','1.21.10','1.21.9','1.21.8','1.21.7','1.21.6',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19','1.18.2','1.18.1','1.18',
@@ -44,13 +45,14 @@ const FALLBACK_VERSIONS: Record<string, string[]> = {
     '1.20.62','1.20.60','1.20.51','1.20.50',
   ],
   hybrid: [
-    '26.1.2','26.1.1','26.1.0',
+    '1.21.11','1.21.10','1.21.9','1.21.8','1.21.7','1.21.6',
     '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.2','1.19','1.18.2','1.18',
   ],
   vanilla: [
-    '26.1.2','26.1.1','26.1.0','26.0.3','26.0.2','26.0.1','26.0.0',
+    '26.2','26.1.2','26.1.1','26.1',
+    '1.21.11','1.21.10','1.21.9','1.21.8','1.21.7','1.21.6',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19.1','1.19','1.18.2','1.18.1','1.18',
@@ -213,6 +215,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
   const optionalPlugins = plugins.filter(p => !p.silent && !p.offlineOnly && !PRESET_PLUGINS.find(pp => pp.name === p.name)?.enabled)
   const offlinePlugins  = plugins.filter(p => p.offlineOnly)
   const silentPlugins   = plugins.filter(p => p.silent)
+  const supportsBukkitPlugins = ['paper', 'purpur', 'hybrid'].includes(type)
 
   const fetchVersions = (t: ServerType) => {
     setLoadingVersions(true)
@@ -265,7 +268,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
     const coreList    = pluginsWithChunky.filter(p => !p.silent && !p.offlineOnly && PRESET_PLUGINS.find(pp => pp.name === p.name)?.enabled)
     const optList     = pluginsWithChunky.filter(p => !p.silent && !p.offlineOnly && !PRESET_PLUGINS.find(pp => pp.name === p.name)?.enabled)
 
-    const toInstall = [
+    const toInstall = supportsBukkitPlugins ? [
       // silent: always included
       ...silentPlugins,
       // offline-only: only if offline mode
@@ -273,7 +276,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
       // core + optional: only if enabled
       ...coreList.filter(p => p.enabled),
       ...optList.filter(p => p.enabled),
-    ]
+    ] : []
     const selectedPlugins = toInstall.map(p => ({ name: p.name, url: p.url, filename: p.filename, modrinthSlug: p.modrinthSlug }))
     const res = isElectron
       ? await window.electron.createServer({ name: effectiveName.trim(), type, version, ram, port, plugins: selectedPlugins, offlineMode, chunkyRadius: radius })
@@ -295,10 +298,10 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
 
   const onClickCreate = () => {
     if (!name.trim()) return
-    if (type === 'bedrock') {
-      handleCreate(null)       // bedrock: straight to create (no PlayIt/Chunky)
+    if (!supportsBukkitPlugins) {
+      handleCreate(null)       // Vanilla/Fabric/Bedrock: no Bukkit plugin onboarding
     } else {
-      setShowPlayitModal(true) // always ask about PlayIt for Java/Fabric/etc
+      setShowPlayitModal(true) // Paper/Purpur/Hybrid can use Bukkit plugin onboarding
     }
   }
 
@@ -883,11 +886,15 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                 <h2 className="text-xl font-bold text-white mb-1">Plugins pré-configurados</h2>
                 <p className="text-sm text-slate-500 mb-4">Desative o que não precisar — tudo pode ser mudado depois</p>
 
-                {type === 'bedrock' && (
+                {!supportsBukkitPlugins && (
                   <div className="flex items-start gap-2.5 p-3.5 bg-orange-400/5 border border-orange-400/20 rounded-xl mb-4">
                     <Shield size={13} className="text-orange-400 mt-0.5 shrink-0" />
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      Servidores Bedrock (PowerNukkit) usam plugins NukkitX. Os plugins abaixo são para servidores Java.
+                      {type === 'fabric'
+                        ? 'Servidores Fabric usam mods na pasta mods/. Os plugins Bukkit abaixo são para Paper, Purpur e Hybrid.'
+                        : type === 'vanilla'
+                          ? 'Servidor Vanilla não carrega plugins. Use Paper ou Purpur se quiser plugins.'
+                          : 'Servidores Bedrock (PowerNukkit) usam plugins NukkitX. Os plugins abaixo são para servidores Java Paper/Purpur.'}
                     </p>
                   </div>
                 )}
@@ -898,7 +905,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                     <PluginRow
                       key={p.name}
                       plugin={p}
-                      disabled={type === 'bedrock'}
+                      disabled={!supportsBukkitPlugins}
                       onToggle={() => togglePlugin(p.name)}
                     />
                   ))}
@@ -918,7 +925,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                       </p>
                       <div className="space-y-1.5">
                         {offlinePlugins.map(p => (
-                          <PluginRow key={p.name} plugin={{ ...p, enabled: true }} disabled={false} locked onToggle={() => {}} />
+                          <PluginRow key={p.name} plugin={{ ...p, enabled: true }} disabled={!supportsBukkitPlugins} locked onToggle={() => {}} />
                         ))}
                       </div>
                     </motion.div>
@@ -926,12 +933,14 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                 </AnimatePresence>
 
                 {/* Silent plugins note */}
-                <div className="flex items-center gap-2 mt-3 px-1">
-                  <Zap size={11} className="text-brand-400 shrink-0" />
-                  <p className="text-[11px] text-slate-600">
-                    {silentPlugins.map(p => p.name).join(', ')} instalado{silentPlugins.length > 1 ? 's' : ''} automaticamente para melhorar a performance
-                  </p>
-                </div>
+                {supportsBukkitPlugins && (
+                  <div className="flex items-center gap-2 mt-3 px-1">
+                    <Zap size={11} className="text-brand-400 shrink-0" />
+                    <p className="text-[11px] text-slate-600">
+                      {silentPlugins.map(p => p.name).join(', ')} instalado{silentPlugins.length > 1 ? 's' : ''} automaticamente para melhorar a performance
+                    </p>
+                  </div>
+                )}
 
                 {/* Optional plugins toggle */}
                 <button
@@ -960,7 +969,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                           <PluginRow
                             key={p.name}
                             plugin={p}
-                            disabled={type === 'bedrock'}
+                            disabled={!supportsBukkitPlugins}
                             onToggle={() => togglePlugin(p.name)}
                           />
                         ))}

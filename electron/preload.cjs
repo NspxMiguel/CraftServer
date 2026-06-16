@@ -35,9 +35,6 @@ contextBridge.exposeInMainWorld('electron', {
   // playit.gg plugin
   installPlayitPlugin: (sid) => ipcRenderer.invoke('install-playit-plugin', { serverId: sid }),
   checkPlayitPlugin: (sid) => ipcRenderer.invoke('check-playit-plugin', { serverId: sid }),
-  getPlayitSecret: () => ipcRenderer.invoke('get-playit-secret'),
-  setPlayitSecret: (secret) => ipcRenderer.invoke('set-playit-secret', secret),
-  syncPlayitSecret: (sid) => ipcRenderer.invoke('sync-playit-secret', sid),
 
   // Updates
   checkUpdate: (sid) => ipcRenderer.invoke('check-update', sid),
@@ -53,6 +50,13 @@ contextBridge.exposeInMainWorld('electron', {
   listServerBackups: (sid) => ipcRenderer.invoke('list-server-backups', sid),
   createServerBackup: (sid) => ipcRenderer.invoke('create-server-backup', sid),
   revealBackup: (backupPath) => ipcRenderer.invoke('reveal-backup', backupPath),
+
+  // Google Drive backups
+  driveGetStatus: () => ipcRenderer.invoke('drive-get-status'),
+  driveConfigureOAuth: () => ipcRenderer.invoke('drive-configure-oauth'),
+  driveLogin: () => ipcRenderer.invoke('drive-login'),
+  driveLogout: () => ipcRenderer.invoke('drive-logout'),
+  driveUploadBackup: (sid) => ipcRenderer.invoke('drive-upload-backup', sid),
 
   // Config
   getConfig: () => ipcRenderer.invoke('get-config'),
@@ -74,7 +78,7 @@ contextBridge.exposeInMainWorld('electron', {
   logInfo: (msg, data) => ipcRenderer.invoke('log-info', { msg, data }),
 
   on: (channel, cb) => {
-    const allowed = ['server-log', 'server-stopped', 'create-progress', 'player-count']
+    const allowed = ['server-log', 'server-stopped', 'create-progress', 'player-count', 'drive-auth-callback']
     if (!allowed.includes(channel)) return
     // Wrap to strip the event argument, then store wrapper so off() can remove it
     const wrapper = (_e, d) => cb(d)

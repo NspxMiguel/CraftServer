@@ -98,6 +98,7 @@ export default function ServerDetail({ navigate }: Props) {
     setLogs(l => [...l.slice(-799), { text, type, ts: Date.now() }])
 
   if (!server) return null
+  const playitSupported = ['paper', 'purpur', 'hybrid'].includes(server.type)
 
   const handleStart = async () => {
     if (!isElectron) {
@@ -151,6 +152,10 @@ export default function ServerDetail({ navigate }: Props) {
   // playit.gg: install the Minecraft plugin (JAR) into plugins/ folder
   const handlePlayit = async () => {
     if (playitLoading) return
+    if (!playitSupported) {
+      addLog('PlayIt.gg via plugin só funciona em Paper/Purpur/Hybrid. Para este tipo de servidor, use o app/agente do PlayIt manualmente.', 'warn')
+      return
+    }
     if (!isElectron) {
       setPlayitLoading(true)
       addLog('── Baixando plugin playit.gg... ──')
@@ -161,7 +166,6 @@ export default function ServerDetail({ navigate }: Props) {
       return
     }
     setPlayitLoading(true)
-    addLog('── Baixando plugin playit.gg... ──')
     const res = await window.electron.installPlayitPlugin?.(server.id)
     setPlayitLoading(false)
     if (!res?.ok) {
@@ -169,10 +173,10 @@ export default function ServerDetail({ navigate }: Props) {
       return
     }
     if (res.alreadyInstalled) {
+      setPlayitInstalled(true)
       addLog('── Plugin playit.gg já está instalado! Use /playit no servidor. ──')
     } else {
       setPlayitInstalled(true)
-      addLog('── Plugin playit.gg instalado! Reinicie o servidor e use /playit in-game ──')
     }
   }
 
@@ -182,15 +186,11 @@ export default function ServerDetail({ navigate }: Props) {
     // Store handler ref so we can remove it after update finishes
     const onProgress = ({ msg }: any) => addLog(`[UPDATE] ${msg}`)
     window.electron.on('create-progress', onProgress)
-    let alive = true
     const res = await window.electron.updateServer(selectedId)
     window.electron.off('create-progress', onProgress)
-    if (!alive) return
     if (res.ok) { updateServer(selectedId, { version: res.newVersion }); setUpdateAvail(null) }
     else addLog(`Erro: ${res.error}`, 'error')
     setUpdating(false)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return () => { alive = false }
   }
 
   const lang = getLang()
@@ -269,13 +269,17 @@ export default function ServerDetail({ navigate }: Props) {
 
           <button
             onClick={handlePlayit}
-            disabled={playitLoading || playitInstalled}
+            disabled={playitLoading || playitInstalled || !playitSupported}
             title={playitInstalled
               ? 'Plugin playit.gg instalado — use /playit no servidor para ativar o túnel'
-              : 'Instalar plugin playit.gg para jogar com amigos sem abrir portas'}
+              : playitSupported
+                ? 'Instalar plugin playit.gg para jogar com amigos sem abrir portas'
+                : 'PlayIt.gg via plugin só funciona em Paper/Purpur/Hybrid'}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all
               ${playitInstalled
                 ? 'bg-brand-500/15 border-brand-500/30 text-brand-300 cursor-default'
+                : !playitSupported
+                  ? 'bg-dark-800 border-dark-600 text-slate-700 cursor-not-allowed'
                 : playitLoading
                   ? 'bg-dark-700 border-brand-500/30 text-brand-400 cursor-wait'
                   : 'bg-dark-700 border-dark-600 text-slate-500 hover:text-white hover:border-dark-500'
@@ -326,7 +330,7 @@ export default function ServerDetail({ navigate }: Props) {
             className="flex items-center gap-3 px-5 py-2.5 bg-brand-400/8 border-b border-brand-400/15 overflow-hidden"
           >
             <Wifi size={13} className="text-brand-400 shrink-0" />
-            <span className="text-xs text-slate-400">Plugin <span className="text-brand-300 font-semibold">PlayIt.gg</span> instalado — inicie o servidor e use <span className="font-mono text-brand-300">/playit</span> para criar o túnel gratuito</span>
+            <span className="text-xs text-slate-400">Plugin <span className="text-brand-300 font-semibold">PlayIt.gg</span> instalado — inicie o servidor e use <span className="font-mono text-brand-300">/playit</span> para vincular este servidor e criar o túnel gratuito</span>
           </motion.div>
         )}
         {javaError && (
