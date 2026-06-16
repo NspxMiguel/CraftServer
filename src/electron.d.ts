@@ -28,11 +28,8 @@ declare global {
       getInstalledPlugins: (sid: string) => Promise<string[]>
       removePlugin: (sid: string, filename: string) => Promise<{ ok: boolean }>
 
-      installPlayitPlugin?: (sid: string) => Promise<{ ok: boolean; alreadyInstalled?: boolean; error?: string }>
+      installPlayitPlugin?: (sid: string) => Promise<{ ok: boolean; alreadyInstalled?: boolean; filename?: string; error?: string }>
       checkPlayitPlugin?: (sid: string) => Promise<{ installed: boolean }>
-      getPlayitSecret?: () => Promise<{ secret: string | null }>
-      setPlayitSecret?: (secret: string) => Promise<{ ok: boolean }>
-      syncPlayitSecret?: (sid: string) => Promise<{ ok: boolean; secret?: string; error?: string }>
       checkUpdate: (sid: string) => Promise<{ hasUpdate: boolean; currentVersion?: string; latestVersion?: string }>
       updateServer: (sid: string) => Promise<{ ok: boolean; newVersion?: string; error?: string }>
 
@@ -45,6 +42,12 @@ declare global {
       createServerBackup?: (sid: string) => Promise<{ ok: boolean; backup?: { name: string; path: string; size: number; createdAt: number }; error?: string }>
       revealBackup?: (backupPath?: string) => Promise<{ ok: boolean }>
 
+      driveGetStatus?: () => Promise<{ configured?: boolean; connected: boolean; email?: string | null; error?: string }>
+      driveConfigureOAuth?: () => Promise<{ ok: boolean; canceled?: boolean; error?: string }>
+      driveLogin?: () => Promise<{ ok: boolean; needsConfig?: boolean; error?: string }>
+      driveLogout?: () => Promise<{ ok: boolean }>
+      driveUploadBackup?: (sid: string) => Promise<{ ok: boolean; fileName?: string; error?: string }>
+
       getConfig: () => Promise<Record<string, string>>
       setConfig: (cfg: Record<string, string>) => Promise<{ ok: boolean }>
 
@@ -55,8 +58,11 @@ declare global {
       windowControl?: (action: 'minimize' | 'maximize' | 'close') => Promise<void>
       windowIsMaximized?: () => Promise<boolean>
       getLogPath?: () => Promise<string>
+      getLogDir?: () => Promise<string>
       getRecentLogs?: (n?: number) => Promise<string[]>
+      listLogFiles?: () => Promise<string[]>
       logError?: (msg: string, data?: unknown) => Promise<{ ok: boolean; error?: string }>
+      logInfo?: (msg: string, data?: unknown) => Promise<{ ok: boolean; error?: string }>
 
       on: (channel: string, cb: (data: any) => void) => void
       off: (channel: string, cb: (data: any) => void) => void

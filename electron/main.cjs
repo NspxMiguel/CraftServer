@@ -43,13 +43,10 @@ const DATA_DIR = path.join(os.homedir(), 'CraftServer')
 const SERVERS_DIR = path.join(DATA_DIR, 'servers')
 const BACKUPS_DIR = path.join(DATA_DIR, 'backups')
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json')
-// playit.gg binary path (kept for legacy cleanup; new approach uses the Minecraft plugin JAR)
-const PLAYIT_BIN = path.join(DATA_DIR, 'playit' + (process.platform === 'win32' ? '.exe' : ''))
 
 ;[DATA_DIR, SERVERS_DIR, BACKUPS_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }) })
 
 const serverProcesses = {}
-const playitProcesses = {}
 
 // Safe IPC send — silently ignores if the renderer has already been destroyed
 function safeSend(sender, channel, payload) {
@@ -173,7 +170,7 @@ function fetchText(url) {
 }
 
 async function resolveJenkinsUrl(originalUrl) {
-  const jenkinsRegex = /^(https?:\/\/[^\/]+\/job\/[^\/]+\/lastSuccessfulBuild)/i
+  const jenkinsRegex = /^(https?:\/\/[^/]+\/job\/[^/]+\/lastSuccessfulBuild)/i
   const match = originalUrl.match(jenkinsRegex)
   if (!match) return originalUrl
 
@@ -224,7 +221,7 @@ async function resolveJenkinsUrl(originalUrl) {
 }
 
 async function resolveGithubLatestUrl(originalUrl) {
-  const ghRegex = /github\.com\/([^\/]+)\/([^\/]+)\/releases\/latest\/download\/([^\/]+)/i
+  const ghRegex = /github\.com\/([^/]+)\/([^/]+)\/releases\/latest\/download\/([^/]+)/i
   const match = originalUrl.match(ghRegex)
   if (!match) return originalUrl
 
@@ -441,8 +438,7 @@ ipcMain.handle('remove-whitelist', (_, { serverId, name }) => {
 // ── Versions ──────────────────────────────────────────────────────────────────
 const FALLBACK_VERSIONS = {
   paper: [
-    '26.1.2','26.1.1','26.1.0',
-    '26.0.3','26.0.2','26.0.1','26.0.0',
+    '1.21.11','1.21.10','1.21.9','1.21.8','1.21.7','1.21.6',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19.1','1.19',
@@ -453,13 +449,15 @@ const FALLBACK_VERSIONS = {
     '1.11.2','1.11','1.10.2','1.9.4','1.8.8',
   ],
   purpur: [
-    '26.1.2','26.1.1','26.1.0','26.0.3','26.0.2','26.0.1',
+    '26.1.2','1.21.11','1.21.10','1.21.9','1.21.8','1.21.7','1.21.6',
     '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19','1.18.2','1.18.1','1.18',
     '1.17.1','1.17','1.16.5','1.16.4',
   ],
   fabric: [
+    '26.2','26.1.2','26.1.1','26.1',
+    '1.21.11','1.21.10','1.21.9','1.21.8','1.21.7','1.21.6',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19','1.18.2','1.18.1','1.18',
@@ -473,13 +471,14 @@ const FALLBACK_VERSIONS = {
     '1.20.62','1.20.60','1.20.51','1.20.50',
   ],
   hybrid: [
-    '26.1.2','26.1.1','26.1.0',
+    '1.21.11','1.21.10','1.21.9','1.21.8','1.21.7','1.21.6',
     '1.21.5','1.21.4','1.21.3','1.21.1','1.21',
     '1.20.6','1.20.4','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.2','1.19','1.18.2','1.18',
   ],
   vanilla: [
-    '26.1.2','26.1.1','26.1.0','26.0.3','26.0.2','26.0.1','26.0.0',
+    '26.2','26.1.2','26.1.1','26.1',
+    '1.21.11','1.21.10','1.21.9','1.21.8','1.21.7','1.21.6',
     '1.21.5','1.21.4','1.21.3','1.21.2','1.21.1','1.21',
     '1.20.6','1.20.5','1.20.4','1.20.3','1.20.2','1.20.1','1.20',
     '1.19.4','1.19.3','1.19.2','1.19.1','1.19','1.18.2','1.18.1','1.18',
@@ -487,6 +486,10 @@ const FALLBACK_VERSIONS = {
     '1.15.2','1.15','1.14.4','1.14','1.13.2','1.13',
     '1.12.2','1.12','1.11.2','1.11','1.10.2','1.9.4','1.9','1.8.9',
   ],
+}
+
+function stableMinecraftVersions(versions) {
+  return (Array.isArray(versions) ? versions : []).filter(v => /^\d+(?:\.\d+){1,3}$/.test(String(v)))
 }
 
 async function resolvePluginUrl(plugin, mcVersion) {
@@ -547,11 +550,11 @@ ipcMain.handle('get-versions', async (_, type) => {
   try {
     if (type === 'paper') {
       const d = await fetchJson('https://api.papermc.io/v2/projects/paper')
-      return d.versions.reverse()
+      return stableMinecraftVersions(d.versions).reverse()
     }
     if (type === 'purpur') {
       const d = await fetchJson('https://api.purpurmc.org/v2/purpur')
-      return d.versions.reverse()
+      return stableMinecraftVersions(d.versions).reverse()
     }
     if (type === 'fabric') {
       const d = await fetchJson('https://meta.fabricmc.net/v2/versions/game')
@@ -560,7 +563,7 @@ ipcMain.handle('get-versions', async (_, type) => {
     if (type === 'hybrid') {
       // Hybrid (Geyser) runs on Paper — use Paper versions
       const d = await fetchJson('https://api.papermc.io/v2/projects/paper')
-      return d.versions.reverse()
+      return stableMinecraftVersions(d.versions).reverse()
     }
     if (type === 'bedrock') {
       const releases = await fetchJson('https://api.github.com/repos/PowerNukkit/PowerNukkit/releases?per_page=15')
@@ -1245,31 +1248,7 @@ ipcMain.handle('start-server', async (event, id) => {
     return { ok: false, error: `Porta ${port} já está em uso. Mude a porta do servidor ou feche o programa que está usando-a.` }
   }
 
-  // ── PlayIt secret sync ───────────────────────────────────────────────────────
-  // If the user has ever logged into PlayIt on any server, share that secret
-  // automatically so they don't need to re-authenticate on each new server.
-  const playitPluginDir = path.join(server.dir, 'plugins', 'playit-gg')
-  const playitCfgFile  = path.join(playitPluginDir, 'config.yml')
-  const hasPlayitPlugin = fs.existsSync(path.join(server.dir, 'plugins')) &&
-    fs.readdirSync(path.join(server.dir, 'plugins')).some(f => f.startsWith('playit'))
-
-  if (hasPlayitPlugin) {
-    const globalSecret = readConfig().playitSecret
-    if (globalSecret) {
-      fs.mkdirSync(playitPluginDir, { recursive: true })
-      // Only write if current config has no secret (don't overwrite a different valid secret)
-      let existingSecret = ''
-      if (fs.existsSync(playitCfgFile)) {
-        const existing = fs.readFileSync(playitCfgFile, 'utf8')
-        const m = existing.match(/agent-secret:\s*"?([^"\n\r]+)"?/)
-        existingSecret = m ? m[1].trim() : ''
-      }
-      if (!existingSecret || existingSecret === globalSecret) {
-        fs.writeFileSync(playitCfgFile, `mc-timeout-sec: 30\nagent-secret: "${globalSecret}"\n`)
-        log.info('PlayIt: injected shared agent-secret', { serverId: id })
-      }
-    }
-  }
+  await maybeUploadDriveBackupOnStart(event, id)
 
   const ramArg = `${server.ram}M`
   const proc = spawn(javaCmd, [
@@ -1303,21 +1282,6 @@ ipcMain.handle('start-server', async (event, id) => {
   proc.on('close', code => {
     delete serverProcesses[id]
     log.info('Server process exited', { serverId: id, exitCode: code })
-    // Capture PlayIt agent-secret after server stops — save globally for other servers
-    if (hasPlayitPlugin && fs.existsSync(playitCfgFile)) {
-      try {
-        const cfgText = fs.readFileSync(playitCfgFile, 'utf8')
-        const m = cfgText.match(/agent-secret:\s*"?([a-zA-Z0-9_\-]{20,})"?/)
-        if (m) {
-          const captured = m[1].trim()
-          const current = readConfig().playitSecret
-          if (captured && captured !== current) {
-            writeConfig({ ...readConfig(), playitSecret: captured })
-            log.info('PlayIt: saved agent-secret globally', { serverId: id })
-          }
-        }
-      } catch {}
-    }
     safeSend(event.sender, 'server-stopped', { id, code })
   })
   return { ok: true }
@@ -1340,7 +1304,7 @@ ipcMain.handle('stop-server', async (_, id) => {
 ipcMain.handle('send-command', (_, { id, command }) => {
   const proc = serverProcesses[id]
   if (!proc || proc === 'starting' || !proc.stdin.writable) return { ok: false }
-  const safe = String(command ?? '').replace(/[\r\n]+/g, ' ').slice(0, 1024)
+  const safe = String(command ?? '').replace(/[\r\n]+/g, ' ').trim().slice(0, 1024)
   if (!safe.trim()) return { ok: false }
   proc.stdin.write(safe + '\n')
   return { ok: true }
@@ -1756,19 +1720,30 @@ ipcMain.handle('install-playit-plugin', async (event, { serverId }) => {
     const servers = readServers()
     const server = servers.find(s => s.id === serverId)
     if (!server) return { ok: false, error: 'Servidor não encontrado' }
+    if (!['paper', 'purpur', 'hybrid'].includes(server.type)) {
+      return { ok: false, error: 'PlayIt.gg via plugin funciona em servidores Paper/Purpur/Hybrid. Para Vanilla/Fabric, use o app/agente do PlayIt manualmente.' }
+    }
 
     // Check if any playit JAR already exists
     const pluginsDir = path.join(server.dir, 'plugins')
-    const alreadyHasPlayit = fs.existsSync(pluginsDir) && fs.readdirSync(pluginsDir).some(f => f.toLowerCase().startsWith('playit'))
+    fs.mkdirSync(pluginsDir, { recursive: true })
+    const alreadyHasPlayit = fs.readdirSync(pluginsDir).some(f => {
+      const lower = f.toLowerCase()
+      return lower.endsWith('.jar') && (lower.startsWith('playit') || lower.includes('playit-'))
+    })
     if (alreadyHasPlayit) return { ok: true, alreadyInstalled: true }
 
     safeSend(event.sender, 'server-log', { id: serverId, text: '── Baixando plugin PlayIt.gg... ──' })
     // Resolve via Modrinth for the correct JAR filename (fallback to direct GitHub URL)
     const playitDef = { name: 'PlayIt.gg', modrinthSlug: 'playit', url: 'https://github.com/playit-cloud/playit-minecraft-plugin/releases/latest/download/playit-minecraft.jar', filename: 'playit-minecraft.jar' }
     const { url: resolvedUrl, filename: resolvedFilename } = await resolvePluginUrl(playitDef, server.version || '1.21.4')
-    await downloadFile(resolvedUrl, path.join(server.dir, 'plugins', resolvedFilename))
-    safeSend(event.sender, 'server-log', { id: serverId, text: '── Plugin PlayIt.gg instalado! Reinicie o servidor e use /playit ──' })
-    return { ok: true }
+    if (!resolvedUrl) return { ok: false, error: 'URL do PlayIt.gg não encontrada' }
+    const safeFilename = path.basename(String(resolvedFilename || 'playit-minecraft.jar')).replace(/[^a-zA-Z0-9._-]/g, '_')
+    await downloadFile(resolvedUrl, path.join(pluginsDir, safeFilename), pct =>
+      safeSend(event.sender, 'create-progress', { id: serverId, msg: `PlayIt.gg: ${pct}%` })
+    )
+    safeSend(event.sender, 'server-log', { id: serverId, text: '── Plugin PlayIt.gg instalado! Inicie o servidor e use /playit para vincular esta conta neste servidor ──' })
+    return { ok: true, filename: safeFilename }
   } catch (e) {
     return { ok: false, error: e.message }
   }
@@ -1780,7 +1755,10 @@ ipcMain.handle('check-playit-plugin', (_, { serverId }) => {
   if (!server) return { installed: false }
   const pluginsDir = path.join(server.dir, 'plugins')
   if (!fs.existsSync(pluginsDir)) return { installed: false }
-  const installed = fs.readdirSync(pluginsDir).some(f => f.toLowerCase().startsWith('playit'))
+  const installed = fs.readdirSync(pluginsDir).some(f => {
+    const lower = f.toLowerCase()
+    return lower.endsWith('.jar') && (lower.startsWith('playit') || lower.includes('playit-'))
+  })
   return { installed }
 })
 
@@ -1848,36 +1826,6 @@ ipcMain.handle('update-server', async (event, arg) => {
 ipcMain.handle('get-config', () => readConfig())
 ipcMain.handle('set-config', (_, cfg) => { writeConfig({ ...readConfig(), ...cfg }); return { ok: true } })
 
-// ── PlayIt shared secret management ──────────────────────────────────────────
-ipcMain.handle('get-playit-secret', () => {
-  return { secret: readConfig().playitSecret || null }
-})
-
-ipcMain.handle('set-playit-secret', (_, secret) => {
-  const clean = typeof secret === 'string' ? secret.trim() : ''
-  writeConfig({ ...readConfig(), playitSecret: clean || undefined })
-  return { ok: true }
-})
-
-ipcMain.handle('sync-playit-secret', (_, serverId) => {
-  // Manually pull the secret from a specific server's playit-gg/config.yml
-  const servers = readServers()
-  const server = servers.find(s => s.id === serverId)
-  if (!server) return { ok: false, error: 'Servidor não encontrado' }
-  const cfgFile = path.join(server.dir, 'plugins', 'playit-gg', 'config.yml')
-  if (!fs.existsSync(cfgFile)) return { ok: false, error: 'Plugin PlayIt não configurado neste servidor ainda.' }
-  try {
-    const text = fs.readFileSync(cfgFile, 'utf8')
-    const m = text.match(/agent-secret:\s*"?([a-zA-Z0-9_\-]{20,})"?/)
-    if (!m) return { ok: false, error: 'Nenhum agent-secret encontrado no config do PlayIt.' }
-    const secret = m[1].trim()
-    writeConfig({ ...readConfig(), playitSecret: secret })
-    return { ok: true, secret }
-  } catch (e) {
-    return { ok: false, error: e.message }
-  }
-})
-
 ipcMain.handle('get-system-ram', () => {
   // Return total system RAM and free RAM in MB
   const totalMb = Math.floor(os.totalmem() / (1024 * 1024))
@@ -1896,13 +1844,264 @@ ipcMain.handle('open-server-folder', (_, serverId) => {
   if (s) shell.openPath(s.dir)
 })
 
+// ── Google Drive OAuth2 + backups ────────────────────────────────────────────
+// Uses a desktop OAuth client and a temporary localhost callback, which is the
+// supported native-app flow for Google OAuth. Credentials are stored locally in
+// ~/CraftServer/config.json after the user imports their OAuth client JSON.
+const DRIVE_ROOT_FOLDER = 'Craft Server'
+const DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/userinfo.email']
+let driveAuthServer = null
+let driveAuthTimeout = null
+
+function normalizeGoogleOAuthJson(raw) {
+  const client = raw?.installed || raw?.web || raw
+  const clientId = String(client?.client_id || '').trim()
+  const clientSecret = String(client?.client_secret || '').trim()
+  if (!clientId || !clientId.endsWith('.apps.googleusercontent.com')) throw new Error('Client ID do Google inválido')
+  return { clientId, clientSecret }
+}
+
+function getDriveOAuthConfig() {
+  const cfg = readConfig()
+  if (cfg.googleDriveOAuth?.clientId) return cfg.googleDriveOAuth
+  if (process.env.GOOGLE_CLIENT_ID) {
+    return {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    }
+  }
+  const file = path.join(DATA_DIR, 'google-oauth-client.json')
+  if (fs.existsSync(file)) {
+    try { return normalizeGoogleOAuthJson(JSON.parse(fs.readFileSync(file, 'utf8'))) } catch {}
+  }
+  return null
+}
+
+function setDriveOAuthConfig(oauth) {
+  const cfg = readConfig()
+  writeConfig({ ...cfg, googleDriveOAuth: oauth })
+}
+
+function getDriveTokens() { return readConfig().driveTokens || null }
+function setDriveTokens(tokens) { writeConfig({ ...readConfig(), driveTokens: tokens }) }
+function clearDriveTokens() { const c = readConfig(); delete c.driveTokens; writeConfig(c) }
+
+function makeDriveAuth(redirectUri) {
+  const { google } = require('googleapis')
+  const oauth = getDriveOAuthConfig()
+  if (!oauth?.clientId) throw new Error('Google Drive não configurado. Importe o JSON OAuth Desktop nas configurações de backup.')
+  const client = new google.auth.OAuth2(oauth.clientId, oauth.clientSecret || undefined, redirectUri || 'http://127.0.0.1')
+  const tokens = getDriveTokens()
+  if (tokens) client.setCredentials(tokens)
+  client.on('tokens', t => setDriveTokens({ ...(getDriveTokens() || {}), ...t }))
+  return client
+}
+
+function closeDriveAuthServer() {
+  if (driveAuthTimeout) {
+    clearTimeout(driveAuthTimeout)
+    driveAuthTimeout = null
+  }
+  if (driveAuthServer) {
+    try { driveAuthServer.close() } catch {}
+    driveAuthServer = null
+  }
+}
+
+async function findOrCreateDriveFolder(drive, name, parentId) {
+  const safeName = String(name || 'Servidor').trim() || 'Servidor'
+  const escaped = safeName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+  const q = `name='${escaped}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
+    + (parentId ? ` and '${parentId}' in parents` : '')
+  const res = await drive.files.list({ q, fields: 'files(id,name)', pageSize: 1 })
+  if (res.data.files?.length) return res.data.files[0].id
+  const r = await drive.files.create({
+    requestBody: { name: safeName, mimeType: 'application/vnd.google-apps.folder', ...(parentId ? { parents: [parentId] } : {}) },
+    fields: 'id',
+  })
+  return r.data.id
+}
+
+async function driveUploadServer(serverId, progressFn) {
+  const pfn = progressFn || (() => {})
+  const tokens = getDriveTokens()
+  if (!tokens?.access_token && !tokens?.refresh_token) throw new Error('Não conectado ao Google Drive')
+  const servers = readServers()
+  const server = servers.find(s => s.id === serverId)
+  if (!server) throw new Error('Servidor não encontrado')
+  if (serverProcesses[serverId] && serverProcesses[serverId] !== 'starting') throw new Error('Pare o servidor antes de criar backup para evitar arquivos corrompidos.')
+  if (!fs.existsSync(server.dir)) throw new Error('Pasta do servidor não encontrada')
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const filename = `${sanitizeFilePart(server.name)}-${stamp}.zip`
+  const tmpZip = path.join(os.tmpdir(), `craftserver-${server.id}-${stamp}.zip`)
+
+  try {
+    pfn('Criando ZIP do servidor...')
+    await new Promise((resolve, reject) => {
+      const output = fs.createWriteStream(tmpZip)
+      const archive = archiver('zip', { zlib: { level: 6 } })
+      const cleanup = (err) => {
+        try { fs.unlinkSync(tmpZip) } catch {}
+        reject(err)
+      }
+      output.on('close', resolve)
+      output.on('error', cleanup)
+      archive.on('error', cleanup)
+      archive.pipe(output)
+      archive.directory(server.dir, false)
+      archive.finalize()
+    })
+
+    pfn('Enviando ZIP para o Google Drive...')
+    const { google } = require('googleapis')
+    const auth = makeDriveAuth()
+    const drive = google.drive({ version: 'v3', auth })
+    const rootId = await findOrCreateDriveFolder(drive, DRIVE_ROOT_FOLDER, null)
+    const serverFolderId = await findOrCreateDriveFolder(drive, server.name, rootId)
+    await drive.files.create({
+      requestBody: { name: filename, parents: [serverFolderId] },
+      media: { mimeType: 'application/zip', body: fs.createReadStream(tmpZip) },
+      fields: 'id,name',
+    })
+    log.info('Drive upload done', { serverId, filename, rootFolder: DRIVE_ROOT_FOLDER, serverFolder: server.name })
+    return filename
+  } finally {
+    try { fs.unlinkSync(tmpZip) } catch {}
+  }
+}
+
+async function maybeUploadDriveBackupOnStart(event, serverId) {
+  const tokens = getDriveTokens()
+  if (!tokens?.access_token && !tokens?.refresh_token) return
+  if (!getDriveOAuthConfig()?.clientId) return
+
+  safeSend(event.sender, 'server-log', { id: serverId, text: '── Google Drive: criando backup antes de iniciar... ──' })
+  try {
+    const fileName = await driveUploadServer(serverId, msg =>
+      safeSend(event.sender, 'server-log', { id: serverId, text: `[Google Drive] ${msg}` })
+    )
+    safeSend(event.sender, 'server-log', { id: serverId, text: `── Google Drive: backup enviado (${fileName}) ──` })
+  } catch (e) {
+    log.warn('Drive startup backup failed', { serverId, message: e.message })
+    safeSend(event.sender, 'server-log', { id: serverId, text: `── Google Drive: backup não enviado (${e.message}). Iniciando mesmo assim. ──` })
+  }
+}
+
+ipcMain.handle('drive-configure-oauth', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Selecionar JSON OAuth do Google Drive',
+    filters: [{ name: 'Google OAuth JSON', extensions: ['json'] }],
+    properties: ['openFile'],
+  })
+  if (result.canceled || !result.filePaths?.[0]) return { ok: false, canceled: true }
+  const oauth = normalizeGoogleOAuthJson(JSON.parse(fs.readFileSync(result.filePaths[0], 'utf8')))
+  setDriveOAuthConfig(oauth)
+  clearDriveTokens()
+  log.info('Google Drive OAuth configured', { clientId: oauth.clientId.replace(/^(.{12}).+(@|\.apps)/, '$1...$2') })
+  return { ok: true }
+})
+
+ipcMain.handle('drive-get-status', async () => {
+  const configured = !!getDriveOAuthConfig()?.clientId
+  const tokens = getDriveTokens()
+  if (!configured) return { configured: false, connected: false, email: null }
+  if (!tokens?.access_token && !tokens?.refresh_token) return { configured: true, connected: false, email: null }
+  try {
+    const { google } = require('googleapis')
+    const auth = makeDriveAuth()
+    const { data } = await google.oauth2({ version: 'v2', auth }).userinfo.get()
+    return { configured: true, connected: true, email: data.email }
+  } catch (e) {
+    log.warn('Drive status check failed', { message: e.message })
+    return { configured: true, connected: false, email: null, error: e.message }
+  }
+})
+
+ipcMain.handle('drive-login', async (event) => {
+  const oauth = getDriveOAuthConfig()
+  if (!oauth?.clientId) return { ok: false, needsConfig: true, error: 'Configure o OAuth do Google Drive primeiro.' }
+
+  closeDriveAuthServer()
+  await new Promise((resolve, reject) => {
+    driveAuthServer = http.createServer(async (req, res) => {
+      const url = new URL(req.url || '/', 'http://127.0.0.1')
+      if (url.pathname !== '/oauth2callback') {
+        res.writeHead(404)
+        res.end('Not found')
+        return
+      }
+      const code = url.searchParams.get('code')
+      const errParam = url.searchParams.get('error')
+      if (errParam || !code) {
+        res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' })
+        res.end('<h2>Login cancelado.</h2><p>Volte para o CraftServer.</p>')
+        safeSend(event.sender, 'drive-auth-callback', { ok: false, error: errParam || 'Login cancelado' })
+        closeDriveAuthServer()
+        return
+      }
+
+      try {
+        const redirectUri = `http://127.0.0.1:${driveAuthServer.address().port}/oauth2callback`
+        const { google } = require('googleapis')
+        const client = new google.auth.OAuth2(oauth.clientId, oauth.clientSecret || undefined, redirectUri)
+        const { tokens } = await client.getToken(code)
+        setDriveTokens(tokens)
+        client.setCredentials(tokens)
+        const { data } = await google.oauth2({ version: 'v2', auth: client }).userinfo.get()
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+        res.end('<h2>Google Drive conectado.</h2><p>Pode voltar para o CraftServer.</p>')
+        safeSend(event.sender, 'drive-auth-callback', { ok: true, email: data.email })
+        log.info('Drive OAuth connected', { email: data.email })
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' })
+        res.end('<h2>Erro ao conectar Google Drive.</h2><p>Volte para o CraftServer.</p>')
+        log.error('Drive OAuth failed', { message: e.message })
+        safeSend(event.sender, 'drive-auth-callback', { ok: false, error: e.message })
+      } finally {
+        closeDriveAuthServer()
+      }
+    })
+
+    driveAuthServer.once('error', reject)
+    driveAuthServer.listen(0, '127.0.0.1', () => {
+      const port = driveAuthServer.address().port
+      const redirectUri = `http://127.0.0.1:${port}/oauth2callback`
+      const client = makeDriveAuth(redirectUri)
+      const url = client.generateAuthUrl({ access_type: 'offline', scope: DRIVE_SCOPES, prompt: 'consent' })
+      driveAuthTimeout = setTimeout(() => {
+        closeDriveAuthServer()
+        safeSend(event.sender, 'drive-auth-callback', { ok: false, error: 'Tempo de login esgotado' })
+      }, 5 * 60 * 1000)
+      shell.openExternal(url)
+      resolve()
+    })
+  })
+
+  return { ok: true }
+})
+
+ipcMain.handle('drive-logout', () => {
+  clearDriveTokens()
+  closeDriveAuthServer()
+  return { ok: true }
+})
+
+ipcMain.handle('drive-upload-backup', async (event, serverId) => {
+  const fileName = await driveUploadServer(serverId, msg => safeSend(event.sender, 'create-progress', { id: serverId, msg }))
+  return { ok: true, fileName }
+})
+
 // ── Window ────────────────────────────────────────────────────────────────────
 let mainWindow = null
 
 ipcMain.handle('window-control', (_, action) => {
   if (!mainWindow) return
   if (action === 'minimize') mainWindow.minimize()
-  else if (action === 'maximize') mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize()
+  else if (action === 'maximize') {
+    if (mainWindow.isMaximized()) mainWindow.unmaximize()
+    else mainWindow.maximize()
+  }
   else if (action === 'close') mainWindow.close()
 })
 ipcMain.handle('window-is-maximized', () => mainWindow?.isMaximized() ?? false)
@@ -1910,6 +2109,7 @@ ipcMain.handle('get-platform', () => process.platform)
 
 function createWindow() {
   const isMac = process.platform === 'darwin'
+  log.info('Creating main window')
   mainWindow = new BrowserWindow({
     width: 1200, height: 780, minWidth: 900, minHeight: 620,
     // hiddenInset is macOS-only — on Windows use 'hidden' so the drag-region CSS handles dragging
@@ -1923,8 +2123,25 @@ function createWindow() {
     },
   })
   // Show only when the page is fully ready — eliminates black/white flash on Windows
-  mainWindow.once('ready-to-show', () => mainWindow.show())
-  if (isDev) { mainWindow.loadURL('http://localhost:5173'); mainWindow.webContents.openDevTools() }
+  let shown = false
+  const showMainWindow = (reason = 'unknown') => {
+    if (shown || mainWindow?.isDestroyed()) return
+    shown = true
+    log.info('Showing main window', { reason })
+    mainWindow.show()
+    mainWindow.focus()
+  }
+  mainWindow.once('ready-to-show', () => showMainWindow('ready-to-show'))
+  mainWindow.webContents.once('did-finish-load', () => showMainWindow('did-finish-load'))
+  mainWindow.webContents.once('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    log.error('Main window failed to load', { errorCode, errorDescription, validatedURL })
+    showMainWindow('did-fail-load')
+  })
+  setTimeout(() => showMainWindow('timeout'), 5000)
+  if (isDev) {
+    mainWindow.loadURL(process.env.CRAFTSERVER_DEV_URL || 'http://localhost:5173')
+    if (process.env.CRAFTSERVER_OPEN_DEVTOOLS === '1') mainWindow.webContents.openDevTools()
+  }
   else mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
 }
 
@@ -1938,6 +2155,7 @@ app.whenReady().then(() => {
 })
 app.on('before-quit', () => {
   app.isQuitting = true
+  closeDriveAuthServer()
   const running = Object.keys(serverProcesses).filter(k => serverProcesses[k] !== 'starting')
   log.info('App quitting', { runningServers: running })
 })
@@ -1958,7 +2176,6 @@ app.on('window-all-closed', async () => {
       } catch { resolve() }
     })
   )
-  Object.values(playitProcesses).forEach(p => { try { p.kill() } catch {} })
   await Promise.race([
     Promise.all(stopPromises),
     new Promise(r => setTimeout(r, 12000)),

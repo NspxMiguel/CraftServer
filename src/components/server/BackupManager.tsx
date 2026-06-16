@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Archive, Cloud, FolderOpen, HardDrive, Loader2, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react'
+import { Archive, Cloud, FolderOpen, HardDrive, Loader2, RefreshCw, ShieldCheck, AlertTriangle, LogIn, LogOut, Upload, Settings } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { DEMO_BACKUPS } from '../../demo'
 
@@ -35,6 +35,16 @@ export default function BackupManager({ serverId, running }: Props) {
   const [creating, setCreating] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+
+  // Google Drive API state
+  const [driveConfigured, setDriveConfigured] = useState(false)
+  const [driveConnected, setDriveConnected] = useState(false)
+  const [driveEmail, setDriveEmail] = useState<string | null>(null)
+  const [driveConfiguring, setDriveConfiguring] = useState(false)
+  const [driveLoggingIn, setDriveLoggingIn] = useState(false)
+  const [driveUploading, setDriveUploading] = useState(false)
+  const [driveMsg, setDriveMsg] = useState('')
+  const [driveErr, setDriveErr] = useState('')
 
   const usingGoogleDrive = useMemo(
     () => googleDirs.some(dir => backupDir && backupDir.startsWith(dir)),
@@ -75,6 +85,79 @@ export default function BackupManager({ serverId, running }: Props) {
     return () => { alive.value = false }
   }, [serverId])
 
+  useEffect(() => {
+    if (!isElectron) return
+    window.electron.driveGetStatus?.().then((s: any) => {
+      setDriveConfigured(!!s?.configured)
+      setDriveConnected(!!s?.connected)
+      setDriveEmail(s?.email ?? null)
+      if (s?.error) setDriveErr(s.error)
+    })
+
+    const onCallback = (data: any) => {
+      setDriveLoggingIn(false)
+      if (data?.ok) {
+        setDriveConfigured(true)
+        setDriveConnected(true)
+        setDriveEmail(data.email ?? null)
+        setDriveMsg('Google Drive conectado!')
+        setDriveErr('')
+      } else {
+        setDriveErr(data?.error || 'Falha ao conectar Drive')
+        setDriveConnected(false)
+      }
+    }
+    window.electron.on('drive-auth-callback', onCallback)
+    return () => window.electron.off('drive-auth-callback', onCallback)
+  }, [serverId])
+
+  const configureDrive = async () => {
+    if (driveConfiguring) return
+    setDriveConfiguring(true)
+    setDriveMsg('')
+    setDriveErr('')
+    try {
+      const res = await window.electron.driveConfigureOAuth?.()
+      if (res?.ok) {
+        setDriveConfigured(true)
+        setDriveConnected(false)
+        setDriveEmail(null)
+        setDriveMsg('OAuth configurado. Agora faça login com Google.')
+      } else if (!res?.canceled) {
+        setDriveErr(res?.error || 'Falha ao configurar OAuth')
+      }
+    } finally {
+      setDriveConfiguring(false)
+    }
+  }
+
+  const loginDrive = async () => {
+    if (driveLoggingIn) return
+    setDriveLoggingIn(true)
+    setDriveMsg('')
+    setDriveErr('')
+    const res = await window.electron.driveLogin?.()
+    if (!res?.ok) {
+      setDriveLoggingIn(false)
+      if (res?.needsConfig) setDriveConfigured(false)
+      setDriveErr(res?.error || 'Falha ao abrir login do Google')
+    }
+  }
+
+  const handleDriveUpload = async () => {
+    if (driveUploading) return
+    setDriveUploading(true)
+    setDriveMsg('')
+    setDriveErr('')
+    try {
+      const res = await window.electron.driveUploadBackup?.(serverId)
+      if (res?.ok) setDriveMsg(`Enviado para Drive: ${res.fileName}`)
+      else setDriveErr(res?.error || 'Falha ao enviar')
+    } finally {
+      setDriveUploading(false)
+    }
+  }
+
   const createBackup = async () => {
     if (creating) return
     setCreating(true)
@@ -108,7 +191,7 @@ export default function BackupManager({ serverId, running }: Props) {
     }
   }
 
-  const useGoogleDrive = async (dir: string) => {
+  const applyGoogleDriveFolder = async (dir: string) => {
     if (!isElectron) return
     const target = `${dir.replace(/[\\/]+$/, '')}/CraftServer Backups`
     const res = await window.electron.setBackupDir?.(target)
@@ -172,7 +255,7 @@ export default function BackupManager({ serverId, running }: Props) {
                 <p className="text-xs text-slate-400 mt-1">Use a pasta sincronizada do Drive para manter cópias fora do computador automaticamente.</p>
               </div>
               <button
-                onClick={() => useGoogleDrive(googleDirs[0])}
+                onClick={() => applyGoogleDriveFolder(googleDirs[0])}
                 className="px-3 py-1.5 rounded-xl bg-sky-400/10 border border-sky-400/20 text-xs font-bold text-sky-200 hover:bg-sky-400/15"
               >
                 Usar Drive
@@ -180,6 +263,68 @@ export default function BackupManager({ serverId, running }: Props) {
             </div>
           </div>
         )}
+
+        {/* Google Drive API backup */}
+        <div className="mt-4 rounded-2xl border border-dark-600 bg-dark-800/60 p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Cloud size={13} className="text-sky-400" />
+            <span className="text-xs font-bold text-sky-200">Backup no Google Drive</span>
+          </div>
+          {!driveConfigured ? (
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-slate-500 flex-1">Importe o JSON OAuth Desktop do Google para ativar login com Drive.</p>
+              <button
+                onClick={configureDrive}
+                disabled={driveConfiguring}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-400/30 text-xs font-bold text-sky-300 hover:bg-sky-500/20"
+              >
+                {driveConfiguring ? <Loader2 size={11} className="animate-spin" /> : <Settings size={11} />}
+                Configurar
+              </button>
+            </div>
+          ) : !driveConnected ? (
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-slate-500 flex-1">Conecte sua conta. Depois disso, todo início de servidor envia um backup para o Drive.</p>
+              <button
+                onClick={loginDrive}
+                disabled={driveLoggingIn}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-400/30 text-xs font-bold text-sky-300 hover:bg-sky-500/20 disabled:opacity-40"
+              >
+                {driveLoggingIn ? <Loader2 size={11} className="animate-spin" /> : <LogIn size={11} />}
+                Login com Google
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                <span className="text-xs text-green-300 font-medium flex-1">{driveEmail || 'Conectado'}</span>
+                <button
+                  onClick={() => { window.electron.driveLogout?.(); setDriveConnected(false); setDriveEmail(null); setDriveMsg('Google Drive desconectado.') }}
+                  className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-red-400 transition-colors"
+                >
+                  <LogOut size={10} />Desconectar
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Ao iniciar este servidor, o CraftServer cria um ZIP e envia para <span className="font-mono text-sky-300">Craft Server/nome-do-servidor</span> no Drive.
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDriveUpload}
+                  disabled={driveUploading || running}
+                  title={running ? 'Pare o servidor antes' : 'Enviar ZIP para Drive agora'}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-400/30 text-xs font-bold text-sky-300 hover:bg-sky-500/20 disabled:opacity-40"
+                >
+                  {driveUploading ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />}
+                  Enviar agora
+                </button>
+              </div>
+            </div>
+          )}
+          {driveMsg && <p className="text-[10px] text-green-400 mt-2">{driveMsg}</p>}
+          {driveErr && <p className="text-[10px] text-red-400 mt-2">{driveErr}</p>}
+        </div>
 
         {running && (
           <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 p-3">

@@ -2,14 +2,16 @@
   "name": "craftserver",
   "version": "0.4.5",
   "description": "Minecraft Server Manager — create, manage and share servers with ease",
+  "author": "Miguel Ramthun Moretti <spxmiguel@users.noreply.github.com>",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
-    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "dev": "concurrently -k \"vite --port 5173 --strictPort\" \"wait-on tcp:5173 && electron .\"",
     "build": "vite build && electron-builder",
     "build:web": "vite build",
     "build:mac": "vite build && electron-builder --mac",
     "build:win": "vite build && electron-builder --win",
+    "build:linux": "vite build && electron-builder --linux",
     "preview": "vite preview",
     "preview-web": "vite",
     "lint": "eslint ."
@@ -17,7 +19,8 @@
   "dependencies": {
     "archiver": "6.0.2",
     "electron-updater": "^6.3.9",
-    "extract-zip": "^2.0.1"
+    "extract-zip": "^2.0.1",
+    "googleapis": "^144.0.0"
   },
   "devDependencies": {
     "@electron/notarize": "^2.5.0",
@@ -31,6 +34,7 @@
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",
     "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.468.0",
     "postcss": "^8.4.49",
@@ -39,6 +43,7 @@
     "react-router-dom": "^7.1.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
+    "typescript-eslint": "^8.61.1",
     "vite": "^6.0.5",
     "wait-on": "^8.0.1",
     "zustand": "^5.0.13"
@@ -92,6 +97,15 @@
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
+    },
+    "linux": {
+      "category": "Game",
+      "artifactName": "CraftServer-Linux-${version}.${ext}",
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ]
     },
     "publish": {
       "provider": "github",
