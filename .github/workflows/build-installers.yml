@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -31,7 +34,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build:mac
+      - run: npm run build:web
+      - run: npx electron-builder --mac --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: CraftServer-macOS-pkg
@@ -49,7 +53,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build:win
+      - run: npm run build:web
+      - run: npx electron-builder --win --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: CraftServer-Windows-msi
@@ -68,7 +73,8 @@ jobs:
           cache: npm
       - run: sudo apt-get update && sudo apt-get install -y rpm fakeroot
       - run: npm ci
-      - run: npm run build:linux
+      - run: npm run build:web
+      - run: npx electron-builder --linux --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: CraftServer-Linux
