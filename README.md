@@ -87,7 +87,7 @@ Arquivos de log são rotacionados automaticamente (1 por dia, últimos 7 dias ma
 ### 🛠️ Desenvolvimento Local
 
 ```bash
-git clone https://github.com/spxmiguel/CraftServer.git
+git clone https://github.com/NspxMiguel/CraftServer.git
 cd CraftServer
 npm install
 npm run electron:dev   # hot reload
@@ -180,7 +180,7 @@ Log files are rotated automatically (one per day, last 7 days kept). When report
 ### 🛠️ Local Development
 
 ```bash
-git clone https://github.com/spxmiguel/CraftServer.git
+git clone https://github.com/NspxMiguel/CraftServer.git
 cd CraftServer
 npm install
 npm run electron:dev   # hot reload
