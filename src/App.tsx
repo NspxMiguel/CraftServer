@@ -78,7 +78,7 @@ export default function App() {
           <span className="text-brand-500/60">·</span>
           <span className="text-brand-400/70">Explore a interface do CraftServer</span>
           <a
-            href="https://github.com/spxmiguel/CraftServer/releases/latest"
+            href="https://github.com/NspxMiguel/CraftServer/releases/latest"
             target="_blank" rel="noreferrer"
             className="ml-2 px-2.5 py-0.5 bg-brand-500 hover:bg-brand-400 text-white rounded-lg font-bold transition-colors text-[10px]"
           >

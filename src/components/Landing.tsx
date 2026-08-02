@@ -92,7 +92,7 @@ export default function Landing({ onEnterDemo }: Props) {
           <span className="font-bold text-white tracking-tight">CraftServer</span>
         </div>
         <a
-          href="https://github.com/spxmiguel/CraftServer/releases/latest"
+          href="https://github.com/NspxMiguel/CraftServer/releases/latest"
           target="_blank" rel="noreferrer"
           className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
         >
@@ -129,7 +129,7 @@ export default function Landing({ onEnterDemo }: Props) {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
-              href="https://github.com/spxmiguel/CraftServer/releases/latest"
+              href="https://github.com/NspxMiguel/CraftServer/releases/latest"
               target="_blank" rel="noreferrer"
               className="flex items-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-400 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-400/35 hover:scale-[1.03] active:scale-[0.98]"
             >
@@ -236,7 +236,7 @@ export default function Landing({ onEnterDemo }: Props) {
           <p className="text-slate-500 text-sm mb-8">Grátis, open source, sem limites.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
-              href="https://github.com/spxmiguel/CraftServer/releases/latest"
+              href="https://github.com/NspxMiguel/CraftServer/releases/latest"
               target="_blank" rel="noreferrer"
               className="flex items-center gap-2 px-8 py-3.5 bg-brand-500 hover:bg-brand-400 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand-500/25 hover:scale-[1.03]"
             >
@@ -264,7 +264,7 @@ export default function Landing({ onEnterDemo }: Props) {
             <span className="text-xs text-slate-600">CraftServer — open source</span>
           </div>
           <a
-            href="https://github.com/spxmiguel/CraftServer"
+            href="https://github.com/NspxMiguel/CraftServer"
             target="_blank" rel="noreferrer"
             className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-400 transition-colors"
           >

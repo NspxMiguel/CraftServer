@@ -101,7 +101,7 @@
     "linux": {
       "category": "Game",
       "artifactName": "CraftServer-Linux-${version}.${ext}",
-      "maintainer": "spxmiguel <spxmiguel@icloud.com>",
+      "maintainer": "NspxMiguel <spxmiguel@icloud.com>",
       "target": [
         "AppImage",
         "deb",
@@ -110,7 +110,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "spxmiguel",
+      "owner": "NspxMiguel",
       "repo": "CraftServer"
     }
   }
