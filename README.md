@@ -227,3 +227,7 @@ MIT © 2025 — Made with ☕ and lots of love for Minecraft.
 **[🇧🇷 PT](#-português) · [🇺🇸🇬🇧 EN](#-english) · [Issues](../../issues) · [Releases](../../releases)**
 
 </div>
+
+## Support
+
+Free and open source. If it saved you time, pay what it was worth at [nspx.dev/loja](https://www.nspx.dev/loja/) — any amount, no account.
