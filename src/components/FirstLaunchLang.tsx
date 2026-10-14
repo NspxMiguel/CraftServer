@@ -44,8 +44,8 @@ export default function FirstLaunchLang({ onDone }: Props) {
         {/* Language cards */}
         <div className="flex flex-col gap-3 w-full mb-8">
           {([
-            { lang: 'pt' as Lang, label: '🇧🇷 Português', sub: 'Padrão recomendado' },
-            { lang: 'en' as Lang, label: '🇺🇸 English', sub: 'Recommended default' },
+            { lang: 'pt' as Lang, label: 'Português', sub: 'Padrão recomendado' },
+            { lang: 'en' as Lang, label: 'English', sub: 'Recommended default' },
           ]).map(({ lang, label, sub }) => (
             <button
               key={lang}
@@ -67,7 +67,12 @@ export default function FirstLaunchLang({ onDone }: Props) {
                 )}
               </div>
               <div>
-                <p className="text-white font-bold text-base">{label}</p>
+                <p className="text-white font-bold text-base flex items-center gap-2">
+                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-bold">
+                    {lang.toUpperCase()}
+                  </span>
+                  {label}
+                </p>
                 <p className="text-slate-500 text-xs mt-0.5">{sub}</p>
               </div>
             </button>

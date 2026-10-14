@@ -1,6 +1,38 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Check, Loader2, Server, Zap, Shield, Globe, Lock, UserCheck, Layers, Gamepad2 } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Loader2,
+  Server,
+  Zap,
+  Shield,
+  Globe,
+  Lock,
+  UserCheck,
+  Layers,
+  Gamepad2,
+  FileText,
+  Gem,
+  Sprout,
+  Cable,
+  Mountain,
+  Settings,
+  Mic,
+  Monitor,
+  TriangleAlert,
+  CircleCheck,
+  Rocket,
+  MessageCircle,
+  Link,
+  PartyPopper,
+  Unlock,
+  Share,
+  Wrench,
+  BookOpen,
+  Video,
+} from 'lucide-react'
 import type { Page } from '../../App'
 import type { ServerType } from '../../types'
 import { PRESET_PLUGINS } from '../../data/presetPlugins'
@@ -65,7 +97,7 @@ const FALLBACK_VERSIONS: Record<string, string[]> = {
 const SERVER_TYPES = [
   {
     id: 'paper', label: 'Java — Paper',
-    emoji: '📄', recommended: true,
+    icon: FileText, recommended: true,
     desc: 'Performance máxima + suporte a todos os plugins Bukkit/Spigot. Ideal para servidores de jogos.',
     color: 'text-amber-300', border: 'border-amber-400/40', glow: 'shadow-amber-400/10',
     gradient: 'from-amber-500/15 to-transparent',
@@ -73,7 +105,7 @@ const SERVER_TYPES = [
   },
   {
     id: 'purpur', label: 'Java — Purpur',
-    emoji: '🔮', recommended: false,
+    icon: Gem, recommended: false,
     desc: 'Fork do Paper com centenas de configurações extras. Performance superior ao Paper.',
     color: 'text-violet-300', border: 'border-violet-400/40', glow: 'shadow-violet-400/10',
     gradient: 'from-violet-500/15 to-transparent',
@@ -81,7 +113,7 @@ const SERVER_TYPES = [
   },
   {
     id: 'vanilla', label: 'Java — Vanilla',
-    emoji: '🌿', recommended: false,
+    icon: Sprout, recommended: false,
     desc: 'Servidor oficial da Mojang. Sem plugins, jogo puro. Ótimo para survival com amigos.',
     color: 'text-slate-300', border: 'border-slate-400/40', glow: 'shadow-slate-400/10',
     gradient: 'from-slate-500/15 to-transparent',
@@ -89,7 +121,7 @@ const SERVER_TYPES = [
   },
   {
     id: 'fabric', label: 'Java — Fabric',
-    emoji: '🧵', recommended: false,
+    icon: Cable, recommended: false,
     desc: 'Ideal para mods técnicos e datapacks. Leve e altamente modular.',
     color: 'text-blue-300', border: 'border-blue-400/40', glow: 'shadow-blue-400/10',
     gradient: 'from-blue-500/15 to-transparent',
@@ -97,7 +129,7 @@ const SERVER_TYPES = [
   },
   {
     id: 'bedrock', label: 'Bedrock (PowerNukkit)',
-    emoji: '🪨', recommended: false,
+    icon: Mountain, recommended: false,
     desc: 'Servidor Bedrock em Java. Suporta mobile (iOS/Android), console e Windows 10/11.',
     color: 'text-orange-300', border: 'border-orange-400/40', glow: 'shadow-orange-400/10',
     gradient: 'from-orange-500/15 to-transparent',
@@ -105,7 +137,7 @@ const SERVER_TYPES = [
   },
   {
     id: 'hybrid', label: 'Java + Bedrock (Geyser)',
-    emoji: '⚡', recommended: false,
+    icon: Zap, recommended: false,
     desc: 'Servidor Java com GeyserMC: jogadores Java e Bedrock (mobile/console) no mesmo servidor.',
     color: 'text-brand-300', border: 'border-brand-400/40', glow: 'shadow-brand-400/10',
     gradient: 'from-brand-400/15 to-transparent',
@@ -424,10 +456,10 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-xl bg-brand-400/20 border border-brand-400/30 flex items-center justify-center">
-                    <Gamepad2 size={20} className="text-brand-400" />
+                    <Gamepad2 size={20} className="text-brand-400" aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="text-white font-black text-base">🎮 Escolher Modo de Jogo</p>
+                    <p className="text-white font-black text-base">Escolher Modo de Jogo</p>
                     <span className="text-[10px] font-bold text-brand-400 bg-brand-400/10 border border-brand-400/20 px-2 py-0.5 rounded-full">Recomendado</span>
                   </div>
                 </div>
@@ -435,7 +467,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                   Survival, Skyblock, OneBlock, KitPvP, SkyWars e mais — tudo pré-configurado, só jogar!
                 </p>
                 <div className="flex gap-1.5 mt-3 flex-wrap">
-                  {['🌿 Survival', '🏝️ Skyblock', '⬛ OneBlock', '💰 Ilha Eco', '🌌 SkyWars', '🥊 KitPvP'].map(m => (
+                  {['Survival', 'Skyblock', 'OneBlock', 'Ilha Eco', 'SkyWars', 'KitPvP'].map(m => (
                     <span key={m} className="text-[10px] px-2 py-0.5 bg-dark-700 border border-dark-600 text-slate-500 rounded-full">{m}</span>
                   ))}
                 </div>
@@ -451,9 +483,9 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-xl bg-dark-700 border border-dark-600 flex items-center justify-center">
-                    <Server size={18} className="text-slate-400" />
+                    <Settings size={18} className="text-slate-400" aria-hidden="true" />
                   </div>
-                  <p className="text-white font-black text-base">⚙️ Configurar Manualmente</p>
+                  <p className="text-white font-black text-base">Configurar Manualmente</p>
                 </div>
                 <p className="text-slate-500 text-sm leading-relaxed">
                   Escolha o tipo de servidor, versão, plugins e RAM no detalhe.
@@ -531,7 +563,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                         <div className="relative">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-2xl">{t.emoji}</span>
+                              <t.icon className="h-6 w-6" aria-hidden="true" />
                               <div>
                                 <p className={`font-bold text-sm leading-tight ${active ? t.color : 'text-slate-200'}`}>{t.label}</p>
                                 <span className="text-[10px] text-slate-600 font-medium">{t.tag}</span>
@@ -570,7 +602,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                           onClick={() => setHybridInfoOpen(v => !v)}
                           className="w-full flex items-center justify-between text-left"
                         >
-                          <span className="text-sm font-bold text-brand-300">⚡ Como funciona o servidor Híbrido (Geyser)?</span>
+                          <span className="text-sm font-bold text-brand-300"><Zap className="inline-block h-4 w-4 mr-1 align-text-bottom" aria-hidden="true" /> Como funciona o servidor Híbrido (Geyser)?</span>
                           <motion.span animate={{ rotate: hybridInfoOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
                             <ChevronRight size={14} className="text-brand-400 rotate-90" />
                           </motion.span>
@@ -618,7 +650,10 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
             {step === 1 && (
               <StepWrap key="version">
                 <div className="flex items-center gap-3 mb-5">
-                  <span className="text-3xl">{selectedTypeMeta.emoji}</span>
+                  <selectedTypeMeta.icon
+                    className="h-[30px] w-[30px]"
+                    aria-hidden="true"
+                  />
                   <div>
                     <h2 className="text-xl font-bold text-white">Versão do Minecraft</h2>
                     <p className="text-sm text-slate-500">{selectedTypeMeta.label} — {versions.length} versões disponíveis</p>
@@ -681,7 +716,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-sm transition-all text-left
                           ${gamingMode ? 'border-brand-400/30 bg-brand-400/[0.06]' : 'border-dark-600 bg-dark-800 hover:border-dark-500'}`}
                       >
-                        <span className={gamingMode ? 'text-brand-300 font-medium' : 'text-slate-400'}>🎮 Vou jogar Minecraft no mesmo PC</span>
+                        <span className={gamingMode ? 'text-brand-300 font-medium' : 'text-slate-400'}><Gamepad2 className="inline-block h-4 w-4 mr-1 align-text-bottom" aria-hidden="true" /> Vou jogar Minecraft no mesmo PC</span>
                         <div className={`relative shrink-0 rounded-full transition-colors ${gamingMode ? 'bg-brand-500' : 'bg-dark-500'}`} style={{height: 18, width: 36}}>
                           <div className={`absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-all ${gamingMode ? 'left-[18px]' : 'left-0.5'}`} />
                         </div>
@@ -698,7 +733,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-sm transition-all text-left
                           ${voiceApp ? 'border-brand-400/30 bg-brand-400/[0.06]' : 'border-dark-600 bg-dark-800 hover:border-dark-500'}`}
                       >
-                        <span className={voiceApp ? 'text-brand-300 font-medium' : 'text-slate-400'}>🎙️ Discord / Spotify abertos</span>
+                        <span className={voiceApp ? 'text-brand-300 font-medium' : 'text-slate-400'}><Mic className="inline-block h-4 w-4 mr-1 align-text-bottom" aria-hidden="true" /> Discord / Spotify abertos</span>
                         <div className={`relative shrink-0 rounded-full transition-colors ${voiceApp ? 'bg-brand-500' : 'bg-dark-500'}`} style={{height: 18, width: 36}}>
                           <div className={`absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-all ${voiceApp ? 'left-[18px]' : 'left-0.5'}`} />
                         </div>
@@ -739,7 +774,7 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                       <div className="flex items-center justify-between px-4 py-3">
                         <div>
                           <p className="text-[10px] text-slate-600 font-semibold uppercase tracking-wide">
-                            {manualRam ? 'Manual' : '✨ Recomendado para seu PC'}
+                            {manualRam ? 'Manual' : 'Recomendado para seu PC'}
                           </p>
                           <p className={`text-2xl font-black font-mono leading-tight ${manualRam ? 'text-slate-300' : 'text-brand-300'}`}>
                             {ram >= 1024 ? `${ram/1024}GB` : `${ram}MB`}
@@ -761,11 +796,24 @@ export default function CreateServerWizard({ navigate, quickSetup: _quickSetup =
                       {/* Breakdown — only shown in auto mode with known system RAM */}
                       {!manualRam && systemRam > 0 && (
                         <div className="px-4 pb-3 flex items-center gap-3 text-[10px] font-mono text-slate-700">
-                          <span>💻 {Math.round(systemRam/1024)}GB total</span>
+                          <span>
+                            <Monitor
+                              className="inline-block h-4 w-4 mr-1 align-text-bottom"
+                              aria-hidden="true"
+                            />{' '}
+                            {Math.round(systemRam / 1024)}GB total
+                          </span>
                           <span className="text-dark-500">─</span>
                           <span>{Math.round(calcOverhead(gamingMode, voiceApp)/1024)}GB reservado (SO{gamingMode ? ' + jogo' : ''}{voiceApp ? ' + Discord' : ''})</span>
                           <span className="text-dark-500">─</span>
-                          <span className="text-brand-400/60">{ram >= 1024 ? `${ram/1024}GB` : `${ram}MB`} pro servidor ✓</span>
+                          <span className="text-brand-400/60">
+                            {ram >= 1024 ? `${ram / 1024}GB` : `${ram}MB`} pro
+                            servidor{' '}
+                            <Check
+                              className="inline-block h-3 w-3"
+                              aria-hidden="true"
+                            />
+                          </span>
                         </div>
                       )}
                     </div>
@@ -1317,14 +1365,26 @@ function PlayItModal({ onUsePlayit, onSkipPlayit }: { onUsePlayit: () => void; o
               >
                 {/* Problem */}
                 <div className="p-4 bg-red-500/[0.05] border border-red-400/15 rounded-2xl">
-                  <p className="text-xs font-bold text-red-300 mb-2">⚠️ O problema</p>
+                  <p className="text-xs font-bold text-red-300 mb-2">
+                    <TriangleAlert
+                      className="inline-block h-4 w-4 mr-1 align-text-bottom"
+                      aria-hidden="true"
+                    />{' '}
+                    O problema
+                  </p>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Normalmente você precisaria <span className="text-slate-300 font-semibold">abrir portas no roteador</span> — uma configuração técnica que varia de aparelho pra aparelho e muita gente não consegue fazer.
                   </p>
                 </div>
                 {/* Solution */}
                 <div className="p-4 bg-violet-500/[0.06] border border-violet-400/15 rounded-2xl">
-                  <p className="text-xs font-bold text-violet-300 mb-2">✅ A solução</p>
+                  <p className="text-xs font-bold text-violet-300 mb-2">
+                    <CircleCheck
+                      className="inline-block h-4 w-4 mr-1 align-text-bottom"
+                      aria-hidden="true"
+                    />{' '}
+                    A solução
+                  </p>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     O <span className="text-violet-300 font-bold">PlayIt.gg</span> resolve automaticamente criando um <span className="text-slate-300 font-semibold">endereço público gratuito</span> pro seu servidor. Sem mexer no roteador.
                   </p>
@@ -1341,15 +1401,62 @@ function PlayItModal({ onUsePlayit, onSkipPlayit }: { onUsePlayit: () => void; o
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Como configurar (depois de criar o servidor)</p>
                 <div className="space-y-2">
                   {[
-                    { icon: '🌐', text: <>Acesse <span className="text-violet-300 font-semibold">playit.gg</span> e crie sua conta gratuita</> },
-                    { icon: '🚀', text: 'Inicie o servidor no CraftServer' },
-                    { icon: '💬', text: <>No console do servidor, execute o comando: <code className="font-mono text-violet-300 bg-violet-500/15 px-1.5 py-0.5 rounded text-[11px]">/playit</code></> },
-                    { icon: '🔗', text: 'Siga o link que aparecer para vincular sua conta PlayIt' },
-                    { icon: '🎉', text: <>Você receberá um endereço tipo <code className="font-mono text-violet-300 text-[11px]">xxxx.playit.gg:25565</code> para compartilhar</> },
-                    { icon: '🎮', text: <>Para testar localmente: entre no Minecraft com endereço <code className="font-mono text-slate-300 text-[11px]">localhost</code> (sem porta)</> },
+                    {
+                      icon: Globe,
+                      text: (
+                        <>
+                          Acesse{' '}
+                          <span className="text-violet-300 font-semibold">
+                            playit.gg
+                          </span>{' '}
+                          e crie sua conta gratuita
+                        </>
+                      ),
+                    },
+                    { icon: Rocket, text: 'Inicie o servidor no CraftServer' },
+                    {
+                      icon: MessageCircle,
+                      text: (
+                        <>
+                          No console do servidor, execute o comando:{' '}
+                          <code className="font-mono text-violet-300 bg-violet-500/15 px-1.5 py-0.5 rounded text-[11px]">
+                            /playit
+                          </code>
+                        </>
+                      ),
+                    },
+                    {
+                      icon: Link,
+                      text: 'Siga o link que aparecer para vincular sua conta PlayIt',
+                    },
+                    {
+                      icon: PartyPopper,
+                      text: (
+                        <>
+                          Você receberá um endereço tipo{' '}
+                          <code className="font-mono text-violet-300 text-[11px]">
+                            xxxx.playit.gg:25565
+                          </code>{' '}
+                          para compartilhar
+                        </>
+                      ),
+                    },
+                    {
+                      icon: Gamepad2,
+                      text: (
+                        <>
+                          Para testar localmente: entre no Minecraft com
+                          endereço{' '}
+                          <code className="font-mono text-slate-300 text-[11px]">
+                            localhost
+                          </code>{' '}
+                          (sem porta)
+                        </>
+                      ),
+                    },
                   ].map((step, i) => (
                     <div key={i} className="flex items-start gap-3 text-xs text-slate-400">
-                      <span className="text-base leading-none mt-0.5 shrink-0">{step.icon}</span>
+                      <step.icon className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
                       <span className="leading-relaxed">{step.text}</span>
                     </div>
                   ))}
@@ -1367,13 +1474,17 @@ function PlayItModal({ onUsePlayit, onSkipPlayit }: { onUsePlayit: () => void; o
                   onClick={onUsePlayit}
                   className="w-full py-3.5 rounded-xl bg-violet-500 hover:bg-violet-400 active:bg-violet-600 text-white text-sm font-bold transition-all shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2"
                 >
-                  <Globe size={15} /> ✅ Sim, usar PlayIt.gg
+                  <Globe size={15} /> Sim, usar PlayIt.gg
                 </button>
                 <button
                   onClick={() => setManualMode(true)}
                   className="w-full py-3 rounded-xl border border-dark-500 hover:border-dark-400 text-slate-500 hover:text-slate-300 text-sm font-semibold transition-colors"
                 >
-                  🔧 Prefiro configurar o roteador manualmente
+                  <Wrench
+                    className="inline-block h-4 w-4 mr-1 align-text-bottom"
+                    aria-hidden="true"
+                  />{' '}
+                  Prefiro configurar o roteador manualmente
                 </button>
               </motion.div>
             </motion.div>
@@ -1399,12 +1510,41 @@ function PlayItModal({ onUsePlayit, onSkipPlayit }: { onUsePlayit: () => void; o
               {/* Steps */}
               <div className="w-full space-y-2.5 mb-6">
                 {[
-                  { icon: '🌍', text: <>Descubra seu IP público em: <span className="text-slate-300 font-semibold">whatismyip.com</span></> },
-                  { icon: '🔓', text: <>Abra a porta <code className="font-mono text-slate-300">25565</code> no seu roteador (protocolo TCP)</> },
-                  { icon: '📤', text: <>Passe seu IP público para os amigos — eles entram com <code className="font-mono text-slate-300">IP:25565</code></> },
+                  {
+                    icon: Globe,
+                    text: (
+                      <>
+                        Descubra seu IP público em:{' '}
+                        <span className="text-slate-300 font-semibold">
+                          whatismyip.com
+                        </span>
+                      </>
+                    ),
+                  },
+                  {
+                    icon: Unlock,
+                    text: (
+                      <>
+                        Abra a porta{' '}
+                        <code className="font-mono text-slate-300">25565</code>{' '}
+                        no seu roteador (protocolo TCP)
+                      </>
+                    ),
+                  },
+                  {
+                    icon: Share,
+                    text: (
+                      <>
+                        Passe seu IP público para os amigos — eles entram com{' '}
+                        <code className="font-mono text-slate-300">
+                          IP:25565
+                        </code>
+                      </>
+                    ),
+                  },
                 ].map((step, i) => (
                   <div key={i} className="flex items-start gap-3 text-sm text-slate-400 p-3 bg-dark-800 border border-dark-600 rounded-xl">
-                    <span className="text-base leading-none mt-0.5 shrink-0">{step.icon}</span>
+                    <step.icon className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
                     <span className="leading-relaxed">{step.text}</span>
                   </div>
                 ))}
@@ -1416,13 +1556,21 @@ function PlayItModal({ onUsePlayit, onSkipPlayit }: { onUsePlayit: () => void; o
                   onClick={() => openExternal('https://portforward.com')}
                   className="flex-1 py-2.5 rounded-xl border border-dark-500 hover:border-dark-400 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-colors"
                 >
-                  📖 Tutorial completo → portforward.com
+                  <BookOpen
+                    className="inline-block h-4 w-4 mr-1 align-text-bottom"
+                    aria-hidden="true"
+                  />{' '}
+                  Tutorial completo → portforward.com
                 </button>
                 <button
                   onClick={() => openExternal('https://www.youtube.com/results?search_query=como+abrir+porta+minecraft')}
                   className="flex-1 py-2.5 rounded-xl border border-dark-500 hover:border-dark-400 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-colors"
                 >
-                  🎥 Ver tutorial no YouTube
+                  <Video
+                    className="inline-block h-4 w-4 mr-1 align-text-bottom"
+                    aria-hidden="true"
+                  />{' '}
+                  Ver tutorial no YouTube
                 </button>
               </div>
 

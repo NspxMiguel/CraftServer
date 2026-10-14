@@ -69,9 +69,9 @@ const pt: T = {
 
   chooseMode: 'Como deseja criar?',
   chooseModeDesc: 'Selecione o modo de criação do seu servidor',
-  quickSetupTitle: '⚡ Configuração Rápida',
+  quickSetupTitle: 'Configuração Rápida',
   quickSetupDesc: 'A gente configura tudo automaticamente — Paper, última versão, plugins recomendados e RAM ideal. Só diga o nome!',
-  manualSetup: '⚙️ Configurar Manualmente',
+  manualSetup: 'Configurar Manualmente',
   manualSetupDesc: 'Escolha o tipo de servidor, versão, plugins e RAM no detalhe.',
 
   createServer: 'Criar Servidor', configManual: 'Configurar Manualmente',
@@ -133,7 +133,8 @@ const pt: T = {
   firstLaunchTitle: 'Bem-vindo ao CraftServer!',
   firstLaunchDesc: 'Escolha o idioma da interface:',
   firstLaunchContinue: 'Continuar',
-  langPT: '🇧🇷 Português', langEN: '🇺🇸 English',
+  langPT: 'Português',
+  langEN: 'English',
 }
 
 const en: T = {
@@ -156,9 +157,9 @@ const en: T = {
 
   chooseMode: 'How do you want to create?',
   chooseModeDesc: 'Select your server creation mode',
-  quickSetupTitle: '⚡ Quick Setup',
+  quickSetupTitle: 'Quick Setup',
   quickSetupDesc: 'We configure everything automatically — Paper, latest version, recommended plugins, and ideal RAM. Just enter the name!',
-  manualSetup: '⚙️ Configure Manually',
+  manualSetup: 'Configure Manually',
   manualSetupDesc: 'Choose server type, version, plugins, and RAM in detail.',
 
   createServer: 'Create Server', configManual: 'Configure Manually',
@@ -220,7 +221,8 @@ const en: T = {
   firstLaunchTitle: 'Welcome to CraftServer!',
   firstLaunchDesc: 'Choose your interface language:',
   firstLaunchContinue: 'Continue',
-  langPT: '🇧🇷 Português', langEN: '🇺🇸 English',
+  langPT: 'Português',
+  langEN: 'English',
 }
 
 // ── Reactive language store ───────────────────────────────────────────────────

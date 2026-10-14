@@ -283,13 +283,13 @@ export const PRESET_PLUGINS: PresetPlugin[] = [
 export type PluginCategory = 'auth' | 'core' | 'compat' | 'protection' | 'perf' | 'map' | 'social' | 'qol' | 'rpg'
 
 export const CATEGORY_LABELS: Record<PluginCategory, string> = {
-  auth:       '🔐 Auth & Segurança',
-  core:       '⚙️  Core & Permissões',
-  compat:     '🔄 Compatibilidade',
-  protection: '🛡️  Proteção',
-  perf:       '⚡ Performance',
-  map:        '🗺️  Mapa',
-  social:     '💬 Social & Discord',
-  qol:        '✨ Qualidade de Vida',
-  rpg:        '⚔️  RPG & Progressão',
+  auth: 'Auth & Segurança',
+  core: 'Core & Permissões',
+  compat: 'Compatibilidade',
+  protection: 'Proteção',
+  perf: 'Performance',
+  map: 'Mapa',
+  social: 'Social & Discord',
+  qol: 'Qualidade de Vida',
+  rpg: 'RPG & Progressão',
 }

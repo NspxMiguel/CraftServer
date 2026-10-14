@@ -4,7 +4,7 @@ import {
   Play, Square, FolderOpen, Wifi, WifiOff, Puzzle,
   RefreshCw, ChevronLeft, Copy, Check, AlertTriangle,
   Server, Terminal, Settings, Shield, Circle, Loader2,
-  Sparkles, Code2, FileText, Archive
+  Sparkles, Gamepad2, Code2, FileText, Archive
 } from 'lucide-react'
 import { useServerStore } from '../../store/serverStore'
 import type { Page } from '../../App'
@@ -210,9 +210,11 @@ export default function ServerDetail({ navigate }: Props) {
   }
 
   // In friendly mode: translate and filter logs (keep ts for timestamp display)
-  const friendlyLogs = logs.reduce<{ text: string; emoji: string; type: string; ts: number }[]>((acc, log) => {
+  const friendlyLogs = logs.reduce<
+    { text: string; type: string; ts: number }[]
+  >((acc, log) => {
     if (log.type === 'cmd') {
-      acc.push({ text: log.text, emoji: '⌨️', type: 'cmd', ts: log.ts })
+      acc.push({ text: log.text, type: 'cmd', ts: log.ts })
       return acc
     }
     const friendly = translateLog(log.text, lang)
@@ -288,7 +290,10 @@ export default function ServerDetail({ navigate }: Props) {
             {playitLoading
               ? <Loader2 size={12} className="animate-spin" />
               : playitInstalled ? <Wifi size={12} /> : <WifiOff size={12} />}
-            {playitLoading ? 'Instalando...' : playitInstalled ? 'PlayIt.gg ✓' : 'PlayIt.gg'}
+            {playitLoading ? 'Instalando...' : 'PlayIt.gg'}
+            {!playitLoading && playitInstalled && (
+              <Check className="h-3 w-3" aria-hidden="true" />
+            )}
           </button>
 
           <button onClick={() => isElectron && window.electron.openServerFolder(server.id)}
@@ -423,7 +428,10 @@ export default function ServerDetail({ navigate }: Props) {
                   /* ── Friendly mode ── */
                   friendlyLogs.length === 0 ? (
                     <div className="flex flex-col items-center gap-3 mt-10 select-none text-center">
-                      <span className="text-3xl">🎮</span>
+                      <Gamepad2
+                        className="h-[30px] w-[30px]"
+                        aria-hidden="true"
+                      />
                       <p className="text-slate-600 text-xs">
                         {lang === 'en'
                           ? 'Waiting for the server to start...'
@@ -431,14 +439,13 @@ export default function ServerDetail({ navigate }: Props) {
                       </p>
                       <p className="text-slate-700 text-[10px]">
                         {lang === 'en'
-                          ? 'Click the ⌨️ Technical button to see all raw logs'
-                          : 'Clique no botão ⌨️ Técnico para ver todos os logs brutos'}
+                          ? 'Click the Technical button to see all raw logs'
+                          : 'Clique no botão Técnico para ver todos os logs brutos'}
                       </p>
                     </div>
                   ) : (
                     friendlyLogs.map((log, i) => (
                       <div key={i} className={`flex items-start gap-2 py-0.5 ${logColor(log.type)}`}>
-                        <span className="shrink-0 text-sm leading-5">{log.emoji}</span>
                         <span className="shrink-0 text-[10px] font-mono text-slate-700 leading-5 mt-px select-none">{fmtTs(log.ts)}</span>
                         <span className="font-sans leading-5">{log.text}</span>
                       </div>

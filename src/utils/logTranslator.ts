@@ -4,7 +4,6 @@
 
 export interface FriendlyLog {
   text: string
-  emoji: string
   type: 'success' | 'info' | 'warn' | 'error' | 'player' | 'cmd'
 }
 
@@ -13,7 +12,6 @@ interface Rule {
   match: RegExp
   pt: (m: RegExpMatchArray) => string
   en: (m: RegExpMatchArray) => string
-  emoji: string
   type: FriendlyLog['type']
   hide?: boolean
 }
@@ -24,43 +22,43 @@ const RULES: Rule[] = [
     match: /Done \((\d+[\d.,]+)s\)!/i,
     pt: m => `Servidor iniciado em ${m[1]} segundos — pode entrar!`,
     en: m => `Server started in ${m[1]} seconds — jump in!`,
-    emoji: '✅', type: 'success',
+    type: 'success',
   },
   {
     match: /Starting Minecraft server on/i,
     pt: () => 'Iniciando servidor...',
     en: () => 'Starting server...',
-    emoji: '🚀', type: 'info',
+    type: 'info',
   },
   {
     match: /Stopping (the )?server/i,
     pt: () => 'Servidor parando...',
     en: () => 'Server stopping...',
-    emoji: '🛑', type: 'warn',
+    type: 'warn',
   },
   {
     match: /Closing Server/i,
     pt: () => 'Servidor desligado.',
     en: () => 'Server shut down.',
-    emoji: '⛔', type: 'warn',
+    type: 'warn',
   },
   {
     match: /Saving the game/i,
     pt: () => 'Salvando o mundo...',
     en: () => 'Saving the world...',
-    emoji: '💾', type: 'info',
+    type: 'info',
   },
   {
     match: /Saved the game/i,
     pt: () => 'Mundo salvo!',
     en: () => 'World saved!',
-    emoji: '✔️', type: 'info',
+    type: 'info',
   },
   {
     match: /Reloading!/i,
     pt: () => 'Recarregando servidor...',
     en: () => 'Reloading server...',
-    emoji: '🔄', type: 'info',
+    type: 'info',
   },
 
   // ── World & chunk loading ────────────────────────────────────────────────────
@@ -68,25 +66,25 @@ const RULES: Rule[] = [
     match: /Preparing spawn area[^:]*:\s*(\d+)%/i,
     pt: m => `Preparando área de spawn: ${m[1]}%`,
     en: m => `Preparing spawn area: ${m[1]}%`,
-    emoji: '🌍', type: 'info',
+    type: 'info',
   },
   {
     match: /Preparing start region for dimension/i,
     pt: () => 'Carregando região inicial...',
     en: () => 'Loading starting region...',
-    emoji: '🌍', type: 'info',
+    type: 'info',
   },
   {
     match: /Preparing spawn area/i,
     pt: () => 'Gerando área de spawn...',
     en: () => 'Preparing spawn area...',
-    emoji: '🌍', type: 'info',
+    type: 'info',
   },
   {
     match: /Time elapsed: (\d+)/i,
     pt: m => `Carregamento concluído em ${m[1]}ms`,
     en: m => `Load completed in ${m[1]}ms`,
-    emoji: '⏱️', type: 'info',
+    type: 'info',
   },
 
   // ── Players join / leave / connection ───────────────────────────────────────
@@ -94,26 +92,26 @@ const RULES: Rule[] = [
     match: /(\w+) joined the game/,
     pt: m => `${m[1]} entrou no servidor!`,
     en: m => `${m[1]} joined the server!`,
-    emoji: '👋', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) left the game/,
     pt: m => `${m[1]} saiu do servidor.`,
     en: m => `${m[1]} left the server.`,
-    emoji: '👤', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) lost connection: (.+)/,
     pt: m => `${m[1]} perdeu a conexão: ${translateDisconnectReason(m[2])}`,
     en: m => `${m[1]} lost connection: ${m[2]}`,
-    emoji: '📡', type: 'warn',
+    type: 'warn',
   },
   {
     // UUID lookup: "UUID of player Steve is abc-123"
     match: /UUID of player (\w+) is/i,
     pt: m => `${m[1]} autenticado`,
     en: m => `${m[1]} authenticated`,
-    emoji: '🔑', type: 'info',
+    type: 'info',
   },
 
   // ── Player deaths ────────────────────────────────────────────────────────────
@@ -121,121 +119,121 @@ const RULES: Rule[] = [
     match: /(\w+) was slain by (.+)/,
     pt: m => `${m[1]} foi morto por ${m[2]}`,
     en: m => `${m[1]} was slain by ${m[2]}`,
-    emoji: '⚔️', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) was killed by (.+)/,
     pt: m => `${m[1]} foi eliminado por ${m[2]}`,
     en: m => `${m[1]} was killed by ${m[2]}`,
-    emoji: '💀', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) was shot by (.+)/,
     pt: m => `${m[1]} foi atingido por flecha de ${m[2]}`,
     en: m => `${m[1]} was shot by ${m[2]}`,
-    emoji: '🏹', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) drowned/,
     pt: m => `${m[1]} se afogou`,
     en: m => `${m[1]} drowned`,
-    emoji: '🌊', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) burned to death/,
     pt: m => `${m[1]} morreu queimado`,
     en: m => `${m[1]} burned to death`,
-    emoji: '🔥', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) went up in flames/,
     pt: m => `${m[1]} foi consumido pelas chamas`,
     en: m => `${m[1]} went up in flames`,
-    emoji: '🔥', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) blew up/,
     pt: m => `${m[1]} explodiu`,
     en: m => `${m[1]} blew up`,
-    emoji: '💥', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) was blown up by (.+)/,
     pt: m => `${m[1]} foi explodido por ${m[2]}`,
     en: m => `${m[1]} was blown up by ${m[2]}`,
-    emoji: '💥', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) fell from a high place/,
     pt: m => `${m[1]} caiu de um lugar alto`,
     en: m => `${m[1]} fell from a high place`,
-    emoji: '🪂', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) fell out of the world/,
     pt: m => `${m[1]} caiu para fora do mundo`,
     en: m => `${m[1]} fell out of the world`,
-    emoji: '🕳️', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) was doomed to fall by (.+)/,
     pt: m => `${m[1]} foi lançado no abismo por ${m[2]}`,
     en: m => `${m[1]} was doomed to fall by ${m[2]}`,
-    emoji: '🪂', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) starved to death/,
     pt: m => `${m[1]} morreu de fome`,
     en: m => `${m[1]} starved to death`,
-    emoji: '🍖', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) suffocated in a wall/,
     pt: m => `${m[1]} sufocou numa parede`,
     en: m => `${m[1]} suffocated in a wall`,
-    emoji: '🧱', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) was struck by lightning/,
     pt: m => `${m[1]} foi atingido por raio`,
     en: m => `${m[1]} was struck by lightning`,
-    emoji: '⚡', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) hit the ground too hard/,
     pt: m => `${m[1]} bateu no chão forte demais`,
     en: m => `${m[1]} hit the ground too hard`,
-    emoji: '🪂', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) froze to death/,
     pt: m => `${m[1]} congelou até morrer`,
     en: m => `${m[1]} froze to death`,
-    emoji: '🧊', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) discovered the floor was lava/,
     pt: m => `${m[1]} descobriu que o chão era lava`,
     en: m => `${m[1]} discovered the floor was lava`,
-    emoji: '🌋', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) tried to swim in lava/,
     pt: m => `${m[1]} tentou nadar em lava`,
     en: m => `${m[1]} tried to swim in lava`,
-    emoji: '🌋', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) was impaled by (.+)/,
     pt: m => `${m[1]} foi empalado por ${m[2]}`,
     en: m => `${m[1]} was impaled by ${m[2]}`,
-    emoji: '🔱', type: 'player',
+    type: 'player',
   },
   {
     match: /(\w+) died/,
     pt: m => `${m[1]} morreu`,
     en: m => `${m[1]} died`,
-    emoji: '💀', type: 'player',
+    type: 'player',
   },
 
   // ── Player commands issued ────────────────────────────────────────────────────
@@ -243,27 +241,27 @@ const RULES: Rule[] = [
     match: /(\w+) issued server command: (.+)/,
     pt: m => `${m[1]} executou: ${m[2]}`,
     en: m => `${m[1]} ran: ${m[2]}`,
-    emoji: '⌨️', type: 'cmd',
+    type: 'cmd',
   },
 
   // ── Advancements ─────────────────────────────────────────────────────────────
   {
     match: /(\w+) has made the advancement \[(.+)\]/,
-    pt: m => `${m[1]} desbloqueou a conquista "${m[2]}"! 🎉`,
-    en: m => `${m[1]} got the advancement "${m[2]}"! 🎉`,
-    emoji: '🏆', type: 'success',
+    pt: (m) => `${m[1]} desbloqueou a conquista "${m[2]}"!`,
+    en: (m) => `${m[1]} got the advancement "${m[2]}"!`,
+    type: 'success',
   },
   {
     match: /(\w+) has completed the challenge \[(.+)\]/,
-    pt: m => `${m[1]} completou o desafio "${m[2]}"! 🎉`,
-    en: m => `${m[1]} completed the challenge "${m[2]}"! 🎉`,
-    emoji: '🏆', type: 'success',
+    pt: (m) => `${m[1]} completou o desafio "${m[2]}"!`,
+    en: (m) => `${m[1]} completed the challenge "${m[2]}"!`,
+    type: 'success',
   },
   {
     match: /(\w+) has reached the goal \[(.+)\]/,
-    pt: m => `${m[1]} atingiu o objetivo "${m[2]}"! 🎉`,
-    en: m => `${m[1]} reached the goal "${m[2]}"! 🎉`,
-    emoji: '🎯', type: 'success',
+    pt: (m) => `${m[1]} atingiu o objetivo "${m[2]}"!`,
+    en: (m) => `${m[1]} reached the goal "${m[2]}"!`,
+    type: 'success',
   },
 
   // ── Player chat ──────────────────────────────────────────────────────────────
@@ -271,7 +269,7 @@ const RULES: Rule[] = [
     match: /^<(\w+)> (.+)$/,
     pt: m => `${m[1]}: ${m[2]}`,
     en: m => `${m[1]}: ${m[2]}`,
-    emoji: '💬', type: 'player',
+    type: 'player',
   },
 
   // ── /op and /deop ────────────────────────────────────────────────────────────
@@ -279,13 +277,13 @@ const RULES: Rule[] = [
     match: /Made (\w+) a server operator/i,
     pt: m => `${m[1]} agora é operador (OP)`,
     en: m => `${m[1]} is now an operator (OP)`,
-    emoji: '👑', type: 'success',
+    type: 'success',
   },
   {
     match: /De-opped (\w+)/i,
     pt: m => `${m[1]} perdeu os poderes de operador`,
     en: m => `${m[1]} lost operator privileges`,
-    emoji: '👤', type: 'info',
+    type: 'info',
   },
 
   // ── /kick ────────────────────────────────────────────────────────────────────
@@ -293,7 +291,7 @@ const RULES: Rule[] = [
     match: /Kicked (\w+)(?: from the game)?(?:: (.+))?/i,
     pt: m => `${m[1]} foi expulso do servidor${m[3] ? `: ${m[3]}` : ''}`,
     en: m => `${m[1]} was kicked${m[3] ? `: ${m[3]}` : ''}`,
-    emoji: '🦵', type: 'warn',
+    type: 'warn',
   },
 
   // ── /ban and /ban-ip ─────────────────────────────────────────────────────────
@@ -301,13 +299,13 @@ const RULES: Rule[] = [
     match: /Banned player (\w+)/i,
     pt: m => `${m[1]} foi banido do servidor`,
     en: m => `${m[1]} was banned`,
-    emoji: '🔨', type: 'warn',
+    type: 'warn',
   },
   {
     match: /Banned IP address (.+)/i,
     pt: m => `IP ${m[1]} foi banido`,
     en: m => `IP ${m[1]} was banned`,
-    emoji: '🔨', type: 'warn',
+    type: 'warn',
   },
 
   // ── /pardon and /pardon-ip ────────────────────────────────────────────────────
@@ -315,13 +313,13 @@ const RULES: Rule[] = [
     match: /Unbanned player (\w+)/i,
     pt: m => `${m[1]} foi desbanido`,
     en: m => `${m[1]} was unbanned`,
-    emoji: '✅', type: 'success',
+    type: 'success',
   },
   {
     match: /Unbanned IP address (.+)/i,
     pt: m => `IP ${m[1]} foi desbanido`,
     en: m => `IP ${m[1]} was unbanned`,
-    emoji: '✅', type: 'success',
+    type: 'success',
   },
 
   // ── /whitelist ────────────────────────────────────────────────────────────────
@@ -329,37 +327,37 @@ const RULES: Rule[] = [
     match: /Added (\w+) to the whitelist/i,
     pt: m => `${m[1]} adicionado à whitelist`,
     en: m => `${m[1]} added to whitelist`,
-    emoji: '📋', type: 'success',
+    type: 'success',
   },
   {
     match: /Removed (\w+) from the whitelist/i,
     pt: m => `${m[1]} removido da whitelist`,
     en: m => `${m[1]} removed from whitelist`,
-    emoji: '📋', type: 'info',
+    type: 'info',
   },
   {
     match: /There are \d+ whitelisted player/i,
     pt: () => 'Whitelist listada',
     en: () => 'Whitelist listed',
-    emoji: '📋', type: 'info',
+    type: 'info',
   },
   {
     match: /Whitelist reloaded/i,
     pt: () => 'Whitelist recarregada',
     en: () => 'Whitelist reloaded',
-    emoji: '🔄', type: 'info',
+    type: 'info',
   },
   {
     match: /Turned on the whitelist/i,
     pt: () => 'Whitelist ativada',
     en: () => 'Whitelist enabled',
-    emoji: '🔒', type: 'info',
+    type: 'info',
   },
   {
     match: /Turned off the whitelist/i,
     pt: () => 'Whitelist desativada',
     en: () => 'Whitelist disabled',
-    emoji: '🔓', type: 'info',
+    type: 'info',
   },
 
   // ── /gamemode ────────────────────────────────────────────────────────────────
@@ -371,13 +369,13 @@ const RULES: Rule[] = [
     en: m => m[1]
       ? `${m[1]}'s game mode set to ${m[2]}`
       : `Game mode set to ${m[2]}`,
-    emoji: '🎮', type: 'info',
+    type: 'info',
   },
   {
     match: /(\w+) has (?:selected|now) (Survival|Creative|Adventure|Spectator) Mode/i,
     pt: m => `${m[1]} está no modo ${translateGamemode(m[2])}`,
     en: m => `${m[1]} is now in ${m[2]} mode`,
-    emoji: '🎮', type: 'info',
+    type: 'info',
   },
 
   // ── /tp and /teleport ────────────────────────────────────────────────────────
@@ -385,13 +383,13 @@ const RULES: Rule[] = [
     match: /Teleported (\w+) to (\w+)/i,
     pt: m => `${m[1]} teleportado para ${m[2]}`,
     en: m => `${m[1]} teleported to ${m[2]}`,
-    emoji: '✨', type: 'info',
+    type: 'info',
   },
   {
     match: /Teleported (\w+) to ([0-9., -]+)/i,
     pt: m => `${m[1]} teleportado para ${m[2]}`,
     en: m => `${m[1]} teleported to ${m[2]}`,
-    emoji: '✨', type: 'info',
+    type: 'info',
   },
 
   // ── /time ────────────────────────────────────────────────────────────────────
@@ -399,13 +397,13 @@ const RULES: Rule[] = [
     match: /Set the time to (\d+)/i,
     pt: m => `Hora do mundo alterada para ${translateTime(parseInt(m[1]))}`,
     en: m => `Time set to ${m[1]}`,
-    emoji: '🕐', type: 'info',
+    type: 'info',
   },
   {
     match: /The time is (\d+)/i,
     pt: m => `Hora atual: ${translateTime(parseInt(m[1]))}`,
     en: m => `Current time: ${m[1]}`,
-    emoji: '🕐', type: 'info',
+    type: 'info',
   },
 
   // ── /weather ─────────────────────────────────────────────────────────────────
@@ -413,13 +411,13 @@ const RULES: Rule[] = [
     match: /Changing to (clear|rain|thunder) weather/i,
     pt: m => `Clima alterado para ${translateWeather(m[1])}`,
     en: m => `Weather changed to ${m[1]}`,
-    emoji: '🌦️', type: 'info',
+    type: 'info',
   },
   {
     match: /Set the weather to (clear|rain|thunder)/i,
     pt: m => `Clima definido para ${translateWeather(m[1])}`,
     en: m => `Weather set to ${m[1]}`,
-    emoji: '🌦️', type: 'info',
+    type: 'info',
   },
 
   // ── /give ─────────────────────────────────────────────────────────────────────
@@ -427,7 +425,7 @@ const RULES: Rule[] = [
     match: /Gave (\d+) \[(.+)\] to (\w+)/i,
     pt: m => `Deu ${m[1]}x ${m[2]} para ${m[3]}`,
     en: m => `Gave ${m[1]}x ${m[2]} to ${m[3]}`,
-    emoji: '🎁', type: 'info',
+    type: 'info',
   },
 
   // ── /kill ─────────────────────────────────────────────────────────────────────
@@ -435,7 +433,7 @@ const RULES: Rule[] = [
     match: /Killed (\w+)/i,
     pt: m => `${m[1]} foi morto por comando`,
     en: m => `${m[1]} was killed by command`,
-    emoji: '💀', type: 'info',
+    type: 'info',
   },
 
   // ── /clear ────────────────────────────────────────────────────────────────────
@@ -443,7 +441,7 @@ const RULES: Rule[] = [
     match: /Removed (\d+) items? from (\w+)/i,
     pt: m => `Removidos ${m[1]} itens do inventário de ${m[2]}`,
     en: m => `Removed ${m[1]} items from ${m[2]}'s inventory`,
-    emoji: '🗑️', type: 'info',
+    type: 'info',
   },
 
   // ── /effect ───────────────────────────────────────────────────────────────────
@@ -451,13 +449,13 @@ const RULES: Rule[] = [
     match: /(?:Applied|Given) effect (.+) to (\w+)/i,
     pt: m => `Efeito ${m[1]} aplicado em ${m[2]}`,
     en: m => `Effect ${m[1]} applied to ${m[2]}`,
-    emoji: '✨', type: 'info',
+    type: 'info',
   },
   {
     match: /Took all effects from (\w+)/i,
     pt: m => `Todos os efeitos removidos de ${m[1]}`,
     en: m => `All effects removed from ${m[1]}`,
-    emoji: '✨', type: 'info',
+    type: 'info',
   },
 
   // ── /xp / /experience ─────────────────────────────────────────────────────────
@@ -465,7 +463,7 @@ const RULES: Rule[] = [
     match: /Gave (\d+) experience (?:levels? )?to (\w+)/i,
     pt: m => `${m[2]} recebeu ${m[1]} de experiência`,
     en: m => `Gave ${m[1]} experience to ${m[2]}`,
-    emoji: '⭐', type: 'info',
+    type: 'info',
   },
 
   // ── /say ──────────────────────────────────────────────────────────────────────
@@ -473,7 +471,7 @@ const RULES: Rule[] = [
     match: /\[Server\] (.+)/,
     pt: m => `[Servidor] ${m[1]}`,
     en: m => `[Server] ${m[1]}`,
-    emoji: '📢', type: 'info',
+    type: 'info',
   },
 
   // ── /list ─────────────────────────────────────────────────────────────────────
@@ -487,7 +485,7 @@ const RULES: Rule[] = [
       const players = m[3] ? `: ${m[3]}` : ''
       return `${m[1]} of ${m[2]} players online${players}`
     },
-    emoji: '👥', type: 'info',
+    type: 'info',
   },
 
   // ── /difficulty ───────────────────────────────────────────────────────────────
@@ -495,7 +493,7 @@ const RULES: Rule[] = [
     match: /The difficulty has been set to (Peaceful|Easy|Normal|Hard)/i,
     pt: m => `Dificuldade alterada para ${translateDifficulty(m[1])}`,
     en: m => `Difficulty set to ${m[1]}`,
-    emoji: '⚔️', type: 'info',
+    type: 'info',
   },
 
   // ── /gamerule ─────────────────────────────────────────────────────────────────
@@ -503,13 +501,13 @@ const RULES: Rule[] = [
     match: /Game rule (\w+) has been updated to (.+)/i,
     pt: m => `Regra de jogo "${m[1]}" definida para ${m[2]}`,
     en: m => `Game rule "${m[1]}" set to ${m[2]}`,
-    emoji: '📜', type: 'info',
+    type: 'info',
   },
   {
     match: /Gamerule (\w+) is currently set to: (.+)/i,
     pt: m => `Regra "${m[1]}": ${m[2]}`,
     en: m => `Rule "${m[1]}": ${m[2]}`,
-    emoji: '📜', type: 'info',
+    type: 'info',
   },
 
   // ── /seed ─────────────────────────────────────────────────────────────────────
@@ -517,7 +515,7 @@ const RULES: Rule[] = [
     match: /Seed: \[?(-?\d+)\]?/i,
     pt: m => `Seed do mundo: ${m[1]}`,
     en: m => `World seed: ${m[1]}`,
-    emoji: '🌱', type: 'info',
+    type: 'info',
   },
 
   // ── /scoreboard ───────────────────────────────────────────────────────────────
@@ -525,13 +523,13 @@ const RULES: Rule[] = [
     match: /Created new objective (.+)/i,
     pt: m => `Placar "${m[1]}" criado`,
     en: m => `Scoreboard "${m[1]}" created`,
-    emoji: '📊', type: 'info',
+    type: 'info',
   },
   {
     match: /Removed objective (.+)/i,
     pt: m => `Placar "${m[1]}" removido`,
     en: m => `Scoreboard "${m[1]}" removed`,
-    emoji: '📊', type: 'info',
+    type: 'info',
   },
 
   // ── /summon ───────────────────────────────────────────────────────────────────
@@ -539,7 +537,7 @@ const RULES: Rule[] = [
     match: /Summoned new (.+)/i,
     pt: m => `Invocado: ${m[1]}`,
     en: m => `Summoned: ${m[1]}`,
-    emoji: '✨', type: 'info',
+    type: 'info',
   },
 
   // ── /fill ─────────────────────────────────────────────────────────────────────
@@ -547,7 +545,7 @@ const RULES: Rule[] = [
     match: /(\d+) blocks? filled/i,
     pt: m => `${m[1]} blocos preenchidos`,
     en: m => `${m[1]} blocks filled`,
-    emoji: '🧱', type: 'info',
+    type: 'info',
   },
 
   // ── /clone ────────────────────────────────────────────────────────────────────
@@ -555,7 +553,7 @@ const RULES: Rule[] = [
     match: /(\d+) blocks? cloned/i,
     pt: m => `${m[1]} blocos clonados`,
     en: m => `${m[1]} blocks cloned`,
-    emoji: '🧱', type: 'info',
+    type: 'info',
   },
 
   // ── /forceload ────────────────────────────────────────────────────────────────
@@ -563,7 +561,7 @@ const RULES: Rule[] = [
     match: /Added (\d+) chunk/i,
     pt: m => `${m[1]} chunk(s) forçados a carregar`,
     en: m => `${m[1]} chunk(s) force-loaded`,
-    emoji: '📦', type: 'info',
+    type: 'info',
   },
 
   // ── Unknown command ───────────────────────────────────────────────────────────
@@ -571,13 +569,13 @@ const RULES: Rule[] = [
     match: /Unknown or incomplete command/i,
     pt: () => 'Comando desconhecido ou incompleto',
     en: () => 'Unknown or incomplete command',
-    emoji: '❓', type: 'warn',
+    type: 'warn',
   },
   {
     match: /Unknown command\. Type/i,
     pt: () => 'Comando desconhecido',
     en: () => 'Unknown command',
-    emoji: '❓', type: 'warn',
+    type: 'warn',
   },
 
   // ── Server command output ─────────────────────────────────────────────────────
@@ -585,7 +583,7 @@ const RULES: Rule[] = [
     match: /\[(?:Server|CONSOLE)\]: (.+)/,
     pt: m => `Comando do servidor: ${m[1]}`,
     en: m => `Server command: ${m[1]}`,
-    emoji: '⌨️', type: 'cmd',
+    type: 'cmd',
   },
 
   // ── Plugins ──────────────────────────────────────────────────────────────────
@@ -593,45 +591,45 @@ const RULES: Rule[] = [
     match: /\[Server thread\/INFO\].*Enabling (.+) v/,
     pt: m => `Plugin ${m[1]} ativado`,
     en: m => `Plugin ${m[1]} enabled`,
-    emoji: '🔌', type: 'info',
+    type: 'info',
   },
   {
     match: /\[Server thread\/INFO\].*Disabling (.+) v/,
     pt: m => `Plugin ${m[1]} desativado`,
     en: m => `Plugin ${m[1]} disabled`,
-    emoji: '🔌', type: 'info',
+    type: 'info',
   },
   {
     match: /Could not load '?plugins\/([^'"\s]+)'?/i,
     pt: m => `Erro ao carregar plugin: ${m[1]}`,
     en: m => `Failed to load plugin: ${m[1]}`,
-    emoji: '❌', type: 'error',
+    type: 'error',
   },
   {
     match: /Plugin (.+) is incompatible/i,
     pt: m => `Plugin ${m[1]} é incompatível com esta versão`,
     en: m => `Plugin ${m[1]} is incompatible with this version`,
-    emoji: '⚠️', type: 'warn',
+    type: 'warn',
   },
   {
     // EssentialsX
     match: /Enabling EssentialsX v/i,
     pt: () => 'EssentialsX ativado',
     en: () => 'EssentialsX enabled',
-    emoji: '🔌', type: 'info',
+    type: 'info',
   },
   {
     // LuckPerms
     match: /Loading LuckPerms/i,
     pt: () => 'LuckPerms carregando...',
     en: () => 'LuckPerms loading...',
-    emoji: '🔑', type: 'info',
+    type: 'info',
   },
   {
     match: /LuckPerms .* loaded successfully/i,
     pt: () => 'LuckPerms carregado!',
     en: () => 'LuckPerms loaded!',
-    emoji: '🔑', type: 'success',
+    type: 'success',
   },
 
   // ── Errors & warnings ─────────────────────────────────────────────────────────
@@ -639,31 +637,32 @@ const RULES: Rule[] = [
     match: /OutOfMemoryError/i,
     pt: () => 'Sem memória RAM! Aumente o RAM do servidor nas configurações.',
     en: () => 'Out of memory! Increase server RAM in settings.',
-    emoji: '🔴', type: 'error',
+    type: 'error',
   },
   {
     match: /java\.net\.BindException/i,
     pt: () => 'Porta já está em uso! Mude a porta nas configurações do servidor.',
     en: () => 'Port already in use! Change the port in server settings.',
-    emoji: '🔴', type: 'error',
+    type: 'error',
   },
   {
     match: /Failed to bind to port/i,
     pt: () => 'Não conseguiu abrir a porta. Mude a porta nas configurações.',
     en: () => 'Failed to bind port. Change the port in settings.',
-    emoji: '🔴', type: 'error',
+    type: 'error',
   },
   {
     match: /Can't keep up!/i,
     pt: () => 'Servidor com lag! Considere reduzir o view-distance ou aumentar RAM.',
     en: () => 'Server is lagging! Consider reducing view-distance or increasing RAM.',
-    emoji: '⚠️', type: 'warn',
+    type: 'warn',
   },
   {
     match: /\[WARN\].*Nag author/i,
     pt: () => null as unknown as string,
     en: () => null as unknown as string,
-    emoji: '', type: 'info', hide: true,
+    type: 'info',
+    hide: true,
   },
 
   // ── CraftServer internal ─────────────────────────────────────────────────────
@@ -671,7 +670,7 @@ const RULES: Rule[] = [
     match: /── (.+) ──/,
     pt: m => m[1],
     en: m => m[1],
-    emoji: '📋', type: 'info',
+    type: 'info',
   },
 ]
 
@@ -763,18 +762,18 @@ export function translateLog(
       if (rule.hide) return null
       const text = lang === 'en' ? rule.en(m) : rule.pt(m)
       if (!text) return null
-      return { text, emoji: rule.emoji, type: rule.type }
+      return { text, type: rule.type }
     }
   }
 
   // Plain ERROR/WARN lines without a specific rule
   if (/ERROR|SEVERE/i.test(line)) {
     const clean = stripped || line
-    return { text: clean, emoji: '❌', type: 'error' }
+    return { text: clean, type: 'error' }
   }
   if (/WARN/i.test(line)) {
     const clean = stripped || line
-    return { text: clean, emoji: '⚠️', type: 'warn' }
+    return { text: clean, type: 'warn' }
   }
 
   return null

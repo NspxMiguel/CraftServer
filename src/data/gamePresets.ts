@@ -1,3 +1,15 @@
+import {
+  Sprout,
+  Skull,
+  Palmtree,
+  Box,
+  Coins,
+  Swords,
+  Bed,
+  Orbit,
+  type LucideIcon,
+} from 'lucide-react'
+
 // ── CraftServer — Game Mode Presets ──────────────────────────────────────────
 // Each preset = plugins (auto-downloaded) + server.properties + optional world
 
@@ -12,7 +24,7 @@ export interface GamePreset {
   id: string
   name: string
   nameEN: string
-  emoji: string
+  icon: LucideIcon
   taglinePT: string
   taglineEN: string
   descPT: string
@@ -83,12 +95,12 @@ const P: Record<string, PresetPluginDef> = {
 // ─── Presets ──────────────────────────────────────────────────────────────────
 export const GAME_PRESETS: GamePreset[] = [
 
-  // ── 🌿 Survival Padrão ──────────────────────────────────────────────────────
+  // ── Standard Survival ──────────────────────────────────────────────────────
   {
     id: 'survival',
     name: 'Survival Padrão',
     nameEN: 'Standard Survival',
-    emoji: '🌿',
+    icon: Sprout,
     taglinePT: 'Survival clássico com seus amigos',
     taglineEN: 'Classic survival with your friends',
     descPT: 'Minecraft sobrevivência do jeito que tem que ser. Mundo gerado, plugins essenciais, proteção de terreno e chat formatado.',
@@ -103,12 +115,12 @@ export const GAME_PRESETS: GamePreset[] = [
     serverProperties: { difficulty: 'normal', pvp: false, 'max-players': 20 },
   },
 
-  // ── 💀 Hardcore ─────────────────────────────────────────────────────────────
+  // ── Hardcore ─────────────────────────────────────────────────────────────
   {
     id: 'hardcore',
     name: 'Hardcore',
     nameEN: 'Hardcore',
-    emoji: '💀',
+    icon: Skull,
     taglinePT: 'Morra uma vez, perde tudo',
     taglineEN: 'Die once, lose everything',
     descPT: 'Morte permanente, dificuldade máxima. Um erro e você vira espectador. Pra quem quer uma experiência verdadeiramente brutal.',
@@ -123,12 +135,12 @@ export const GAME_PRESETS: GamePreset[] = [
     serverProperties: { hardcore: true, difficulty: 'hard', pvp: true, 'max-players': 10 },
   },
 
-  // ── 🏝️ Skyblock ──────────────────────────────────────────────────────────────
+  // ── Skyblock ──────────────────────────────────────────────────────────────
   {
     id: 'skyblock',
     name: 'Skyblock',
     nameEN: 'Skyblock',
-    emoji: '🏝️',
+    icon: Palmtree,
     taglinePT: 'Ilha no vácuo, recursos limitados',
     taglineEN: 'Island in the void, limited resources',
     descPT: 'Cada jogador começa com uma ilha no vácuo e recursos mínimos. Expanda sua ilha, complete desafios e suba no ranking de nível.',
@@ -143,12 +155,12 @@ export const GAME_PRESETS: GamePreset[] = [
     serverProperties: { difficulty: 'normal', pvp: false, 'max-players': 50, 'level-name': 'world' },
   },
 
-  // ── ⬛ OneBlock ───────────────────────────────────────────────────────────────
+  // ── OneBlock ───────────────────────────────────────────────────────────────
   {
     id: 'oneblock',
     name: 'OneBlock',
     nameEN: 'OneBlock',
-    emoji: '⬛',
+    icon: Box,
     taglinePT: 'Um bloco infinito no vácuo',
     taglineEN: 'One infinite block in the void',
     descPT: 'Você começa no vácuo com um único bloco mágico que regenera infinitamente. Quebre-o e evolua pelas fases: Pradaria, Floresta, Mina, Nether e mais.',
@@ -163,12 +175,12 @@ export const GAME_PRESETS: GamePreset[] = [
     serverProperties: { difficulty: 'normal', pvp: false, 'max-players': 30 },
   },
 
-  // ── 💰 Ilha com Economia (ReiDeSky) ──────────────────────────────────────────
+  // ── Economy Island (ReiDeSky) ──────────────────────────────────────────
   {
     id: 'skyblock-eco',
     name: 'Ilha Economia',
     nameEN: 'Island Economy',
-    emoji: '💰',
+    icon: Coins,
     taglinePT: 'Skyblock com loja, empregos e economia',
     taglineEN: 'Skyblock with shop, jobs and economy',
     descPT: 'Skyblock completo com sistema econômico real: loja de compra/venda pré-configurada, empregos com salário, banco da ilha e hologramas de ranking — estilo ReiDeSky, pronto para jogar.',
@@ -183,12 +195,12 @@ export const GAME_PRESETS: GamePreset[] = [
     serverProperties: { difficulty: 'normal', pvp: false, 'max-players': 100 },
   },
 
-  // ── 🥊 KitPvP ────────────────────────────────────────────────────────────────
+  // ── KitPvP ────────────────────────────────────────────────────────────────
   {
     id: 'kitpvp',
     name: 'KitPvP',
     nameEN: 'KitPvP',
-    emoji: '🥊',
+    icon: Swords,
     taglinePT: 'PvP com kits, ranking e arenas',
     taglineEN: 'PvP with kits, ranking and arenas',
     descPT: 'Servidor de PvP competitivo com 4 kits pré-configurados (Guerreiro, Arqueiro, Mago, Tank). Use /kit no jogo para equipar. Mundo plano gerado automaticamente.',
@@ -203,12 +215,12 @@ export const GAME_PRESETS: GamePreset[] = [
     serverProperties: { difficulty: 'normal', pvp: true, 'max-players': 32, 'level-type': 'flat', 'allow-nether': false, 'allow-end': false },
   },
 
-  // ── 🛏️ BedWars ───────────────────────────────────────────────────────────────
+  // ── BedWars ───────────────────────────────────────────────────────────────
   {
     id: 'bedwars',
     name: 'BedWars',
     nameEN: 'BedWars',
-    emoji: '🛏️',
+    icon: Bed,
     taglinePT: 'Destrua as camas, elimine os inimigos',
     taglineEN: 'Destroy beds, eliminate enemies',
     descPT: 'Arena 2v2 pré-construída incluída — ilhas Red e Blue, geradores de ferro/ouro/diamante/esmeralda, loja e upgrades configurados. Liga imediatamente ao criar.',
@@ -223,12 +235,12 @@ export const GAME_PRESETS: GamePreset[] = [
     serverProperties: { difficulty: 'easy', pvp: true, 'max-players': 16, 'allow-nether': false, 'allow-end': false },
   },
 
-  // ── 🌌 SkyWars ───────────────────────────────────────────────────────────────
+  // ── SkyWars ───────────────────────────────────────────────────────────────
   {
     id: 'skywars',
     name: 'SkyWars',
     nameEN: 'SkyWars',
-    emoji: '🌌',
+    icon: Orbit,
     taglinePT: 'Ilhas no céu, último a sobreviver vence',
     taglineEN: 'Islands in the sky, last to survive wins',
     descPT: '2 arenas prontas incluídas — cada jogador começa em uma ilha no céu com um baú de itens. O objetivo: sobreviver e eliminar todos os outros. O último vence.',

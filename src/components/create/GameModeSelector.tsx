@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, Check, Info, Zap, AlertTriangle } from 'lucide-react'
+import {
+  ChevronLeft,
+  Check,
+  Gamepad2,
+  Info,
+  Zap,
+  AlertTriangle,
+} from 'lucide-react'
 import { GAME_PRESETS, type GamePreset } from '../../data/gamePresets'
 import { useT, getLang } from '../../i18n'
 
@@ -36,8 +43,9 @@ export default function GameModeSelector({ onSelect, onBack }: Props) {
             <ChevronLeft size={18} />
           </button>
           <div>
-            <h2 className="text-xl font-black text-white">
-              {label('🎮 Escolha o Modo de Jogo', '🎮 Choose Game Mode')}
+            <h2 className="text-xl font-black text-white flex items-center gap-2">
+              <Gamepad2 className="h-5 w-5" aria-hidden="true" />
+              {label('Escolha o Modo de Jogo', 'Choose Game Mode')}
             </h2>
             <p className="text-sm text-slate-500 mt-0.5">
               {label('Plugins e configurações instalados automaticamente', 'Plugins and settings installed automatically')}
@@ -72,7 +80,7 @@ export default function GameModeSelector({ onSelect, onBack }: Props) {
                   </div>
                 )}
 
-                <div className="text-3xl mb-2">{preset.emoji}</div>
+                <preset.icon className="h-[30px] w-[30px] mb-2" aria-hidden="true" />
                 <p className={`font-black text-sm mb-1 ${isSelected ? preset.color : 'text-white'}`}>
                   {label(preset.name, preset.nameEN)}
                 </p>
@@ -111,7 +119,10 @@ export default function GameModeSelector({ onSelect, onBack }: Props) {
                 {/* Left: info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-4xl">{selected.emoji}</span>
+                    <selected.icon
+                      className="h-9 w-9 shrink-0"
+                      aria-hidden="true"
+                    />
                     <div>
                       <h3 className={`text-lg font-black ${selected.color}`}>
                         {label(selected.name, selected.nameEN)}

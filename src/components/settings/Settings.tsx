@@ -52,8 +52,8 @@ export default function Settings() {
           <p className="text-xs text-zinc-500 mb-3">{t.languageLabel}</p>
           <div className="flex gap-2">
             {([
-              { lang: 'pt' as Lang, label: '🇧🇷 Português' },
-              { lang: 'en' as Lang, label: '🇺🇸 English' },
+              { lang: 'pt' as Lang, label: 'Português' },
+              { lang: 'en' as Lang, label: 'English' },
             ]).map(({ lang: l, label }) => (
               <button
                 key={l}
@@ -64,6 +64,9 @@ export default function Settings() {
                     : 'bg-dark-700 border-dark-600 text-slate-500 hover:border-dark-500 hover:text-slate-300'
                   }`}
               >
+                <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-bold mr-2">
+                  {l.toUpperCase()}
+                </span>
                 {label}
               </button>
             ))}
