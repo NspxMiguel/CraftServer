@@ -715,7 +715,9 @@ ipcMain.handle('create-server', async (event, opts) => {
       fs.mkdirSync(arenaDir, { recursive: true })
       fs.writeFileSync(path.join(arenaDir, 'bw_arena.yml'), buildBedWarsArenaYaml())
 
-      send('Arena BedWars pronta — 2 times, loja, upgrades e geradores configurados ✅')
+      send(
+        'Arena BedWars pronta — 2 times, loja, upgrades e geradores configurados',
+      )
     }
 
     const server = { id, name: safeName, type, version, ram: safeRam, port: safePort, dir: serverDir, createdAt: Date.now(), playit: false }
